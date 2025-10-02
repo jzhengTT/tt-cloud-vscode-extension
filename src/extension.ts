@@ -12,6 +12,7 @@ interface SetupState {
   currentStep: number;
   totalSteps: number;
   checklist: ChecklistItem[];
+  downloadStep: number; // 0: show env var, 1: token input, 2: login command, 3: download command
 }
 
 let terminal: vscode.Terminal | undefined;
@@ -23,8 +24,9 @@ export function activate(context: vscode.ExtensionContext) {
     checklist: [
       { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true },
       { id: 'verify', title: 'Verify tt-metal Installation', subtitle: 'Test installation', completed: false, active: false },
-      { id: 'download', title: 'Save Hugging Face Token', subtitle: 'Set up access token', completed: false, active: false }
-    ]
+      { id: 'download', title: 'Download Model from Hugging Face', subtitle: 'Get Llama-3.1-8B-Instruct model', completed: false, active: false }
+    ],
+    downloadStep: 0
   };
 
   let panel: vscode.WebviewPanel | undefined;
@@ -151,28 +153,38 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
       state.currentStep = 3;
       break;
 
-    case 'downloadModel':
-      // Get token from webview input field
-      panel.webview.postMessage({
-        command: 'getToken'
-      });
+    case 'nextDownloadStep':
+      state.downloadStep = 1;
       break;
 
     case 'setToken':
       const token = message.token;
       if (token) {
-        // Set the environment variable and check path
+        // Set the environment variable and move to next step
         terminal.show();
         terminal.sendText(`export HF_TOKEN="${token}"`);
         terminal.sendText('echo "HF_TOKEN set successfully"');
-        terminal.sendText('ls -la /mnt/mldata/model_checkpoints/pytorch/huggingface/meta-llama/Llama-3.1-8B-Instruct');
-        
-        // Mark token save as completed
-        const downloadCompleteItem = state.checklist.find(item => item.id === 'download');
-        if (downloadCompleteItem) {
-          downloadCompleteItem.completed = true;
-          downloadCompleteItem.subtitle = 'Token saved successfully';
-        }
+        state.downloadStep = 2;
+      }
+      break;
+
+    case 'runLogin':
+      terminal.show();
+      terminal.sendText('hf auth login --token "$HF_TOKEN"');
+      terminal.sendText('echo "Authentication completed"');
+      state.downloadStep = 3;
+      break;
+
+    case 'runDownload':
+      terminal.show();
+      terminal.sendText('huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct');
+      terminal.sendText('echo "Model download completed"');
+      
+      // Mark download as completed
+      const downloadCompleteItem = state.checklist.find(item => item.id === 'download');
+      if (downloadCompleteItem) {
+        downloadCompleteItem.completed = true;
+        downloadCompleteItem.subtitle = 'Model downloaded successfully';
       }
       break;
 
@@ -227,11 +239,11 @@ function getStepContent(state: SetupState) {
       };
     case 'download':
       return {
-        title: 'Save Hugging Face Token',
-        description: 'Save your Hugging Face access token for downloading models. This token will be used in the next step to download the Llama-3.2-1B model.',
-        buttonText: 'Save Token',
-        buttonCommand: 'downloadModel',
-        commandToShow: 'export HF_TOKEN="<your-hugging-face-access-token>"',
+        title: 'Download Model from Hugging Face',
+        description: 'Finally, download the Llama-3.1-8B-Instruct model.',
+        buttonText: 'Run',
+        buttonCommand: 'runDownload',
+        commandToShow: 'huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct',
         codeVisible: false
       };
     default:
@@ -642,13 +654,38 @@ function getWebviewContent(state: SetupState): string {
                             <div style="margin-top: 8px; font-size: 12px; color: var(--vscode-descriptionForeground, #858585);">
                                 Enter your Hugging Face access token to download the model.
                             </div>
+                            <div style="margin: 10px 0;">
+                                <button class="btn btn-primary" onclick="handleDownloadModel()" style="margin-right: 10px;">Run</button>
+                            </div>
                         </div>
                     ` : ''}
 
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="${state.checklist.find(item => item.active)?.id === 'download' ? 'handleDownloadModel()' : `runCommand('${stepContent.buttonCommand}')`}">${stepContent.buttonText}</button>
-                        <button class="btn btn-secondary" onclick="runCommand('openDocumentation')">View Documentation</button>
-                    </div>
+                    ${state.checklist.find(item => item.active)?.id === 'download' ? `
+                        <div class="code-block" style="margin: 20px 0;">
+                            <div class="code-line">
+                                <span class="line-content"><span class="terminal-prompt">$</span> <span class="terminal-command">hf auth login --token "$HF_TOKEN"</span></span>
+                            </div>
+                        </div>
+                        <div style="margin: 10px 0;">
+                            <button class="btn btn-primary" onclick="runCommand('runLogin')" style="margin-right: 10px;">Run</button>
+                        </div>
+
+                        <div class="code-block" style="margin: 20px 0;">
+                            <div class="code-line">
+                                <span class="line-content"><span class="terminal-prompt">$</span> <span class="terminal-command">huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct</span></span>
+                            </div>
+                        </div>
+                        <div style="margin: 10px 0;">
+                            <button class="btn btn-primary" onclick="runCommand('runDownload')" style="margin-right: 10px;">Run</button>
+                        </div>
+                    ` : ''}
+
+                    ${state.checklist.find(item => item.active)?.id !== 'download' ? `
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="runCommand('${stepContent.buttonCommand}')">${stepContent.buttonText}</button>
+                            <button class="btn btn-secondary" onclick="runCommand('openDocumentation')">View Documentation</button>
+                        </div>
+                    ` : ''}
                     
                     ${state.checklist.find(item => item.active)?.id === 'verify' ? `
                         <div class="info-box" style="margin-top: 20px; font-size: 13px; line-height: 1.5;">
@@ -699,6 +736,18 @@ function getWebviewContent(state: SetupState): string {
                 }
             }
         });
+
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                // Show brief success feedback
+                const copyBtn = event.target;
+                const originalEmoji = copyBtn.textContent;
+                copyBtn.textContent = '✅';
+                setTimeout(() => {
+                    copyBtn.textContent = originalEmoji;
+                }, 1000);
+            });
+        }
     </script>
 </body>
 </html>`;
