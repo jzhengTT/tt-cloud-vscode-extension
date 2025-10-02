@@ -248,7 +248,8 @@ function getStepContent(state: SetupState) {
 }
 
 function getWebviewContent(state: SetupState): string {
-  const progressPercentage = Math.round((state.checklist.filter(item => item.completed).length / state.totalSteps) * 100);
+  const completedCount = state.checklist.filter(item => item.completed).length;
+  const progressPercentage = state.totalSteps > 0 ? Math.round((completedCount / state.totalSteps) * 100) : 0;
   const stepContent = getStepContent(state);
 
   return `<!DOCTYPE html>
@@ -585,7 +586,7 @@ function getWebviewContent(state: SetupState): string {
                 <div class="progress-bar">
                     <div class="progress-fill"></div>
                 </div>
-                <div class="progress-text">${state.checklist.filter(item => item.completed).length} of ${state.totalSteps} steps completed</div>
+                <div class="progress-text">${completedCount} of ${state.totalSteps} steps completed</div>
             </div>
 
             <div class="checklist">
