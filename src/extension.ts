@@ -240,10 +240,10 @@ function getStepContent(state: SetupState) {
     case 'download':
       return {
         title: 'Download Model from Hugging Face',
-        description: 'Finally, download the Llama-3.1-8B-Instruct model.',
+        description: 'First, set your Hugging Face token as an environment variable.',
         buttonText: 'Run',
-        buttonCommand: 'runDownload',
-        commandToShow: 'huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct',
+        buttonCommand: 'setToken',
+        commandToShow: 'export HF_TOKEN="<your-hugging-face-access-token>"',
         codeVisible: false
       };
     default:
