@@ -19,10 +19,11 @@ let terminal: vscode.Terminal | undefined;
 export function activate(context: vscode.ExtensionContext) {
   const setupState: SetupState = {
     currentStep: 1,
-    totalSteps: 2,
+    totalSteps: 3,
     checklist: [
       { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true },
-      { id: 'verify', title: 'Verify tt-metal Installation', subtitle: 'Test installation', completed: false, active: false }
+      { id: 'verify', title: 'Verify tt-metal Installation', subtitle: 'Test installation', completed: false, active: false },
+      { id: 'download', title: 'Save Hugging Face Token', subtitle: 'Set up access token', completed: false, active: false }
     ]
   };
 
@@ -38,11 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!terminal) {
       terminal = vscode.window.createTerminal({
         name: 'Tenstorrent CLI',
-        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-        env: {
-          ...process.env,
-          'PS1': 'tt-smi $ '
-        }
+        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
       });
     }
     terminal.show();
@@ -71,6 +68,11 @@ export function activate(context: vscode.ExtensionContext) {
           case 'updateProgress':
             updateChecklistProgress(message.itemId, setupState, panel!);
             break;
+          case 'setToken':
+            if (terminal) {
+              handleRunCommand('setToken', setupState, panel!, terminal, message);
+            }
+            break;
         }
       }
     );
@@ -98,7 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.executeCommand('workbench.action.closeSidebar');
 }
 
-function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel, terminal: vscode.Terminal) {
+function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel, terminal: vscode.Terminal, message?: any) {
   // Send commands to the real terminal and update state
   switch (commandName) {
     case 'detectHardware':
@@ -132,12 +134,45 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
       verifyTerminal.show();
       verifyTerminal.sendText('python3 -m ttnn.examples.usage.run_op_on_device');
       
-      // Mark verification as completed but keep it active
+      // Mark verification as completed and activate download step
       const verifyCompleteItem = state.checklist.find(item => item.id === 'verify');
       if (verifyCompleteItem) {
         verifyCompleteItem.completed = true;
+        verifyCompleteItem.active = false;
         verifyCompleteItem.subtitle = 'Installation verified';
-        // Keep the step active so it stays on this step
+      }
+
+      // Activate download step
+      const downloadItem = state.checklist.find(item => item.id === 'download');
+      if (downloadItem) {
+        downloadItem.active = true;
+      }
+
+      state.currentStep = 3;
+      break;
+
+    case 'downloadModel':
+      // Get token from webview input field
+      panel.webview.postMessage({
+        command: 'getToken'
+      });
+      break;
+
+    case 'setToken':
+      const token = message.token;
+      if (token) {
+        // Set the environment variable and check path
+        terminal.show();
+        terminal.sendText(`export HF_TOKEN="${token}"`);
+        terminal.sendText('echo "HF_TOKEN set successfully"');
+        terminal.sendText('ls -la /mnt/mldata/model_checkpoints/pytorch/huggingface/meta-llama/Llama-3.1-8B-Instruct');
+        
+        // Mark token save as completed
+        const downloadCompleteItem = state.checklist.find(item => item.id === 'download');
+        if (downloadCompleteItem) {
+          downloadCompleteItem.completed = true;
+          downloadCompleteItem.subtitle = 'Token saved successfully';
+        }
       }
       break;
 
@@ -146,6 +181,8 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
       const currentItem = state.checklist.find(item => item.active);
       if (currentItem?.id === 'verify') {
         vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-metal/blob/main/INSTALLING.md'));
+      } else if (currentItem?.id === 'download') {
+        vscode.env.openExternal(vscode.Uri.parse('https://huggingface.co/meta-llama/Llama-3.2-1B'));
       } else {
         vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-smi'));
       }
@@ -186,6 +223,15 @@ function getStepContent(state: SetupState) {
         buttonText: 'Run',
         buttonCommand: 'verifyInstallation',
         commandToShow: 'python3 -m ttnn.examples.usage.run_op_on_device',
+        codeVisible: false
+      };
+    case 'download':
+      return {
+        title: 'Save Hugging Face Token',
+        description: 'Save your Hugging Face access token for downloading models. This token will be used in the next step to download the Llama-3.2-1B model.',
+        buttonText: 'Save Token',
+        buttonCommand: 'downloadModel',
+        commandToShow: 'export HF_TOKEN="<your-hugging-face-access-token>"',
         codeVisible: false
       };
     default:
@@ -574,8 +620,32 @@ function getWebviewContent(state: SetupState): string {
                         </div>
                     ` : ''}
 
+                    ${state.checklist.find(item => item.active)?.id === 'download' ? `
+                        <div class="token-input-section" style="margin: 20px 0;">
+                            <label for="hf-token" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--vscode-foreground, #cccccc);">Hugging Face Access Token:</label>
+                            <input 
+                                type="password" 
+                                id="hf-token" 
+                                placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+                                style="
+                                    width: 100%; 
+                                    padding: 10px; 
+                                    border: 1px solid var(--vscode-input-border, #3e3e42); 
+                                    border-radius: 4px; 
+                                    background: var(--vscode-input-background, #3c3c3c); 
+                                    color: var(--vscode-input-foreground, #cccccc); 
+                                    font-family: var(--vscode-font-family, monospace);
+                                    font-size: 13px;
+                                "
+                            />
+                            <div style="margin-top: 8px; font-size: 12px; color: var(--vscode-descriptionForeground, #858585);">
+                                Enter your Hugging Face access token to download the model.
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div class="action-buttons">
-                        <button class="btn btn-primary" onclick="runCommand('${stepContent.buttonCommand}')">${stepContent.buttonText}</button>
+                        <button class="btn btn-primary" onclick="${state.checklist.find(item => item.active)?.id === 'download' ? 'handleDownloadModel()' : `runCommand('${stepContent.buttonCommand}')`}">${stepContent.buttonText}</button>
                         <button class="btn btn-secondary" onclick="runCommand('openDocumentation')">View Documentation</button>
                     </div>
                     
@@ -605,6 +675,29 @@ function getWebviewContent(state: SetupState): string {
                 itemId: itemId
             });
         }
+
+        // Handle token input for download step
+        function handleDownloadModel() {
+            const tokenInput = document.getElementById('hf-token');
+            if (tokenInput && tokenInput.value.trim()) {
+                vscode.postMessage({
+                    command: 'setToken',
+                    token: tokenInput.value.trim()
+                });
+            } else {
+                alert('Please enter your Hugging Face access token');
+            }
+        }
+
+        // Listen for getToken message from extension
+        window.addEventListener('message', event => {
+            if (event.data.command === 'getToken') {
+                const tokenInput = document.getElementById('hf-token');
+                if (tokenInput) {
+                    tokenInput.focus();
+                }
+            }
+        });
     </script>
 </body>
 </html>`;
