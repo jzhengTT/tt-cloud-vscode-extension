@@ -12,22 +12,14 @@ interface SetupState {
   currentStep: number;
   totalSteps: number;
   checklist: ChecklistItem[];
-  terminalOutput: string[];
 }
 
 export function activate(context: vscode.ExtensionContext) {
   const setupState: SetupState = {
     currentStep: 1,
-    totalSteps: 5,
+    totalSteps: 1,
     checklist: [
-      { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true },
-      { id: 'install', title: 'Install TT-Metalium', subtitle: 'Runtime & drivers', completed: false, active: false },
-      { id: 'verify', title: 'Verify Installation', subtitle: 'Run health checks', completed: false, active: false },
-      { id: 'first-program', title: 'First Program', subtitle: 'Hello Tenstorrent', completed: false, active: false },
-      { id: 'examples', title: 'Explore Examples', subtitle: 'Sample projects', completed: false, active: false }
-    ],
-    terminalOutput: [
-      'tt-smi $ █'
+      { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true }
     ]
   };
 
@@ -87,124 +79,24 @@ export function activate(context: vscode.ExtensionContext) {
 function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel) {
   switch (commandName) {
     case 'detectHardware':
-      // Remove the cursor from the previous line
-      if (state.terminalOutput[state.terminalOutput.length - 1].includes('█')) {
-        state.terminalOutput[state.terminalOutput.length - 1] = 'tt-smi $';
-      }
-
-      state.terminalOutput.push('tt-smi $ tt-smi detect');
-      state.terminalOutput.push('Scanning for Tenstorrent devices...');
-      state.terminalOutput.push('✓ Found 1 device(s)');
-      state.terminalOutput.push('  Device 0: Wormhole N150');
-      state.terminalOutput.push('  Status: Ready');
-      state.terminalOutput.push('  Driver: v1.4.2');
-      state.terminalOutput.push('');
-      state.terminalOutput.push('tt-smi $ █');
-
       // Mark hardware detection as completed
       const hardwareItem = state.checklist.find(item => item.id === 'hardware');
       if (hardwareItem) {
         hardwareItem.completed = true;
         hardwareItem.active = false;
-        hardwareItem.subtitle = 'Wormhole detected';
+        hardwareItem.subtitle = 'Hardware detected';
       }
-
-      // Activate install step
-      const installItem = state.checklist.find(item => item.id === 'install');
-      if (installItem) {
-        installItem.active = true;
-      }
-
-      state.currentStep = 2;
       break;
 
-    case 'installTTMetalium':
-      // Remove the cursor from the previous line
-      if (state.terminalOutput[state.terminalOutput.length - 1].includes('█')) {
-        state.terminalOutput[state.terminalOutput.length - 1] = 'tt-smi $';
-      }
-
-      state.terminalOutput.push('tt-smi $ pip install tt-metalium');
-      state.terminalOutput.push('Installing TT-Metalium...');
-      state.terminalOutput.push('✅ TT-Metalium installed successfully');
-      state.terminalOutput.push('✅ Drivers loaded');
-      state.terminalOutput.push('');
-      state.terminalOutput.push('tt-smi $ █');
-
-      // Mark install as completed
-      const installCompleteItem = state.checklist.find(item => item.id === 'install');
-      if (installCompleteItem) {
-        installCompleteItem.completed = true;
-        installCompleteItem.active = false;
-      }
-
-      // Activate verify step
-      const verifyItem = state.checklist.find(item => item.id === 'verify');
-      if (verifyItem) {
-        verifyItem.active = true;
-      }
-
-      state.currentStep = 3;
+    case 'runTtSmi':
+      // Run actual tt-smi command in VS Code terminal
+      const terminal = vscode.window.createTerminal('TT-SMI Hardware Detection');
+      terminal.show();
+      terminal.sendText('tt-smi');
       break;
 
-    case 'verifyInstallation':
-      // Remove the cursor from the previous line
-      if (state.terminalOutput[state.terminalOutput.length - 1].includes('█')) {
-        state.terminalOutput[state.terminalOutput.length - 1] = 'tt-smi $';
-      }
-
-      state.terminalOutput.push('tt-smi $ tt-smi health');
-      state.terminalOutput.push('Running health checks...');
-      state.terminalOutput.push('✅ Device communication: OK');
-      state.terminalOutput.push('✅ Memory test: PASSED');
-      state.terminalOutput.push('✅ Driver status: ACTIVE');
-      state.terminalOutput.push('');
-      state.terminalOutput.push('tt-smi $ █');
-
-      // Mark verify as completed
-      const verifyCompleteItem = state.checklist.find(item => item.id === 'verify');
-      if (verifyCompleteItem) {
-        verifyCompleteItem.completed = true;
-        verifyCompleteItem.active = false;
-      }
-
-      // Activate first program step
-      const firstProgramItem = state.checklist.find(item => item.id === 'first-program');
-      if (firstProgramItem) {
-        firstProgramItem.active = true;
-      }
-
-      state.currentStep = 4;
-      break;
-
-    case 'runOnTenstorrent':
-      // Remove the cursor from the previous line
-      if (state.terminalOutput[state.terminalOutput.length - 1].includes('█')) {
-        state.terminalOutput[state.terminalOutput.length - 1] = 'tt-smi $';
-      }
-
-      state.terminalOutput.push('tt-smi $ python hello_tt.py');
-      state.terminalOutput.push('Initializing Tenstorrent device...');
-      state.terminalOutput.push('✅ Successfully ran on Tenstorrent device!');
-      state.terminalOutput.push('Device: Wormhole-0');
-      state.terminalOutput.push('Execution time: 12.4ms');
-      state.terminalOutput.push('');
-      state.terminalOutput.push('tt-smi $ █');
-
-      // Mark first program as completed
-      const firstProgramCompleteItem = state.checklist.find(item => item.id === 'first-program');
-      if (firstProgramCompleteItem) {
-        firstProgramCompleteItem.completed = true;
-        firstProgramCompleteItem.active = false;
-      }
-
-      // Activate examples step
-      const examplesItem = state.checklist.find(item => item.id === 'examples');
-      if (examplesItem) {
-        examplesItem.active = true;
-      }
-
-      state.currentStep = 5;
+    case 'openDocumentation':
+      vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-smi'));
       break;
   }
 
@@ -228,50 +120,20 @@ function getStepContent(state: SetupState) {
   switch (currentItem?.id) {
     case 'hardware':
       return {
-        title: 'Detect Hardware',
-        description: 'Let\'s start by detecting your Tenstorrent hardware. This will scan for connected devices and verify they\'re properly recognized by the system.',
-        buttonText: '🔍 Detect Hardware',
-        buttonCommand: 'detectHardware',
-        codeVisible: false
-      };
-    case 'install':
-      return {
-        title: 'Install TT-Metalium',
-        description: 'Install the TT-Metalium runtime and drivers. This provides the core libraries needed to run programs on Tenstorrent hardware.',
-        buttonText: '📦 Install TT-Metalium',
-        buttonCommand: 'installTTMetalium',
-        codeVisible: false
-      };
-    case 'verify':
-      return {
-        title: 'Verify Installation',
-        description: 'Run health checks to ensure your Tenstorrent device is properly configured and ready to use.',
-        buttonText: '✅ Run Health Check',
-        buttonCommand: 'verifyInstallation',
-        codeVisible: false
-      };
-    case 'first-program':
-      return {
-        title: 'Run Your First Program',
-        description: 'Let\'s run a simple tensor operation on your Tenstorrent hardware. This example demonstrates basic tensor creation and computation using TT-Metalium.',
-        buttonText: '▶ Run on Tenstorrent',
-        buttonCommand: 'runOnTenstorrent',
-        codeVisible: true
-      };
-    case 'examples':
-      return {
-        title: 'Explore Examples',
-        description: 'Congratulations! You\'ve successfully set up your Tenstorrent development environment. Explore sample projects to learn more advanced techniques.',
-        buttonText: '📚 Browse Examples',
-        buttonCommand: 'browseExamples',
+        title: 'Hardware Detection',
+        description: 'Detect and verify your Tenstorrent hardware using tt-smi. This will scan for connected devices and verify they\'re properly recognized by the system.',
+        buttonText: 'Run',
+        buttonCommand: 'runTtSmi',
+        commandToShow: 'tt-smi',
         codeVisible: false
       };
     default:
       return {
         title: 'Setup Complete',
-        description: 'Your Tenstorrent development environment is ready!',
-        buttonText: '🎉 Get Started',
+        description: 'Your Tenstorrent hardware has been detected!',
+        buttonText: 'Get Started',
         buttonCommand: 'getStarted',
+        commandToShow: '',
         codeVisible: false
       };
   }
@@ -437,38 +299,6 @@ function getWebviewContent(state: SetupState): string {
             flex-direction: column;
         }
 
-        .tab-bar {
-            display: flex;
-            background: var(--vscode-tab-inactiveBackground, #2d2d30);
-            border-bottom: 1px solid var(--vscode-tab-border, #3e3e42);
-        }
-
-        .tab {
-            padding: 10px 16px;
-            font-size: 12px;
-            color: var(--vscode-tab-inactiveForeground, #969696);
-            border-right: 1px solid var(--vscode-tab-border, #3e3e42);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tab.active {
-            background: var(--vscode-tab-activeBackground, #1e1e1e);
-            color: var(--vscode-tab-activeForeground, #ffffff);
-        }
-
-        .tab-icon {
-            font-size: 14px;
-        }
-
-        .editor-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
 
         .content-pane {
             flex: 1;
@@ -546,6 +376,22 @@ function getWebviewContent(state: SetupState): string {
             background: var(--vscode-button-secondaryHoverBackground, #4e4e52);
         }
 
+        .copy-btn-small {
+            padding: 4px 8px;
+            background: var(--vscode-button-secondaryBackground, #3e3e42);
+            border: none;
+            border-radius: 4px;
+            color: var(--vscode-button-secondaryForeground, #cccccc);
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-left: auto;
+        }
+
+        .copy-btn-small:hover {
+            background: var(--vscode-button-secondaryHoverBackground, #4e4e52);
+        }
+
         .code-line {
             display: flex;
             gap: 16px;
@@ -570,56 +416,6 @@ function getWebviewContent(state: SetupState): string {
         .variable { color: var(--vscode-symbolIcon-variableForeground, #9cdcfe); }
         .number { color: var(--vscode-symbolIcon-numberForeground, #b5cea8); }
 
-        .terminal {
-            background: var(--vscode-terminal-background, #1e1e1e);
-            border-top: 1px solid var(--vscode-panel-border, #3e3e42);
-            height: 250px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .terminal-header {
-            padding: 8px 12px;
-            background: var(--vscode-tab-inactiveBackground, #2d2d30);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--vscode-foreground, #cccccc);
-        }
-
-        .terminal-content {
-            flex: 1;
-            padding: 12px;
-            font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
-            font-size: 13px;
-            overflow-y: auto;
-            line-height: 1.5;
-        }
-
-        .terminal-line {
-            margin-bottom: 4px;
-        }
-
-        .terminal-prompt {
-            color: var(--vscode-terminal-ansiGreen, #4ec9b0);
-        }
-
-        .terminal-command {
-            color: var(--vscode-terminal-ansiYellow, #dcdcaa);
-        }
-
-        .terminal-output {
-            color: var(--vscode-terminal-foreground, #cccccc);
-        }
-
-        .terminal-success {
-            color: var(--vscode-terminal-ansiGreen, #4ec9b0);
-        }
-
-        .terminal-warning {
-            color: var(--vscode-terminal-ansiYellow, #ce9178);
-        }
 
         .action-buttons {
             display: flex;
@@ -699,19 +495,7 @@ function getWebviewContent(state: SetupState): string {
 
         <!-- Main Content -->
         <div class="main-content">
-            <div class="tab-bar">
-                <div class="tab active">
-                    <span class="tab-icon">📄</span>
-                    <span>hello_tt.py</span>
-                </div>
-                <div class="tab">
-                    <span class="tab-icon">📋</span>
-                    <span>Setup Guide</span>
-                </div>
-            </div>
-
-            <div class="editor-area">
-                <div class="content-pane">
+            <div class="content-pane">
                     <div class="step-header">
                         <div class="step-badge">STEP ${state.currentStep} OF ${state.totalSteps}</div>
                         <h1 class="step-title">${stepContent.title}</h1>
@@ -720,119 +504,17 @@ function getWebviewContent(state: SetupState): string {
                         </p>
                     </div>
 
-                    ${stepContent.codeVisible ? `
-                        <div class="info-box">
-                            💡 <strong>Tip:</strong> Make sure your Tenstorrent device is properly connected and drivers are loaded. You can verify this by checking the terminal output below.
-                        </div>
-
+                    ${stepContent.commandToShow ? `
                         <div class="code-block">
-                            <div class="code-header">
-                                <span class="code-title">hello_tt.py</span>
-                                <button class="copy-btn">Copy</button>
-                            </div>
                             <div class="code-line">
-                                <span class="line-number">1</span>
-                                <span class="line-content"><span class="keyword">import</span> tt_lib <span class="keyword">as</span> ttl</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">2</span>
-                                <span class="line-content"><span class="keyword">import</span> torch</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">3</span>
-                                <span class="line-content"></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">4</span>
-                                <span class="line-content"><span class="comment"># Initialize Tenstorrent device</span></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">5</span>
-                                <span class="line-content"><span class="variable">device</span> = <span class="function">ttl</span>.device.<span class="function">CreateDevice</span>(<span class="number">0</span>)</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">6</span>
-                                <span class="line-content"></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">7</span>
-                                <span class="line-content"><span class="comment"># Create a tensor on CPU</span></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">8</span>
-                                <span class="line-content"><span class="variable">cpu_tensor</span> = torch.<span class="function">randn</span>(<span class="number">2</span>, <span class="number">3</span>, <span class="number">32</span>, <span class="number">32</span>)</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">9</span>
-                                <span class="line-content"></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">10</span>
-                                <span class="line-content"><span class="comment"># Transfer to Tenstorrent device</span></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">11</span>
-                                <span class="line-content"><span class="variable">tt_tensor</span> = <span class="function">ttl</span>.tensor.<span class="function">Tensor</span>(<span class="variable">cpu_tensor</span>, <span class="variable">device</span>)</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">12</span>
-                                <span class="line-content"></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">13</span>
-                                <span class="line-content"><span class="comment"># Perform computation on TT hardware</span></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">14</span>
-                                <span class="line-content"><span class="variable">result</span> = <span class="function">ttl</span>.tensor.<span class="function">mul</span>(<span class="variable">tt_tensor</span>, <span class="number">2.0</span>)</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">15</span>
-                                <span class="line-content"></span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">16</span>
-                                <span class="line-content"><span class="function">print</span>(<span class="string">f"✅ Successfully ran on Tenstorrent device!"</span>)</span>
-                            </div>
-                            <div class="code-line">
-                                <span class="line-number">17</span>
-                                <span class="line-content"><span class="function">print</span>(<span class="string">f"Device: {device.id()}"</span>)</span>
+                                <span class="line-content"><span class="terminal-prompt">$</span> <span class="terminal-command">${stepContent.commandToShow}</span></span>
                             </div>
                         </div>
                     ` : ''}
 
                     <div class="action-buttons">
                         <button class="btn btn-primary" onclick="runCommand('${stepContent.buttonCommand}')">${stepContent.buttonText}</button>
-                        <button class="btn btn-secondary" onclick="runCommand('viewDocs')">📖 View Documentation</button>
-                    </div>
-                </div>
-
-                <!-- Terminal -->
-                <div class="terminal">
-                    <div class="terminal-header">
-                        <span>⚡ Terminal</span>
-                        <span style="margin-left: auto; font-size: 11px; color: var(--vscode-descriptionForeground, #858585);">Tenstorrent CLI</span>
-                    </div>
-                    <div class="terminal-content">
-                        ${state.terminalOutput.map(line => {
-                          if (line.startsWith('tt-smi $')) {
-                            const parts = line.split(' ');
-                            const prompt = parts.slice(0, 2).join(' ');
-                            const command = parts.slice(2).join(' ');
-                            return `<div class="terminal-line">
-                              <span class="terminal-prompt">${prompt}</span>
-                              <span class="terminal-command"> ${command}</span>
-                            </div>`;
-                          } else if (line.includes('✓') || line.includes('✅')) {
-                            return `<div class="terminal-line terminal-success">${line}</div>`;
-                          } else if (line.includes('WARNING') || line.includes('⚠')) {
-                            return `<div class="terminal-line terminal-warning">${line}</div>`;
-                          } else if (line === '') {
-                            return `<div class="terminal-line"></div>`;
-                          } else {
-                            return `<div class="terminal-line terminal-output">${line}</div>`;
-                          }
-                        }).join('')}
+                        <button class="btn btn-secondary" onclick="runCommand('openDocumentation')">View Documentation</button>
                     </div>
                 </div>
             </div>
@@ -856,11 +538,6 @@ function getWebviewContent(state: SetupState): string {
             });
         }
 
-        // Auto-scroll terminal to bottom
-        const terminal = document.querySelector('.terminal-content');
-        if (terminal) {
-            terminal.scrollTop = terminal.scrollHeight;
-        }
     </script>
 </body>
 </html>`;
