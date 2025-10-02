@@ -14,6 +14,8 @@ interface SetupState {
   checklist: ChecklistItem[];
 }
 
+let terminal: vscode.Terminal | undefined;
+
 export function activate(context: vscode.ExtensionContext) {
   const setupState: SetupState = {
     currentStep: 1,
@@ -30,6 +32,19 @@ export function activate(context: vscode.ExtensionContext) {
       panel.reveal(vscode.ViewColumn.Two);
       return;
     }
+
+    // Create and show the real terminal
+    if (!terminal) {
+      terminal = vscode.window.createTerminal({
+        name: 'Tenstorrent CLI',
+        cwd: vscode.workspace.rootPath,
+        env: {
+          ...process.env,
+          'PS1': 'tt-smi $ '
+        }
+      });
+    }
+    terminal.show();
 
     panel = vscode.window.createWebviewPanel(
       'tenstorrentSetup',
@@ -48,7 +63,9 @@ export function activate(context: vscode.ExtensionContext) {
       message => {
         switch (message.command) {
           case 'runCommand':
-            handleRunCommand(message.commandName, setupState, panel!);
+            if (terminal) {
+              handleRunCommand(message.commandName, setupState, panel!, terminal);
+            }
             break;
           case 'updateProgress':
             updateChecklistProgress(message.itemId, setupState, panel!);
@@ -59,13 +76,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     panel.onDidDispose(() => {
       panel = undefined;
+      // Keep the terminal open for user interaction
     });
   });
 
   const runCommandCommand = vscode.commands.registerCommand('tenstorrent.runCommand',
     (commandName: string) => {
-      if (panel) {
-        handleRunCommand(commandName, setupState, panel);
+      if (panel && terminal) {
+        handleRunCommand(commandName, setupState, panel, terminal);
       }
     }
   );
@@ -79,7 +97,8 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.executeCommand('workbench.action.closeSidebar');
 }
 
-function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel) {
+function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel, terminal: vscode.Terminal) {
+  // Send commands to the real terminal and update state
   switch (commandName) {
     case 'detectHardware':
       // Mark hardware detection as completed
@@ -540,13 +559,17 @@ function getWebviewContent(state: SetupState): string {
                 itemId: itemId
             });
         }
-
     </script>
 </body>
 </html>`;
 }
 
-export function deactivate() {}
+export function deactivate() {
+  if (terminal) {
+    terminal.dispose();
+    terminal = undefined;
+  }
+}
 
 
 
