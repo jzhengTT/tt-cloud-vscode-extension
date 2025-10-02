@@ -1,0 +1,39 @@
+{
+  "name": "tt-cloud-hello-world",
+  "displayName": "TT Cloud Hello World",
+  "description": "Barebones Hello World VS Code extension",
+  "version": "0.0.1",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "tt-cloud-hello-world.helloWorld",
+        "title": "Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.93.0",
+    "typescript": "^5.4.0",
+    "vsce": "^2.15.0"
+  }
+}
+
+
