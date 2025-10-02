@@ -80,8 +80,11 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(openSetupCommand, runCommandCommand);
 
-  // Auto-open the setup panel on activation
+  // Auto-open the setup panel on activation and minimize file explorer
   vscode.commands.executeCommand('tenstorrent.openSetup');
+
+  // Minimize the file explorer pane
+  vscode.commands.executeCommand('workbench.action.closeSidebar');
 }
 
 function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel) {
