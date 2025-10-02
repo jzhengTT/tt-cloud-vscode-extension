@@ -1,9 +1,9 @@
 {
-  "name": "tt-cloud-hello-world",
-  "displayName": "TT Cloud Hello World",
-  "description": "Barebones Hello World VS Code extension",
+  "name": "tenstorrent-developer-extension",
+  "displayName": "Tenstorrent Developer Extension",
+  "description": "Setup and development tools for Tenstorrent hardware",
   "version": "0.0.1",
-  "publisher": "your-publisher-id",
+  "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -17,10 +17,33 @@
   "contributes": {
     "commands": [
       {
-        "command": "tt-cloud-hello-world.helloWorld",
-        "title": "Hello World"
+        "command": "tenstorrent.openSetup",
+        "title": "Open Tenstorrent Setup",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runCommand",
+        "title": "Run Tenstorrent Command"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tenstorrent-setup",
+          "title": "Tenstorrent Setup",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "tenstorrent-setup": [
+        {
+          "id": "tenstorrent-checklist",
+          "name": "Setup Progress",
+          "when": "true"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
