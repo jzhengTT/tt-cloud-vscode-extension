@@ -17,9 +17,10 @@ interface SetupState {
 export function activate(context: vscode.ExtensionContext) {
   const setupState: SetupState = {
     currentStep: 1,
-    totalSteps: 1,
+    totalSteps: 2,
     checklist: [
-      { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true }
+      { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true },
+      { id: 'verify', title: 'Verify tt-metal Installation', subtitle: 'Test installation', completed: false, active: false }
     ]
   };
 
@@ -82,13 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel) {
   switch (commandName) {
     case 'detectHardware':
-      // Mark hardware detection as completed
-      const hardwareItem = state.checklist.find(item => item.id === 'hardware');
-      if (hardwareItem) {
-        hardwareItem.completed = true;
-        hardwareItem.active = false;
-        hardwareItem.subtitle = 'Hardware detected';
-      }
+      // This case is handled by runTtSmi now
       break;
 
     case 'runTtSmi':
@@ -96,10 +91,46 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
       const terminal = vscode.window.createTerminal('TT-SMI Hardware Detection');
       terminal.show();
       terminal.sendText('tt-smi');
+      
+      // Mark hardware detection as completed
+      const hardwareItem = state.checklist.find(item => item.id === 'hardware');
+      if (hardwareItem) {
+        hardwareItem.completed = true;
+        hardwareItem.subtitle = 'Hardware detected';
+      }
+
+      // Activate verify step
+      const verifyItem = state.checklist.find(item => item.id === 'verify');
+      if (verifyItem) {
+        verifyItem.active = true;
+      }
+
+      state.currentStep = 2;
+      break;
+
+    case 'verifyInstallation':
+      // Run tt-metal verification command in VS Code terminal
+      const verifyTerminal = vscode.window.createTerminal('TT-Metal Verification');
+      verifyTerminal.show();
+      verifyTerminal.sendText('python3 -m ttnn.examples.usage.run_op_on_device');
+      
+      // Mark verification as completed but keep it active
+      const verifyCompleteItem = state.checklist.find(item => item.id === 'verify');
+      if (verifyCompleteItem) {
+        verifyCompleteItem.completed = true;
+        verifyCompleteItem.subtitle = 'Installation verified';
+        // Keep the step active so it stays on this step
+      }
       break;
 
     case 'openDocumentation':
-      vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-smi'));
+      // Determine which documentation to open based on current step
+      const currentItem = state.checklist.find(item => item.active);
+      if (currentItem?.id === 'verify') {
+        vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-metal/blob/main/INSTALLING.md'));
+      } else {
+        vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-smi'));
+      }
       break;
   }
 
@@ -130,13 +161,23 @@ function getStepContent(state: SetupState) {
         commandToShow: 'tt-smi',
         codeVisible: false
       };
-    default:
+    case 'verify':
       return {
-        title: 'Setup Complete',
-        description: 'Your Tenstorrent hardware has been detected!',
-        buttonText: 'Get Started',
-        buttonCommand: 'getStarted',
-        commandToShow: '',
+        title: 'Verify tt-metal Installation',
+        description: 'Test your tt-metal installation by running a sample operation on your Tenstorrent device. This verifies that the software stack is properly configured.',
+        buttonText: 'Run',
+        buttonCommand: 'verifyInstallation',
+        commandToShow: 'python3 -m ttnn.examples.usage.run_op_on_device',
+        codeVisible: false
+      };
+    default:
+      // Fallback to first step if no active step
+      return {
+        title: 'Hardware Detection',
+        description: 'Detect and verify your Tenstorrent hardware using tt-smi. This will scan for connected devices and verify they\'re properly recognized by the system.',
+        buttonText: 'Run',
+        buttonCommand: 'runTtSmi',
+        commandToShow: 'tt-smi',
         codeVisible: false
       };
   }
@@ -519,6 +560,12 @@ function getWebviewContent(state: SetupState): string {
                         <button class="btn btn-primary" onclick="runCommand('${stepContent.buttonCommand}')">${stepContent.buttonText}</button>
                         <button class="btn btn-secondary" onclick="runCommand('openDocumentation')">View Documentation</button>
                     </div>
+                    
+                    ${state.checklist.find(item => item.active)?.id === 'verify' ? `
+                        <div class="info-box" style="margin-top: 20px; font-size: 13px; line-height: 1.5;">
+                            For more programming examples to try, visit <a href="https://docs.tenstorrent.com/tt-metal/latest/ttnn/ttnn/usage.html#basic-examples" target="_blank" style="color: var(--vscode-textLink-foreground, #4ec9b0); text-decoration: none;">Tenstorrent's TT-NN Basic Examples Page</a> or get started with <a href="https://docs.tenstorrent.com/tt-metal/latest/tt-metalium/tt_metal/examples/index.html" target="_blank" style="color: var(--vscode-textLink-foreground, #4ec9b0); text-decoration: none;">Simple Kernels on TT-Metalium</a>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
