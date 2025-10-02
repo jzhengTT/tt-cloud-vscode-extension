@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!terminal) {
       terminal = vscode.window.createTerminal({
         name: 'Tenstorrent CLI',
-        cwd: vscode.workspace.rootPath,
+        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
         env: {
           ...process.env,
           'PS1': 'tt-smi $ '
@@ -112,7 +112,6 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
 
     case 'runTtSmi':
       // Run actual tt-smi command in VS Code terminal
-      const terminal = vscode.window.createTerminal('TT-SMI Hardware Detection');
       terminal.show();
       terminal.sendText('tt-smi');
       break;
