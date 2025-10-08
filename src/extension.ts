@@ -12,10 +12,11 @@ interface SetupState {
   currentStep: number;
   totalSteps: number;
   checklist: ChecklistItem[];
-  downloadStep: number; // 0: show env var, 1: token input, 2: login command, 3: download command
 }
 
-let terminal: vscode.Terminal | undefined;
+let hardwareDetectionTerminal: vscode.Terminal | undefined;
+let verifyInstallationTerminal: vscode.Terminal | undefined;
+let downloadModelTerminal: vscode.Terminal | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   const setupState: SetupState = {
@@ -25,8 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
       { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true },
       { id: 'verify', title: 'Verify tt-metal Installation', subtitle: 'Test installation', completed: false, active: false },
       { id: 'download', title: 'Download Model from Hugging Face', subtitle: 'Get Llama-3.1-8B-Instruct model', completed: false, active: false }
-    ],
-    downloadStep: 0
+    ]
   };
 
   let panel: vscode.WebviewPanel | undefined;
@@ -37,14 +37,25 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    // Create and show the real terminal
-    if (!terminal) {
-      terminal = vscode.window.createTerminal({
-        name: 'Tenstorrent CLI',
+    // Create terminals for each step
+    if (!hardwareDetectionTerminal) {
+      hardwareDetectionTerminal = vscode.window.createTerminal({
+        name: 'Hardware Detection',
         cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
       });
     }
-    terminal.show();
+    if (!verifyInstallationTerminal) {
+      verifyInstallationTerminal = vscode.window.createTerminal({
+        name: 'TT-Metal Verification',
+        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+      });
+    }
+    if (!downloadModelTerminal) {
+      downloadModelTerminal = vscode.window.createTerminal({
+        name: 'Model Download',
+        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+      });
+    }
 
     panel = vscode.window.createWebviewPanel(
       'tenstorrentSetup',
@@ -63,17 +74,10 @@ export function activate(context: vscode.ExtensionContext) {
       message => {
         switch (message.command) {
           case 'runCommand':
-            if (terminal) {
-              handleRunCommand(message.commandName, setupState, panel!, terminal);
-            }
+            handleRunCommand(message.commandName, setupState, panel!, message);
             break;
           case 'updateProgress':
             updateChecklistProgress(message.itemId, setupState, panel!);
-            break;
-          case 'setToken':
-            if (terminal) {
-              handleRunCommand('setToken', setupState, panel!, terminal, message);
-            }
             break;
         }
       }
@@ -87,8 +91,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   const runCommandCommand = vscode.commands.registerCommand('tenstorrent.runCommand',
     (commandName: string) => {
-      if (panel && terminal) {
-        handleRunCommand(commandName, setupState, panel, terminal);
+      if (panel) {
+        handleRunCommand(commandName, setupState, panel);
       }
     }
   );
@@ -102,17 +106,15 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.executeCommand('workbench.action.closeSidebar');
 }
 
-function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel, terminal: vscode.Terminal, message?: any) {
+function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel, message?: any) {
   // Send commands to the real terminal and update state
   switch (commandName) {
-    case 'detectHardware':
-      // This case is handled by runTtSmi now
-      break;
-
     case 'runTtSmi':
       // Run actual tt-smi command in VS Code terminal
-      terminal.show();
-      terminal.sendText('tt-smi');
+      if (hardwareDetectionTerminal) {
+        hardwareDetectionTerminal.show();
+        hardwareDetectionTerminal.sendText('tt-smi');
+      }
       
       // Mark hardware detection as completed
       const hardwareItem = state.checklist.find(item => item.id === 'hardware');
@@ -132,15 +134,15 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
 
     case 'verifyInstallation':
       // Run tt-metal verification command in VS Code terminal
-      const verifyTerminal = vscode.window.createTerminal('TT-Metal Verification');
-      verifyTerminal.show();
-      verifyTerminal.sendText('python3 -m ttnn.examples.usage.run_op_on_device');
+      if (verifyInstallationTerminal) {
+        verifyInstallationTerminal.show();
+        verifyInstallationTerminal.sendText('python3 -m ttnn.examples.usage.run_op_on_device');
+      }
       
       // Mark verification as completed and activate download step
       const verifyCompleteItem = state.checklist.find(item => item.id === 'verify');
       if (verifyCompleteItem) {
         verifyCompleteItem.completed = true;
-        verifyCompleteItem.active = false;
         verifyCompleteItem.subtitle = 'Installation verified';
       }
 
@@ -153,32 +155,28 @@ function handleRunCommand(commandName: string, state: SetupState, panel: vscode.
       state.currentStep = 3;
       break;
 
-    case 'nextDownloadStep':
-      state.downloadStep = 1;
-      break;
 
     case 'setToken':
       const token = message.token;
-      if (token) {
+      if (token && downloadModelTerminal) {
         // Set the environment variable and move to next step
-        terminal.show();
-        terminal.sendText(`export HF_TOKEN="${token}"`);
-        terminal.sendText('echo "HF_TOKEN set successfully"');
-        state.downloadStep = 2;
+        downloadModelTerminal.show();
+        downloadModelTerminal.sendText(`export HF_TOKEN="${token}"`);
       }
       break;
 
     case 'runLogin':
-      terminal.show();
-      terminal.sendText('hf auth login --token "$HF_TOKEN"');
-      terminal.sendText('echo "Authentication completed"');
-      state.downloadStep = 3;
+      if (downloadModelTerminal) {
+        downloadModelTerminal.show();
+        downloadModelTerminal.sendText('hf auth login --token "$HF_TOKEN"');
+      }
       break;
 
     case 'runDownload':
-      terminal.show();
-      terminal.sendText('huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct');
-      terminal.sendText('echo "Model download completed"');
+      if (downloadModelTerminal) {
+        downloadModelTerminal.show();
+        downloadModelTerminal.sendText('huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct');
+      }
       
       // Mark download as completed
       const downloadCompleteItem = state.checklist.find(item => item.id === 'download');
@@ -700,11 +698,18 @@ function getWebviewContent(state: SetupState): string {
     <script>
         const vscode = acquireVsCodeApi();
 
-        function runCommand(commandName) {
-            vscode.postMessage({
+        function runCommand(commandName, token = null) {
+            const message = {
                 command: 'runCommand',
                 commandName: commandName
-            });
+            };
+            
+            // Add token if provided
+            if (token) {
+                message.token = token;
+            }
+            
+            vscode.postMessage(message);
         }
 
         function updateProgress(itemId) {
@@ -718,10 +723,7 @@ function getWebviewContent(state: SetupState): string {
         function handleDownloadModel() {
             const tokenInput = document.getElementById('hf-token');
             if (tokenInput && tokenInput.value.trim()) {
-                vscode.postMessage({
-                    command: 'setToken',
-                    token: tokenInput.value.trim()
-                });
+                runCommand('setToken', tokenInput.value.trim());
             } else {
                 alert('Please enter your Hugging Face access token');
             }
@@ -754,9 +756,17 @@ function getWebviewContent(state: SetupState): string {
 }
 
 export function deactivate() {
-  if (terminal) {
-    terminal.dispose();
-    terminal = undefined;
+  if (hardwareDetectionTerminal) {
+    hardwareDetectionTerminal.dispose();
+    hardwareDetectionTerminal = undefined;
+  }
+  if (verifyInstallationTerminal) {
+    verifyInstallationTerminal.dispose();
+    verifyInstallationTerminal = undefined;
+  }
+  if (downloadModelTerminal) {
+    downloadModelTerminal.dispose();
+    downloadModelTerminal = undefined;
   }
 }
 
