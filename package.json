@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
@@ -17,33 +17,73 @@
   "contributes": {
     "commands": [
       {
-        "command": "tenstorrent.openSetup",
-        "title": "Open Tenstorrent Setup",
+        "command": "tenstorrent.runHardwareDetection",
+        "title": "Run Hardware Detection (tt-smi)",
         "category": "Tenstorrent"
       },
       {
-        "command": "tenstorrent.runCommand",
-        "title": "Run Tenstorrent Command"
+        "command": "tenstorrent.verifyInstallation",
+        "title": "Verify tt-metal Installation",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.setHuggingFaceToken",
+        "title": "Set Hugging Face Token",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.loginHuggingFace",
+        "title": "Login to Hugging Face",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.downloadModel",
+        "title": "Download Model from Hugging Face",
+        "category": "Tenstorrent"
       }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "tenstorrent-setup",
-          "title": "Tenstorrent Setup",
-          "icon": "$(circuit-board)"
-        }
-      ]
-    },
-    "views": {
-      "tenstorrent-setup": [
-        {
-          "id": "tenstorrent-checklist",
-          "name": "Setup Progress",
-          "when": "true"
-        }
-      ]
-    }
+    "walkthroughs": [
+      {
+        "id": "tenstorrent.setup",
+        "title": "Get Started with Tenstorrent",
+        "description": "Set up your Tenstorrent development environment step by step",
+        "steps": [
+          {
+            "id": "hardware-detection",
+            "title": "Hardware Detection",
+            "description": "Scan for connected Tenstorrent devices and verify they're properly recognized by the system.\n[Open Instructions](command:tenstorrent.runHardwareDetection)",
+            "media": {
+              "markdown": "content/lessons/01-hardware-detection.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.runHardwareDetection"
+            ]
+          },
+          {
+            "id": "verify-installation",
+            "title": "Verify tt-metal Installation",
+            "description": "Test your tt-metal installation by running a sample operation on your Tenstorrent device.\n[Open Instructions](command:tenstorrent.verifyInstallation)",
+            "media": {
+              "markdown": "content/lessons/02-verify-installation.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.verifyInstallation"
+            ]
+          },
+          {
+            "id": "download-model",
+            "title": "Download Model from Hugging Face",
+            "description": "Download the Llama-3.1-8B-Instruct model to run AI workloads on your Tenstorrent hardware.\n[Open Instructions](command:tenstorrent.setHuggingFaceToken)",
+            "media": {
+              "markdown": "content/lessons/03-download-model.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.downloadModel"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
