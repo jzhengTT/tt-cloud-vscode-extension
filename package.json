@@ -17,6 +17,16 @@
   "contributes": {
     "commands": [
       {
+        "command": "tenstorrent.openWalkthrough",
+        "title": "Open Setup Walkthrough",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.resetProgress",
+        "title": "Reset Walkthrough Progress",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.runHardwareDetection",
         "title": "Run Hardware Detection (tt-smi)",
         "category": "Tenstorrent"

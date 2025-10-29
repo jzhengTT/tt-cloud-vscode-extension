@@ -377,7 +377,7 @@ async function runInference(): Promise<void> {
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
   // Model is downloaded to ~/models/Llama-3.1-8B-Instruct
-  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct');
+  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct', 'original');
 
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
 
@@ -391,6 +391,55 @@ async function runInference(): Promise<void> {
   vscode.window.showInformationMessage(
     '🚀 Running Llama inference on Tenstorrent hardware! First run may take a few minutes for kernel compilation. Check the terminal for output.'
   );
+}
+
+// ============================================================================
+// Walkthrough Management
+// ============================================================================
+
+/**
+ * Command: tenstorrent.openWalkthrough
+ *
+ * Opens (or reopens) the Tenstorrent setup walkthrough.
+ * This allows users to access the walkthrough at any time from the Command Palette.
+ */
+function openWalkthrough(): void {
+  // Open the walkthrough using VS Code's built-in command
+  // Format: publisher.extensionName#walkthroughId
+  vscode.commands.executeCommand(
+    'workbench.action.openWalkthrough',
+    'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup',
+    false
+  );
+
+  vscode.window.showInformationMessage('Opening Tenstorrent Setup Walkthrough...');
+}
+
+/**
+ * Command: tenstorrent.resetProgress
+ *
+ * Resets walkthrough progress by clearing stored paths and state.
+ * This allows users to start the walkthrough from scratch.
+ */
+async function resetProgress(): Promise<void> {
+  const choice = await vscode.window.showWarningMessage(
+    'This will reset your walkthrough progress and clear stored paths. Continue?',
+    'Reset Progress',
+    'Cancel'
+  );
+
+  if (choice === 'Reset Progress') {
+    // Clear all stored state
+    await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, undefined);
+    await extensionContext.globalState.update(STATE_KEYS.MODEL_PATH, undefined);
+
+    vscode.window.showInformationMessage(
+      '✓ Walkthrough progress reset. You can now start from the beginning.'
+    );
+
+    // Optionally, reopen the walkthrough
+    openWalkthrough();
+  }
 }
 
 // ============================================================================
@@ -412,8 +461,13 @@ export function activate(context: vscode.ExtensionContext): void {
   // Store context globally for use in command handlers
   extensionContext = context;
 
-  // Register all commands referenced by walkthrough steps
+  // Register all commands (walkthrough management + step commands)
   const commands = [
+    // Walkthrough management commands
+    vscode.commands.registerCommand('tenstorrent.openWalkthrough', openWalkthrough),
+    vscode.commands.registerCommand('tenstorrent.resetProgress', resetProgress),
+
+    // Walkthrough step commands
     vscode.commands.registerCommand('tenstorrent.runHardwareDetection', runHardwareDetection),
     vscode.commands.registerCommand('tenstorrent.verifyInstallation', verifyInstallation),
     vscode.commands.registerCommand('tenstorrent.setHuggingFaceToken', setHuggingFaceToken),
@@ -427,9 +481,17 @@ export function activate(context: vscode.ExtensionContext): void {
   // Add all command registrations to subscriptions for proper cleanup
   context.subscriptions.push(...commands);
 
-  // Optional: Auto-open the walkthrough when extension first activates
-  // Uncomment the line below if you want the walkthrough to open automatically
-  // vscode.commands.executeCommand('workbench.action.openWalkthrough', 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup', false);
+  // Auto-open the walkthrough on first activation
+  const hasSeenWalkthrough = context.globalState.get<boolean>('hasSeenWalkthrough', false);
+  if (!hasSeenWalkthrough) {
+    // Mark as seen first to avoid reopening if command fails
+    context.globalState.update('hasSeenWalkthrough', true);
+
+    // Open the walkthrough automatically on first run
+    setTimeout(() => {
+      openWalkthrough();
+    }, 1000); // Small delay to ensure extension is fully activated
+  }
 }
 
 /**
