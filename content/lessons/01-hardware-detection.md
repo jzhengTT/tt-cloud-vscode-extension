@@ -14,7 +14,7 @@ The `tt-smi` command scans your system for connected Tenstorrent devices and dis
 
 Click the button below to run the hardware detection:
 
-[Run tt-smi](command:tenstorrent.runHardwareDetection)
+[🔍 Detect Tenstorrent Hardware](command:tenstorrent.runHardwareDetection)
 
 ## Expected Output
 
