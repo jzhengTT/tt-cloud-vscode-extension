@@ -13,7 +13,7 @@ This step runs a simple test program that:
 
 Click the button below to verify your installation:
 
-[Run Verification](command:tenstorrent.verifyInstallation)
+[✓ Verify TT-Metal Installation](command:tenstorrent.verifyInstallation)
 
 ## Expected Output
 

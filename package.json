@@ -17,6 +17,16 @@
   "contributes": {
     "commands": [
       {
+        "command": "tenstorrent.openWalkthrough",
+        "title": "Open Setup Walkthrough",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.resetProgress",
+        "title": "Reset Walkthrough Progress",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.runHardwareDetection",
         "title": "Run Hardware Detection (tt-smi)",
         "category": "Tenstorrent"
@@ -39,6 +49,21 @@
       {
         "command": "tenstorrent.downloadModel",
         "title": "Download Model from Hugging Face",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.cloneTTMetal",
+        "title": "Check for TT-Metal / Clone Repository",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.setupEnvironment",
+        "title": "Setup Python Environment for Inference",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runInference",
+        "title": "Run Llama Inference Demo",
         "category": "Tenstorrent"
       }
     ],
@@ -72,13 +97,13 @@
           },
           {
             "id": "download-model",
-            "title": "Download Model from Hugging Face",
-            "description": "Download the Llama-3.1-8B-Instruct model to run AI workloads on your Tenstorrent hardware.\n[Open Instructions](command:tenstorrent.setHuggingFaceToken)",
+            "title": "Download Model and Run Inference",
+            "description": "Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.\n[Open Instructions](command:tenstorrent.setHuggingFaceToken)",
             "media": {
               "markdown": "content/lessons/03-download-model.md"
             },
             "completionEvents": [
-              "onCommand:tenstorrent.downloadModel"
+              "onCommand:tenstorrent.runInference"
             ]
           }
         ]
