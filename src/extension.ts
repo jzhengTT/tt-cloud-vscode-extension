@@ -141,7 +141,7 @@ async function setHuggingFaceToken(): Promise<void> {
  */
 function loginHuggingFace(): void {
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
-  runInTerminal(terminal, 'huggingface-cli login --token "$HF_TOKEN"');
+  runInTerminal(terminal, "huggingface-cli login --token \"$HF_TOKEN\"");
 
   vscode.window.showInformationMessage(
     'Authenticating with Hugging Face. Check the terminal for results.'
