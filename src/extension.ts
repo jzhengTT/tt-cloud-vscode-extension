@@ -1,774 +1,217 @@
+/**
+ * Tenstorrent Developer Extension
+ *
+ * This extension provides a walkthrough-based setup experience for Tenstorrent
+ * hardware development. The walkthrough guides users through:
+ *   1. Hardware detection (tt-smi)
+ *   2. Installation verification (tt-metal test)
+ *   3. Model downloading (Hugging Face CLI)
+ *
+ * Architecture:
+ * - Content is defined in markdown files (content/lessons/*.md)
+ * - Walkthrough structure is defined in package.json (contributes.walkthroughs)
+ * - This file only registers commands that execute terminal operations
+ *
+ * Technical writers can edit lesson content without touching this code!
+ */
+
 import * as vscode from 'vscode';
 
-interface ChecklistItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  completed: boolean;
-  active: boolean;
-}
+// ============================================================================
+// Terminal Management
+// ============================================================================
 
-interface SetupState {
-  currentStep: number;
-  totalSteps: number;
-  checklist: ChecklistItem[];
-}
+/**
+ * Stores references to terminals used by the walkthrough steps.
+ * Each step gets its own dedicated terminal for better organization.
+ */
+const terminals = {
+  hardwareDetection: undefined as vscode.Terminal | undefined,
+  verifyInstallation: undefined as vscode.Terminal | undefined,
+  modelDownload: undefined as vscode.Terminal | undefined,
+};
 
-let hardwareDetectionTerminal: vscode.Terminal | undefined;
-let verifyInstallationTerminal: vscode.Terminal | undefined;
-let downloadModelTerminal: vscode.Terminal | undefined;
+/**
+ * Gets or creates a terminal with the specified name.
+ * Reuses existing terminals if they're still alive.
+ *
+ * @param name - Display name for the terminal
+ * @param terminalRef - Reference to store/retrieve the terminal
+ * @returns Active terminal instance
+ */
+function getOrCreateTerminal(
+  name: string,
+  terminalRef: keyof typeof terminals
+): vscode.Terminal {
+  // Check if terminal still exists
+  if (terminals[terminalRef] && vscode.window.terminals.includes(terminals[terminalRef]!)) {
+    return terminals[terminalRef]!;
+  }
 
-export function activate(context: vscode.ExtensionContext) {
-  const setupState: SetupState = {
-    currentStep: 1,
-    totalSteps: 3,
-    checklist: [
-      { id: 'hardware', title: 'Hardware Detection', subtitle: 'Scan for devices', completed: false, active: true },
-      { id: 'verify', title: 'Verify tt-metal Installation', subtitle: 'Test installation', completed: false, active: false },
-      { id: 'download', title: 'Download Model from Hugging Face', subtitle: 'Get Llama-3.1-8B-Instruct model', completed: false, active: false }
-    ]
-  };
-
-  let panel: vscode.WebviewPanel | undefined;
-
-  const openSetupCommand = vscode.commands.registerCommand('tenstorrent.openSetup', () => {
-    if (panel) {
-      panel.reveal(vscode.ViewColumn.Two);
-      return;
-    }
-
-    // Create terminals for each step
-    if (!hardwareDetectionTerminal) {
-      hardwareDetectionTerminal = vscode.window.createTerminal({
-        name: 'Hardware Detection',
-        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-      });
-    }
-    if (!verifyInstallationTerminal) {
-      verifyInstallationTerminal = vscode.window.createTerminal({
-        name: 'TT-Metal Verification',
-        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-      });
-    }
-    if (!downloadModelTerminal) {
-      downloadModelTerminal = vscode.window.createTerminal({
-        name: 'Model Download',
-        cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-      });
-    }
-
-    panel = vscode.window.createWebviewPanel(
-      'tenstorrentSetup',
-      'Tenstorrent Setup',
-      vscode.ViewColumn.Two,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true
-      }
-    );
-
-    panel.webview.html = getWebviewContent(setupState);
-
-    // Handle messages from the webview
-    panel.webview.onDidReceiveMessage(
-      message => {
-        switch (message.command) {
-          case 'runCommand':
-            handleRunCommand(message.commandName, setupState, panel!, message);
-            break;
-          case 'updateProgress':
-            updateChecklistProgress(message.itemId, setupState, panel!);
-            break;
-        }
-      }
-    );
-
-    panel.onDidDispose(() => {
-      panel = undefined;
-      // Keep the terminal open for user interaction
-    });
+  // Create new terminal with workspace root as cwd
+  const terminal = vscode.window.createTerminal({
+    name,
+    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   });
 
-  const runCommandCommand = vscode.commands.registerCommand('tenstorrent.runCommand',
-    (commandName: string) => {
-      if (panel) {
-        handleRunCommand(commandName, setupState, panel);
-      }
-    }
+  terminals[terminalRef] = terminal;
+  return terminal;
+}
+
+/**
+ * Executes a command in the specified terminal.
+ * Shows the terminal to the user so they can see the output.
+ *
+ * @param terminal - The terminal to execute the command in
+ * @param command - The shell command to execute
+ */
+function runInTerminal(terminal: vscode.Terminal, command: string): void {
+  terminal.show();
+  terminal.sendText(command);
+}
+
+// ============================================================================
+// Command Handlers
+// ============================================================================
+
+/**
+ * Command: tenstorrent.runHardwareDetection
+ *
+ * Runs the tt-smi command to detect and display connected Tenstorrent devices.
+ * This is Step 1 in the walkthrough.
+ */
+function runHardwareDetection(): void {
+  const terminal = getOrCreateTerminal('Hardware Detection', 'hardwareDetection');
+  runInTerminal(terminal, 'tt-smi');
+
+  vscode.window.showInformationMessage(
+    'Running hardware detection. Check the terminal for results.'
+  );
+}
+
+/**
+ * Command: tenstorrent.verifyInstallation
+ *
+ * Runs a test program to verify tt-metal is properly installed and configured.
+ * This is Step 2 in the walkthrough.
+ */
+function verifyInstallation(): void {
+  const terminal = getOrCreateTerminal('TT-Metal Verification', 'verifyInstallation');
+  runInTerminal(terminal, 'python3 -m ttnn.examples.usage.run_op_on_device');
+
+  vscode.window.showInformationMessage(
+    'Running installation verification. Check the terminal for results.'
+  );
+}
+
+/**
+ * Command: tenstorrent.setHuggingFaceToken
+ *
+ * Prompts the user for their Hugging Face token and sets it as an environment
+ * variable in the model download terminal. This is Step 3a in the walkthrough.
+ */
+async function setHuggingFaceToken(): Promise<void> {
+  // Prompt user for their HF token (password input to hide the token)
+  const token = await vscode.window.showInputBox({
+    prompt: 'Enter your Hugging Face access token',
+    placeHolder: 'hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    password: true, // Hide the token input
+    ignoreFocusOut: true, // Don't dismiss if user clicks elsewhere
+  });
+
+  if (!token) {
+    vscode.window.showWarningMessage('Hugging Face token is required to download models.');
+    return;
+  }
+
+  // Set the token as an environment variable in the terminal
+  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  runInTerminal(terminal, `export HF_TOKEN="${token}"`);
+
+  vscode.window.showInformationMessage(
+    'Hugging Face token set. You can now authenticate and download models.'
+  );
+}
+
+/**
+ * Command: tenstorrent.loginHuggingFace
+ *
+ * Authenticates with Hugging Face using the token stored in HF_TOKEN.
+ * This is Step 3b in the walkthrough.
+ */
+function loginHuggingFace(): void {
+  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  runInTerminal(terminal, 'huggingface-cli login --token "$HF_TOKEN"');
+
+  vscode.window.showInformationMessage(
+    'Authenticating with Hugging Face. Check the terminal for results.'
+  );
+}
+
+/**
+ * Command: tenstorrent.downloadModel
+ *
+ * Downloads the Llama-3.1-8B-Instruct model from Hugging Face.
+ * This is Step 3c in the walkthrough.
+ */
+function downloadModel(): void {
+  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  runInTerminal(
+    terminal,
+    'huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct'
   );
 
-  context.subscriptions.push(openSetupCommand, runCommandCommand);
-
-  // Auto-open the setup panel on activation and minimize file explorer
-  vscode.commands.executeCommand('tenstorrent.openSetup');
-
-  // Minimize the file explorer pane
-  vscode.commands.executeCommand('workbench.action.closeSidebar');
+  vscode.window.showInformationMessage(
+    'Downloading model. This may take several minutes. Check the terminal for progress.'
+  );
 }
 
-function handleRunCommand(commandName: string, state: SetupState, panel: vscode.WebviewPanel, message?: any) {
-  // Send commands to the real terminal and update state
-  switch (commandName) {
-    case 'runTtSmi':
-      // Run actual tt-smi command in VS Code terminal
-      if (hardwareDetectionTerminal) {
-        hardwareDetectionTerminal.show();
-        hardwareDetectionTerminal.sendText('tt-smi');
-      }
-      
-      // Mark hardware detection as completed
-      const hardwareItem = state.checklist.find(item => item.id === 'hardware');
-      if (hardwareItem) {
-        hardwareItem.completed = true;
-        hardwareItem.subtitle = 'Hardware detected';
-      }
+// ============================================================================
+// Extension Lifecycle
+// ============================================================================
 
-      // Activate verify step
-      const verifyItem = state.checklist.find(item => item.id === 'verify');
-      if (verifyItem) {
-        verifyItem.active = true;
-      }
+/**
+ * Called when the extension is activated.
+ *
+ * Registers all commands that are referenced by the walkthrough steps.
+ * The walkthrough itself is automatically shown by VS Code based on the
+ * configuration in package.json.
+ *
+ * @param context - Extension context provided by VS Code
+ */
+export function activate(context: vscode.ExtensionContext): void {
+  console.log('Tenstorrent Developer Extension is now active');
 
-      state.currentStep = 2;
-      break;
+  // Register all commands referenced by walkthrough steps
+  const commands = [
+    vscode.commands.registerCommand('tenstorrent.runHardwareDetection', runHardwareDetection),
+    vscode.commands.registerCommand('tenstorrent.verifyInstallation', verifyInstallation),
+    vscode.commands.registerCommand('tenstorrent.setHuggingFaceToken', setHuggingFaceToken),
+    vscode.commands.registerCommand('tenstorrent.loginHuggingFace', loginHuggingFace),
+    vscode.commands.registerCommand('tenstorrent.downloadModel', downloadModel),
+  ];
 
-    case 'verifyInstallation':
-      // Run tt-metal verification command in VS Code terminal
-      if (verifyInstallationTerminal) {
-        verifyInstallationTerminal.show();
-        verifyInstallationTerminal.sendText('python3 -m ttnn.examples.usage.run_op_on_device');
-      }
-      
-      // Mark verification as completed and activate download step
-      const verifyCompleteItem = state.checklist.find(item => item.id === 'verify');
-      if (verifyCompleteItem) {
-        verifyCompleteItem.completed = true;
-        verifyCompleteItem.subtitle = 'Installation verified';
-      }
+  // Add all command registrations to subscriptions for proper cleanup
+  context.subscriptions.push(...commands);
 
-      // Activate download step
-      const downloadItem = state.checklist.find(item => item.id === 'download');
-      if (downloadItem) {
-        downloadItem.active = true;
-      }
-
-      state.currentStep = 3;
-      break;
-
-
-    case 'setToken':
-      const token = message.token;
-      if (token && downloadModelTerminal) {
-        // Set the environment variable and move to next step
-        downloadModelTerminal.show();
-        downloadModelTerminal.sendText(`export HF_TOKEN="${token}"`);
-      }
-      break;
-
-    case 'runLogin':
-      if (downloadModelTerminal) {
-        downloadModelTerminal.show();
-        downloadModelTerminal.sendText('hf auth login --token "$HF_TOKEN"');
-      }
-      break;
-
-    case 'runDownload':
-      if (downloadModelTerminal) {
-        downloadModelTerminal.show();
-        downloadModelTerminal.sendText('huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct');
-      }
-      
-      // Mark download as completed
-      const downloadCompleteItem = state.checklist.find(item => item.id === 'download');
-      if (downloadCompleteItem) {
-        downloadCompleteItem.completed = true;
-        downloadCompleteItem.subtitle = 'Model downloaded successfully';
-      }
-      break;
-
-    case 'openDocumentation':
-      // Determine which documentation to open based on current step
-      const currentItem = state.checklist.find(item => item.active);
-      if (currentItem?.id === 'verify') {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-metal/blob/main/INSTALLING.md'));
-      } else if (currentItem?.id === 'download') {
-        vscode.env.openExternal(vscode.Uri.parse('https://huggingface.co/meta-llama/Llama-3.2-1B'));
-      } else {
-        vscode.env.openExternal(vscode.Uri.parse('https://github.com/tenstorrent/tt-smi'));
-      }
-      break;
-  }
-
-  panel.webview.html = getWebviewContent(state);
+  // Optional: Auto-open the walkthrough when extension first activates
+  // Uncomment the line below if you want the walkthrough to open automatically
+  // vscode.commands.executeCommand('workbench.action.openWalkthrough', 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup', false);
 }
 
-function updateChecklistProgress(itemId: string, state: SetupState, panel: vscode.WebviewPanel) {
-  const item = state.checklist.find(item => item.id === itemId);
-  if (item) {
-    // Set all items to inactive
-    state.checklist.forEach(item => item.active = false);
-    // Set clicked item as active
-    item.active = true;
-  }
-  panel.webview.html = getWebviewContent(state);
+/**
+ * Called when the extension is deactivated.
+ *
+ * Cleans up terminal references. Note that VS Code automatically disposes
+ * of terminals when the extension is deactivated, but we explicitly clear
+ * our references for good measure.
+ */
+export function deactivate(): void {
+  // Clear all terminal references
+  // VS Code will handle actual disposal
+  terminals.hardwareDetection = undefined;
+  terminals.verifyInstallation = undefined;
+  terminals.modelDownload = undefined;
+
+  console.log('Tenstorrent Developer Extension has been deactivated');
 }
-
-function getStepContent(state: SetupState) {
-  const currentItem = state.checklist.find(item => item.active);
-
-  switch (currentItem?.id) {
-    case 'hardware':
-      return {
-        title: 'Hardware Detection',
-        description: 'Detect and verify your Tenstorrent hardware using tt-smi. This will scan for connected devices and verify they\'re properly recognized by the system.',
-        buttonText: 'Run',
-        buttonCommand: 'runTtSmi',
-        commandToShow: 'tt-smi',
-        codeVisible: false
-      };
-    case 'verify':
-      return {
-        title: 'Verify tt-metal Installation',
-        description: 'Test your tt-metal installation by running a sample operation on your Tenstorrent device. This verifies that the software stack is properly configured.',
-        buttonText: 'Run',
-        buttonCommand: 'verifyInstallation',
-        commandToShow: 'python3 -m ttnn.examples.usage.run_op_on_device',
-        codeVisible: false
-      };
-    case 'download':
-      return {
-        title: 'Download Model from Hugging Face',
-        description: 'First, set your Hugging Face token as an environment variable.',
-        buttonText: 'Run',
-        buttonCommand: 'setToken',
-        commandToShow: 'export HF_TOKEN="<your-hugging-face-access-token>"',
-        codeVisible: false
-      };
-    default:
-      // Fallback to first step if no active step
-      return {
-        title: 'Hardware Detection',
-        description: 'Detect and verify your Tenstorrent hardware using tt-smi. This will scan for connected devices and verify they\'re properly recognized by the system.',
-        buttonText: 'Run',
-        buttonCommand: 'runTtSmi',
-        commandToShow: 'tt-smi',
-        codeVisible: false
-      };
-  }
-}
-
-function getWebviewContent(state: SetupState): string {
-  const completedCount = state.checklist.filter(item => item.completed).length;
-  const progressPercentage = state.totalSteps > 0 ? Math.round((completedCount / state.totalSteps) * 100) : 0;
-  const stepContent = getStepContent(state);
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tenstorrent Developer Extension</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--vscode-editor-background, #1e1e1e);
-            color: var(--vscode-editor-foreground, #cccccc);
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .vscode-container {
-            display: flex;
-            height: 100vh;
-        }
-
-        .sidebar {
-            width: 300px;
-            background: var(--vscode-sideBar-background, #252526);
-            border-right: 1px solid var(--vscode-sideBar-border, #3e3e42);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-header {
-            padding: 12px 16px;
-            background: var(--vscode-titleBar-inactiveBackground, #2d2d30);
-            border-bottom: 1px solid var(--vscode-sideBar-border, #3e3e42);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tt-logo {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: white;
-            font-size: 14px;
-        }
-
-        .sidebar-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--vscode-titleBar-activeForeground, #ffffff);
-        }
-
-        .setup-progress {
-            padding: 16px;
-            border-bottom: 1px solid var(--vscode-sideBar-border, #3e3e42);
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: var(--vscode-progressBar-background, #3e3e42);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            width: ${progressPercentage}%;
-            transition: width 0.3s ease;
-        }
-
-        .progress-text {
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground, #999);
-        }
-
-        .checklist {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-
-        .checklist-item {
-            padding: 12px;
-            margin: 4px 0;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: start;
-            gap: 10px;
-        }
-
-        .checklist-item:hover {
-            background: var(--vscode-list-hoverBackground, #2a2d2e);
-        }
-
-        .checklist-item.active {
-            background: var(--vscode-list-activeSelectionBackground, #37373d);
-        }
-
-        .checkbox {
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--vscode-checkbox-border, #3e3e42);
-            border-radius: 3px;
-            flex-shrink: 0;
-            margin-top: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .checkbox.checked {
-            background: #667eea;
-            border-color: #667eea;
-        }
-
-        .checkbox.checked::after {
-            content: '✓';
-            color: white;
-            font-size: 12px;
-        }
-
-        .item-content {
-            flex: 1;
-        }
-
-        .item-title {
-            font-size: 13px;
-            color: var(--vscode-foreground, #cccccc);
-            margin-bottom: 4px;
-        }
-
-        .item-subtitle {
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground, #858585);
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-
-        .content-pane {
-            flex: 1;
-            padding: 24px;
-            overflow-y: auto;
-        }
-
-        .step-header {
-            margin-bottom: 24px;
-        }
-
-        .step-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: #667eea20;
-            color: #667eea;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .step-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--vscode-editor-foreground, #ffffff);
-            margin-bottom: 8px;
-        }
-
-        .step-description {
-            font-size: 14px;
-            color: var(--vscode-descriptionForeground, #999);
-            line-height: 1.6;
-        }
-
-        .code-block {
-            background: var(--vscode-textCodeBlock-background, #1e1e1e);
-            border: 1px solid var(--vscode-textBlockQuote-border, #3e3e42);
-            border-radius: 6px;
-            padding: 16px;
-            margin: 16px 0;
-            font-family: var(--vscode-editor-font-family, 'Consolas', 'Monaco', monospace);
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .code-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--vscode-textBlockQuote-border, #3e3e42);
-        }
-
-        .code-title {
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground, #858585);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .copy-btn {
-            padding: 4px 12px;
-            background: var(--vscode-button-secondaryBackground, #3e3e42);
-            border: none;
-            border-radius: 4px;
-            color: var(--vscode-button-secondaryForeground, #cccccc);
-            font-size: 11px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .copy-btn:hover {
-            background: var(--vscode-button-secondaryHoverBackground, #4e4e52);
-        }
-
-        .copy-btn-small {
-            padding: 4px 8px;
-            background: var(--vscode-button-secondaryBackground, #3e3e42);
-            border: none;
-            border-radius: 4px;
-            color: var(--vscode-button-secondaryForeground, #cccccc);
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-left: auto;
-        }
-
-        .copy-btn-small:hover {
-            background: var(--vscode-button-secondaryHoverBackground, #4e4e52);
-        }
-
-        .code-line {
-            display: flex;
-            gap: 16px;
-        }
-
-        .line-number {
-            color: var(--vscode-editorLineNumber-foreground, #858585);
-            user-select: none;
-            text-align: right;
-            min-width: 20px;
-        }
-
-        .line-content {
-            flex: 1;
-            color: var(--vscode-editor-foreground, #d4d4d4);
-        }
-
-        .keyword { color: var(--vscode-symbolIcon-keywordForeground, #c586c0); }
-        .string { color: var(--vscode-symbolIcon-stringForeground, #ce9178); }
-        .function { color: var(--vscode-symbolIcon-functionForeground, #dcdcaa); }
-        .comment { color: var(--vscode-symbolIcon-textForeground, #6a9955); }
-        .variable { color: var(--vscode-symbolIcon-variableForeground, #9cdcfe); }
-        .number { color: var(--vscode-symbolIcon-numberForeground, #b5cea8); }
-
-
-        .action-buttons {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .btn-primary {
-            background: var(--vscode-button-background, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-            color: var(--vscode-button-foreground, white);
-        }
-
-        .btn-primary:hover {
-            background: var(--vscode-button-hoverBackground, linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%));
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: var(--vscode-button-secondaryBackground, #3e3e42);
-            color: var(--vscode-button-secondaryForeground, #cccccc);
-        }
-
-        .btn-secondary:hover {
-            background: var(--vscode-button-secondaryHoverBackground, #4e4e52);
-        }
-
-        .info-box {
-            padding: 16px;
-            background: var(--vscode-textBlockQuote-background, #264f78);
-            border-left: 4px solid var(--vscode-terminal-ansiGreen, #4ec9b0);
-            border-radius: 4px;
-            margin: 16px 0;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-    </style>
-</head>
-<body>
-    <div class="vscode-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <div class="tt-logo">TT</div>
-                <div class="sidebar-title">Tenstorrent Setup</div>
-            </div>
-
-            <div class="setup-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-                <div class="progress-text">${completedCount} of ${state.totalSteps} steps completed</div>
-            </div>
-
-            <div class="checklist">
-                ${state.checklist.map(item => `
-                    <div class="checklist-item ${item.active ? 'active' : ''}" onclick="updateProgress('${item.id}')">
-                        <div class="checkbox ${item.completed ? 'checked' : ''}"></div>
-                        <div class="item-content">
-                            <div class="item-title">${item.title}</div>
-                            <div class="item-subtitle">${item.subtitle}</div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="content-pane">
-                    <div class="step-header">
-                        <div class="step-badge">STEP ${state.currentStep} OF ${state.totalSteps}</div>
-                        <h1 class="step-title">${stepContent.title}</h1>
-                        <p class="step-description">
-                            ${stepContent.description}
-                        </p>
-                    </div>
-
-                    ${stepContent.commandToShow ? `
-                        <div class="code-block">
-                            <div class="code-line">
-                                <span class="line-content"><span class="terminal-prompt">$</span> <span class="terminal-command">${stepContent.commandToShow}</span></span>
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${state.checklist.find(item => item.active)?.id === 'download' ? `
-                        <div class="token-input-section" style="margin: 20px 0;">
-                            <label for="hf-token" style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--vscode-foreground, #cccccc);">Hugging Face Access Token:</label>
-                            <input 
-                                type="password" 
-                                id="hf-token" 
-                                placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
-                                style="
-                                    width: 100%; 
-                                    padding: 10px; 
-                                    border: 1px solid var(--vscode-input-border, #3e3e42); 
-                                    border-radius: 4px; 
-                                    background: var(--vscode-input-background, #3c3c3c); 
-                                    color: var(--vscode-input-foreground, #cccccc); 
-                                    font-family: var(--vscode-font-family, monospace);
-                                    font-size: 13px;
-                                "
-                            />
-                            <div style="margin-top: 8px; font-size: 12px; color: var(--vscode-descriptionForeground, #858585);">
-                                Enter your Hugging Face access token to download the model.
-                            </div>
-                            <div style="margin: 10px 0;">
-                                <button class="btn btn-primary" onclick="handleDownloadModel()" style="margin-right: 10px;">Run</button>
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${state.checklist.find(item => item.active)?.id === 'download' ? `
-                        <div class="code-block" style="margin: 20px 0;">
-                            <div class="code-line">
-                                <span class="line-content"><span class="terminal-prompt">$</span> <span class="terminal-command">hf auth login --token "$HF_TOKEN"</span></span>
-                            </div>
-                        </div>
-                        <div style="margin: 10px 0;">
-                            <button class="btn btn-primary" onclick="runCommand('runLogin')" style="margin-right: 10px;">Run</button>
-                        </div>
-
-                        <div class="code-block" style="margin: 20px 0;">
-                            <div class="code-line">
-                                <span class="line-content"><span class="terminal-prompt">$</span> <span class="terminal-command">huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir meta-llama/Llama-3.1-8B-Instruct</span></span>
-                            </div>
-                        </div>
-                        <div style="margin: 10px 0;">
-                            <button class="btn btn-primary" onclick="runCommand('runDownload')" style="margin-right: 10px;">Run</button>
-                        </div>
-                    ` : ''}
-
-                    ${state.checklist.find(item => item.active)?.id !== 'download' ? `
-                        <div class="action-buttons">
-                            <button class="btn btn-primary" onclick="runCommand('${stepContent.buttonCommand}')">${stepContent.buttonText}</button>
-                            <button class="btn btn-secondary" onclick="runCommand('openDocumentation')">View Documentation</button>
-                        </div>
-                    ` : ''}
-                    
-                    ${state.checklist.find(item => item.active)?.id === 'verify' ? `
-                        <div class="info-box" style="margin-top: 20px; font-size: 13px; line-height: 1.5;">
-                            For more programming examples to try, visit <a href="https://docs.tenstorrent.com/tt-metal/latest/ttnn/ttnn/usage.html#basic-examples" target="_blank" style="color: var(--vscode-textLink-foreground, #4ec9b0); text-decoration: none;">Tenstorrent's TT-NN Basic Examples Page</a> or get started with <a href="https://docs.tenstorrent.com/tt-metal/latest/tt-metalium/tt_metal/examples/index.html" target="_blank" style="color: var(--vscode-textLink-foreground, #4ec9b0); text-decoration: none;">Simple Kernels on TT-Metalium</a>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const vscode = acquireVsCodeApi();
-
-        function runCommand(commandName, token = null) {
-            const message = {
-                command: 'runCommand',
-                commandName: commandName
-            };
-            
-            // Add token if provided
-            if (token) {
-                message.token = token;
-            }
-            
-            vscode.postMessage(message);
-        }
-
-        function updateProgress(itemId) {
-            vscode.postMessage({
-                command: 'updateProgress',
-                itemId: itemId
-            });
-        }
-
-        // Handle token input for download step
-        function handleDownloadModel() {
-            const tokenInput = document.getElementById('hf-token');
-            if (tokenInput && tokenInput.value.trim()) {
-                runCommand('setToken', tokenInput.value.trim());
-            } else {
-                alert('Please enter your Hugging Face access token');
-            }
-        }
-
-        // Listen for getToken message from extension
-        window.addEventListener('message', event => {
-            if (event.data.command === 'getToken') {
-                const tokenInput = document.getElementById('hf-token');
-                if (tokenInput) {
-                    tokenInput.focus();
-                }
-            }
-        });
-
-        function copyCommand(command) {
-            navigator.clipboard.writeText(command).then(() => {
-                // Show brief success feedback
-                const copyBtn = event.target;
-                const originalEmoji = copyBtn.textContent;
-                copyBtn.textContent = '✅';
-                setTimeout(() => {
-                    copyBtn.textContent = originalEmoji;
-                }, 1000);
-            });
-        }
-    </script>
-</body>
-</html>`;
-}
-
-export function deactivate() {
-  if (hardwareDetectionTerminal) {
-    hardwareDetectionTerminal.dispose();
-    hardwareDetectionTerminal = undefined;
-  }
-  if (verifyInstallationTerminal) {
-    verifyInstallationTerminal.dispose();
-    verifyInstallationTerminal = undefined;
-  }
-  if (downloadModelTerminal) {
-    downloadModelTerminal.dispose();
-    downloadModelTerminal = undefined;
-  }
-}
-
-
-
