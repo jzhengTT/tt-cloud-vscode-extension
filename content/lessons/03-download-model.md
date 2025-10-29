@@ -42,4 +42,4 @@ The model includes:
 
 ## Learn More
 
-Learn more about the [Llama 3.1 model on Hugging Face](https://huggingface.co/meta-llama/Llama-3.2-1B).
+Learn more about the [Llama 3.1 model on Hugging Face](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct).
