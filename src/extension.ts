@@ -16,6 +16,7 @@
  */
 
 import * as vscode from 'vscode';
+import { TERMINAL_COMMANDS, replaceVariables } from './commands/terminalCommands';
 
 // ============================================================================
 // Global State
@@ -100,7 +101,9 @@ function runInTerminal(terminal: vscode.Terminal, command: string): void {
  */
 function runHardwareDetection(): void {
   const terminal = getOrCreateTerminal('Hardware Detection', 'hardwareDetection');
-  runInTerminal(terminal, 'tt-smi');
+  const command = TERMINAL_COMMANDS.TT_SMI.template;
+
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     'Running hardware detection. Check the terminal for results.'
@@ -115,7 +118,9 @@ function runHardwareDetection(): void {
  */
 function verifyInstallation(): void {
   const terminal = getOrCreateTerminal('TT-Metal Verification', 'verifyInstallation');
-  runInTerminal(terminal, 'python3 -m ttnn.examples.usage.run_op_on_device');
+  const command = TERMINAL_COMMANDS.VERIFY_INSTALLATION.template;
+
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     'Running installation verification. Check the terminal for results.'
@@ -144,7 +149,9 @@ async function setHuggingFaceToken(): Promise<void> {
 
   // Set the token as an environment variable in the terminal
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
-  runInTerminal(terminal, `export HF_TOKEN="${token}"`);
+  const command = replaceVariables(TERMINAL_COMMANDS.SET_HF_TOKEN.template, { token });
+
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     'Hugging Face token set. You can now authenticate and download models.'
@@ -159,7 +166,9 @@ async function setHuggingFaceToken(): Promise<void> {
  */
 function loginHuggingFace(): void {
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
-  runInTerminal(terminal, "huggingface-cli login --token \"$HF_TOKEN\"");
+  const command = TERMINAL_COMMANDS.LOGIN_HF.template;
+
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     'Authenticating with Hugging Face. Check the terminal for results.'
@@ -175,13 +184,11 @@ function loginHuggingFace(): void {
  */
 function downloadModel(): void {
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  const command = TERMINAL_COMMANDS.DOWNLOAD_MODEL.template;
 
   // Create models directory and download to absolute path
   // This ensures the model is in a predictable location for the inference script
-  runInTerminal(
-    terminal,
-    'mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir ~/models/Llama-3.1-8B-Instruct'
-  );
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     'Downloading model to ~/models/Llama-3.1-8B-Instruct. This is ~16GB and may take several minutes. Check the terminal for progress.'
@@ -255,10 +262,11 @@ async function cloneTTMetal(): Promise<void> {
       await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, userPath);
 
       const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
-      runInTerminal(
-        terminal,
-        `git clone https://github.com/tenstorrent/tt-metal.git "${userPath}" --recurse-submodules`
-      );
+      const command = replaceVariables(TERMINAL_COMMANDS.CLONE_TT_METAL.template, {
+        path: userPath,
+      });
+
+      runInTerminal(terminal, command);
 
       vscode.window.showInformationMessage(
         `Cloning tt-metal to ${userPath}. This may take several minutes. Check the terminal for progress.`
@@ -278,10 +286,11 @@ async function cloneTTMetal(): Promise<void> {
       await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, defaultTTMetalPath);
 
       const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
-      runInTerminal(
-        terminal,
-        `git clone https://github.com/tenstorrent/tt-metal.git "${defaultTTMetalPath}" --recurse-submodules`
-      );
+      const command = replaceVariables(TERMINAL_COMMANDS.CLONE_TT_METAL.template, {
+        path: defaultTTMetalPath,
+      });
+
+      runInTerminal(terminal, command);
 
       vscode.window.showInformationMessage(
         `Cloning tt-metal to ${defaultTTMetalPath}. This may take several minutes. Check the terminal for progress.`
@@ -320,10 +329,11 @@ async function cloneTTMetal(): Promise<void> {
       await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, userPath);
 
       const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
-      runInTerminal(
-        terminal,
-        `git clone https://github.com/tenstorrent/tt-metal.git "${userPath}" --recurse-submodules`
-      );
+      const command = replaceVariables(TERMINAL_COMMANDS.CLONE_TT_METAL.template, {
+        path: userPath,
+      });
+
+      runInTerminal(terminal, command);
 
       vscode.window.showInformationMessage(
         `Cloning tt-metal to ${userPath}. This may take several minutes. Check the terminal for progress.`
@@ -351,10 +361,11 @@ async function setupEnvironment(): Promise<void> {
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
 
   // Run setup commands in sequence using the stored path
-  runInTerminal(
-    terminal,
-    `cd "${ttMetalPath}" && export PYTHONPATH=$(pwd) && pip install -r tt_metal/python_env/requirements-dev.txt`
-  );
+  const command = replaceVariables(TERMINAL_COMMANDS.SETUP_ENVIRONMENT.template, {
+    ttMetalPath,
+  });
+
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     `Setting up Python environment in ${ttMetalPath}. This will install required dependencies. Check the terminal for progress.`
@@ -383,10 +394,12 @@ async function runInference(): Promise<void> {
 
   // Run inference demo with LLAMA_DIR set to the model location
   // and reasonable default parameters for seq length and token generation
-  runInTerminal(
-    terminal,
-    `cd "${ttMetalPath}" && export LLAMA_DIR="${modelPath}" && export PYTHONPATH=$(pwd) && pytest models/tt_transformers/demo/simple_text_demo.py -k performance-batch-1 --max_seq_len 1024 --max_generated_tokens 128`
-  );
+  const command = replaceVariables(TERMINAL_COMMANDS.RUN_INFERENCE.template, {
+    ttMetalPath,
+    modelPath,
+  });
+
+  runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
     '🚀 Running Llama inference on Tenstorrent hardware! First run may take a few minutes for kernel compilation. Check the terminal for output.'

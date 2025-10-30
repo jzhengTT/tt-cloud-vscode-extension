@@ -11,7 +11,11 @@ This step runs a simple test program that:
 
 ## Run the Verification
 
-Click the button below to verify your installation:
+This command will run a test operation on your Tenstorrent device:
+
+```bash
+python3 -m ttnn.examples.usage.run_op_on_device
+```
 
 [✓ Verify TT-Metal Installation](command:tenstorrent.verifyInstallation)
 
