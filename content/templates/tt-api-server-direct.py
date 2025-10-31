@@ -94,28 +94,20 @@ def initialize_model():
     # Use performance optimizations
     optimizations = lambda model_args: DecodersPrecision.performance(model_args.n_layers, model_args.model_name)
 
-    # Configure paged attention
-    paged_attention_config = PagedAttentionConfig(
-        block_size=32,
-        max_num_blocks=1024,
-    )
-
-    # Create the model
+    # Create the model (without paged attention for simplicity)
     MODEL_ARGS, MODEL, TT_KV_CACHE, state_dict = create_tt_model(
         MESH_DEVICE,
         instruct=True,
         max_batch_size=1,
         optimizations=optimizations,
         max_seq_len=2048,
-        paged_attention_config=paged_attention_config,
+        paged_attention_config=None,  # Disable paged attention for single-user server
         dtype=ttnn.bfloat8_b,
         state_dict=None,
     )
 
-    # Create page table
-    permutation = torch.randperm(paged_attention_config.max_num_blocks)
-    reverse_permutation = torch.argsort(permutation)
-    PAGE_TABLE = reverse_permutation.reshape(1, paged_attention_config.max_num_blocks)
+    # No page table needed when paged attention is disabled
+    PAGE_TABLE = None
 
     # Create generator
     GENERATOR = Generator(
@@ -150,7 +142,7 @@ def generate_response(prompt, max_tokens=128, temperature=0.0):
     logits = GENERATOR.prefill_forward_text(
         input_tokens_prefill_pt,
         page_table=PAGE_TABLE,
-        kv_cache=TT_KV_CACHE,
+        kv_cache=[TT_KV_CACHE],  # Generator expects a list of kv_caches
         prompt_lens=decoding_pos,
     )
 
@@ -180,7 +172,7 @@ def generate_response(prompt, max_tokens=128, temperature=0.0):
             current_pos,
             enable_trace=True,
             page_table=PAGE_TABLE,
-            kv_cache=TT_KV_CACHE,
+            kv_cache=[TT_KV_CACHE],  # Generator expects a list of kv_caches
             sampling_params=device_sampling_params,
         )
 
