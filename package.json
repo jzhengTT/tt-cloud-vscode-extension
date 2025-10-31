@@ -116,7 +116,7 @@
           {
             "id": "hardware-detection",
             "title": "Hardware Detection",
-            "description": "Scan for connected Tenstorrent devices and verify they're properly recognized by the system.\n[Open Instructions](command:tenstorrent.runHardwareDetection)",
+            "description": "Scan for connected Tenstorrent devices and verify they're properly recognized by the system.",
             "media": {
               "markdown": "content/lessons/01-hardware-detection.md"
             },
@@ -127,7 +127,7 @@
           {
             "id": "verify-installation",
             "title": "Verify tt-metal Installation",
-            "description": "Test your tt-metal installation by running a sample operation on your Tenstorrent device.\n[Open Instructions](command:tenstorrent.verifyInstallation)",
+            "description": "Test your tt-metal installation by running a sample operation on your Tenstorrent device.",
             "media": {
               "markdown": "content/lessons/02-verify-installation.md"
             },
@@ -138,7 +138,7 @@
           {
             "id": "download-model",
             "title": "Download Model and Run Inference",
-            "description": "Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.\n[Open Instructions](command:tenstorrent.setHuggingFaceToken)",
+            "description": "Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.",
             "media": {
               "markdown": "content/lessons/03-download-model.md"
             },
@@ -149,7 +149,7 @@
           {
             "id": "interactive-chat",
             "title": "Interactive Chat Session",
-            "description": "Move from one-shot testing to conversational interaction with your model.\n[Open Instructions](command:tenstorrent.createChatScript)",
+            "description": "Move from one-shot testing to conversational interaction with your model.",
             "media": {
               "markdown": "content/lessons/04-interactive-chat.md"
             },
@@ -160,7 +160,7 @@
           {
             "id": "api-server",
             "title": "HTTP API Server with curl",
-            "description": "Transform your model into a REST API for building applications.\n[Open Instructions](command:tenstorrent.createApiServer)",
+            "description": "Transform your model into a REST API for building applications.",
             "media": {
               "markdown": "content/lessons/05-api-server.md"
             },
