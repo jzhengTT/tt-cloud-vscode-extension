@@ -102,6 +102,72 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     description: 'Runs Llama inference demo with LLAMA_DIR set to the downloaded model',
     variables: ['ttMetalPath', 'modelPath'],
   },
+
+  // Interactive Chat (Lesson 4)
+  INSTALL_INFERENCE_DEPS: {
+    id: 'install-inference-deps',
+    name: 'Install Inference Dependencies',
+    template: 'pip install pi && pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag',
+    description: 'Installs pi package and llama-models from Tenstorrent GitHub for inference',
+  },
+
+  CREATE_CHAT_SCRIPT: {
+    id: 'create-chat-script',
+    name: 'Create Interactive Chat Script',
+    template: 'cp "{{templatePath}}" ~/tt-chat.py && chmod +x ~/tt-chat.py',
+    description: 'Copies the chat script template to home directory and makes it executable',
+    variables: ['templatePath'],
+  },
+
+  START_CHAT_SESSION: {
+    id: 'start-chat-session',
+    name: 'Start Interactive Chat',
+    template:
+      'cd "{{ttMetalPath}}" && export LLAMA_DIR="{{modelPath}}" && export PYTHONPATH=$(pwd) && python3 ~/tt-chat.py',
+    description: 'Starts the interactive chat REPL with the Llama model on tt-metal',
+    variables: ['ttMetalPath', 'modelPath'],
+  },
+
+  // HTTP API Server (Lesson 5)
+  CREATE_API_SERVER: {
+    id: 'create-api-server',
+    name: 'Create API Server Script',
+    template: 'cp "{{templatePath}}" ~/tt-api-server.py && chmod +x ~/tt-api-server.py',
+    description: 'Copies the API server script template to home directory and makes it executable',
+    variables: ['templatePath'],
+  },
+
+  INSTALL_FLASK: {
+    id: 'install-flask',
+    name: 'Install Flask',
+    template: 'pip install flask',
+    description: 'Installs Flask web framework for the API server',
+  },
+
+  START_API_SERVER: {
+    id: 'start-api-server',
+    name: 'Start API Server',
+    template:
+      'cd "{{ttMetalPath}}" && export LLAMA_DIR="{{modelPath}}" && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server.py --port 8080',
+    description: 'Starts the Flask API server with the Llama model on tt-metal',
+    variables: ['ttMetalPath', 'modelPath'],
+  },
+
+  TEST_API_BASIC: {
+    id: 'test-api-basic',
+    name: 'Test API with Basic Query',
+    template:
+      'curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "What is machine learning?"}\'',
+    description: 'Tests the API server with a basic curl request',
+  },
+
+  TEST_API_MULTIPLE: {
+    id: 'test-api-multiple',
+    name: 'Test API with Multiple Queries',
+    template:
+      'echo "Testing Tenstorrent query..." && curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "Tell me about Tenstorrent hardware"}\' && echo "\n\nTesting haiku..." && curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "Write a haiku about AI"}\'',
+    description: 'Tests the API server with multiple sequential curl requests',
+  },
 };
 
 /**

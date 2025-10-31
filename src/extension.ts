@@ -48,6 +48,8 @@ const terminals = {
   hardwareDetection: undefined as vscode.Terminal | undefined,
   verifyInstallation: undefined as vscode.Terminal | undefined,
   modelDownload: undefined as vscode.Terminal | undefined,
+  interactiveChat: undefined as vscode.Terminal | undefined,
+  apiServer: undefined as vscode.Terminal | undefined,
 };
 
 /**
@@ -406,6 +408,228 @@ async function runInference(): Promise<void> {
   );
 }
 
+/**
+ * Command: tenstorrent.installInferenceDeps
+ *
+ * Installs additional Python dependencies required for interactive inference.
+ * This is Step 4-1 in the walkthrough - Interactive Chat
+ */
+function installInferenceDeps(): void {
+  const terminal = getOrCreateTerminal('Interactive Chat', 'interactiveChat');
+  const command = TERMINAL_COMMANDS.INSTALL_INFERENCE_DEPS.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Installing inference dependencies (pi and llama-models). This may take 1-2 minutes. Check the terminal for progress.'
+  );
+}
+
+/**
+ * Command: tenstorrent.createChatScript
+ *
+ * Creates the interactive chat script by copying the template to ~/tt-chat.py
+ * This is Step 4-2 in the walkthrough - Interactive Chat
+ */
+async function createChatScript(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  // Get the template path from the extension
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-chat.py');
+
+  // Check if template exists
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  // Destination path in user's home directory
+  const homeDir = os.homedir();
+  const destPath = path.join(homeDir, 'tt-chat.py');
+
+  try {
+    // Copy the template to home directory
+    fs.copyFileSync(templatePath, destPath);
+
+    // Make it executable
+    fs.chmodSync(destPath, 0o755);
+
+    vscode.window.showInformationMessage(
+      `✅ Created interactive chat script at ${destPath}. You can now start a chat session!`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to create chat script: ${error}`
+    );
+  }
+}
+
+/**
+ * Command: tenstorrent.startChatSession
+ *
+ * Starts an interactive chat session with the Llama model.
+ * This is Step 4-3 in the walkthrough - Interactive Chat
+ */
+async function startChatSession(): Promise<void> {
+  // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  // Model is downloaded to ~/models/Llama-3.1-8B-Instruct
+  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct', 'original');
+
+  const terminal = getOrCreateTerminal('Interactive Chat', 'interactiveChat');
+
+  // Run the interactive chat script with proper environment setup
+  const command = replaceVariables(TERMINAL_COMMANDS.START_CHAT_SESSION.template, {
+    ttMetalPath,
+    modelPath,
+  });
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '💬 Starting interactive chat session. First load may take a few minutes. Type your prompts in the terminal!'
+  );
+}
+
+/**
+ * Command: tenstorrent.createApiServer
+ *
+ * Creates the API server script by copying the template to ~/tt-api-server.py
+ * This is Step 5a in the walkthrough - HTTP API Server
+ */
+async function createApiServer(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  // Get the template path from the extension
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-api-server.py');
+
+  // Check if template exists
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  // Destination path in user's home directory
+  const homeDir = os.homedir();
+  const destPath = path.join(homeDir, 'tt-api-server.py');
+
+  try {
+    // Copy the template to home directory
+    fs.copyFileSync(templatePath, destPath);
+
+    // Make it executable
+    fs.chmodSync(destPath, 0o755);
+
+    vscode.window.showInformationMessage(
+      `✅ Created API server script at ${destPath}. Next, install Flask if you haven't already!`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to create API server script: ${error}`
+    );
+  }
+}
+
+/**
+ * Command: tenstorrent.installFlask
+ *
+ * Installs Flask web framework using pip.
+ * This is Step 5b in the walkthrough - HTTP API Server
+ */
+function installFlask(): void {
+  const terminal = getOrCreateTerminal('API Server', 'apiServer');
+  const command = TERMINAL_COMMANDS.INSTALL_FLASK.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Installing Flask. This should only take a few seconds. Check the terminal for progress.'
+  );
+}
+
+/**
+ * Command: tenstorrent.startApiServer
+ *
+ * Starts the Flask API server with the Llama model.
+ * This is Step 5c in the walkthrough - HTTP API Server
+ */
+async function startApiServer(): Promise<void> {
+  // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  // Model is downloaded to ~/models/Llama-3.1-8B-Instruct
+  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct', 'original');
+
+  const terminal = getOrCreateTerminal('API Server', 'apiServer');
+
+  // Run the API server with proper environment setup
+  const command = replaceVariables(TERMINAL_COMMANDS.START_API_SERVER.template, {
+    ttMetalPath,
+    modelPath,
+  });
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🚀 Starting API server on port 8080. First load may take a few minutes. Open a second terminal to test with curl!'
+  );
+}
+
+/**
+ * Command: tenstorrent.testApiBasic
+ *
+ * Tests the API server with a basic curl query.
+ * This is Step 5d in the walkthrough - HTTP API Server
+ */
+function testApiBasic(): void {
+  // Use a different terminal for testing so we don't interfere with the server
+  const terminal = getOrCreateTerminal('API Test', 'interactiveChat');
+  const command = TERMINAL_COMMANDS.TEST_API_BASIC.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🧪 Testing API with basic query. Check the terminal for the response!'
+  );
+}
+
+/**
+ * Command: tenstorrent.testApiMultiple
+ *
+ * Tests the API server with multiple curl queries.
+ * This is Step 5e in the walkthrough - HTTP API Server
+ */
+function testApiMultiple(): void {
+  // Use a different terminal for testing so we don't interfere with the server
+  const terminal = getOrCreateTerminal('API Test', 'interactiveChat');
+  const command = TERMINAL_COMMANDS.TEST_API_MULTIPLE.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🧪 Testing API with multiple queries. Check the terminal for the responses!'
+  );
+}
+
 // ============================================================================
 // Walkthrough Management
 // ============================================================================
@@ -489,6 +713,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.cloneTTMetal', cloneTTMetal),
     vscode.commands.registerCommand('tenstorrent.setupEnvironment', setupEnvironment),
     vscode.commands.registerCommand('tenstorrent.runInference', runInference),
+    vscode.commands.registerCommand('tenstorrent.installInferenceDeps', installInferenceDeps),
+    vscode.commands.registerCommand('tenstorrent.createChatScript', createChatScript),
+    vscode.commands.registerCommand('tenstorrent.startChatSession', startChatSession),
+    vscode.commands.registerCommand('tenstorrent.createApiServer', createApiServer),
+    vscode.commands.registerCommand('tenstorrent.installFlask', installFlask),
+    vscode.commands.registerCommand('tenstorrent.startApiServer', startApiServer),
+    vscode.commands.registerCommand('tenstorrent.testApiBasic', testApiBasic),
+    vscode.commands.registerCommand('tenstorrent.testApiMultiple', testApiMultiple),
   ];
 
   // Add all command registrations to subscriptions for proper cleanup
@@ -520,6 +752,8 @@ export function deactivate(): void {
   terminals.hardwareDetection = undefined;
   terminals.verifyInstallation = undefined;
   terminals.modelDownload = undefined;
+  terminals.interactiveChat = undefined;
+  terminals.apiServer = undefined;
 
   console.log('Tenstorrent Developer Extension has been deactivated');
 }

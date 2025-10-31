@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
@@ -65,6 +65,46 @@
         "command": "tenstorrent.runInference",
         "title": "Run Llama Inference Demo",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installInferenceDeps",
+        "title": "Install Inference Dependencies",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createChatScript",
+        "title": "Create Interactive Chat Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startChatSession",
+        "title": "Start Interactive Chat Session",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createApiServer",
+        "title": "Create API Server Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installFlask",
+        "title": "Install Flask Web Framework",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startApiServer",
+        "title": "Start API Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiBasic",
+        "title": "Test API with Basic Query",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiMultiple",
+        "title": "Test API with Multiple Queries",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -105,6 +145,28 @@
             "completionEvents": [
               "onCommand:tenstorrent.runInference"
             ]
+          },
+          {
+            "id": "interactive-chat",
+            "title": "Interactive Chat Session",
+            "description": "Move from one-shot testing to conversational interaction with your model.\n[Open Instructions](command:tenstorrent.createChatScript)",
+            "media": {
+              "markdown": "content/lessons/04-interactive-chat.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.startChatSession"
+            ]
+          },
+          {
+            "id": "api-server",
+            "title": "HTTP API Server with curl",
+            "description": "Transform your model into a REST API for building applications.\n[Open Instructions](command:tenstorrent.createApiServer)",
+            "media": {
+              "markdown": "content/lessons/05-api-server.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.testApiBasic"
+            ]
           }
         ]
       }
@@ -112,7 +174,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
-    "build": "tsc -p ./",
+    "build": "tsc -p ./ && npm run copy-content",
+    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "compile": "tsc -p ./"
