@@ -1,74 +1,58 @@
-# HTTP API Server with curl
+# HTTP API Server with Direct API
 
-Transform your interactive chat into an HTTP API that can be queried from anywhere - perfect for building applications on top of your Tenstorrent-powered model.
+Transform your interactive chat into a production-ready HTTP API using the Generator API directly - perfect for building applications that need fast, reliable inference.
 
 ## What Changed?
 
 - **Lesson 4:** Interactive terminal chat (stdin/stdout)
-- **Lesson 5:** HTTP API server (REST endpoints + curl)
-
-This lesson bridges the gap between command-line interaction and production-ready API integration.
+- **Lesson 5:** HTTP API server with model loaded once in memory
+- **Key difference:** Model stays loaded between HTTP requests - **super fast!**
 
 ## Why an HTTP API?
 
 An HTTP server allows you to:
-- Query the model from any programming language
-- Build web applications that use your model
+- Query the model from any programming language (Python, JavaScript, Go, etc.)
+- Build web applications with AI features
 - Create microservices architectures
-- Test API patterns with curl (no code required)
-- Prepare for production deployment patterns
+- Test with curl (no coding required)
+- Deploy to production with proper scaling
 
-**Note:** This is still minimal - we're using Flask with a simple endpoint, no Docker required!
+**This lesson:** Production-grade Flask server with the model loaded once on startup.
 
-## How It Works
+## Architecture
 
-The API server:
-1. Loads the Llama model once on startup
-2. Listens on a local port (default: 8080)
-3. Accepts POST requests with JSON payloads
-4. Runs inference on tt-metal hardware
-5. Returns JSON responses with generated text
+```
+┌─────────────────┐
+│   Flask Server  │  ← Loads model once on startup
+│                 │
+│  ┌───────────┐  │
+│  │ Generator │  │  ← Stays in memory
+│  │    API    │  │
+│  └───────────┘  │
+│                 │
+│  POST /chat     │  ← Fast inference (model already loaded!)
+│  GET  /health   │  ← Health check
+└─────────────────┘
+        ↕
+    curl / HTTP clients
+```
+
+**Performance:**
+- Load time (startup): 2-5 minutes
+- Per-request latency: 1-3 seconds (model already loaded!)
+- Much faster than wrapping pytest
 
 ## Prerequisites
 
-**Important:** This lesson requires the inference dependencies from Lesson 4. If you haven't installed them yet:
+Same as Lesson 4:
+- tt-metal installed
+- Model downloaded (Llama-3.1-8B-Instruct)
+- `HF_MODEL` environment variable set
+- Flask installed
 
-```bash
-pip install pi
-pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
-```
+## Step 1: Install Flask
 
-[📦 Install Inference Dependencies](command:tenstorrent.installInferenceDeps)
-
-## Step 1: Create the API Server Script
-
-First, we'll create a Flask-based HTTP API that wraps the demo from Lesson 3.
-
-This command will create `~/tt-api-server.py`:
-
-```bash
-# Creates the API server wrapper script
-cp template ~/tt-api-server.py && chmod +x ~/tt-api-server.py
-```
-
-[🌐 Create API Server Script](command:tenstorrent.createApiServer)
-
-**What this does:**
-- Creates `~/tt-api-server.py` in your home directory
-- Sets up Flask with `/health` and `/chat` endpoints
-- Wraps the pytest demo in HTTP endpoints
-- Makes the script executable
-
-**How it works:**
-- Wraps the same `simple_text_demo.py` as Lessons 3 and 4
-- Creates temporary JSON files with your custom prompts from POST requests
-- Runs `pytest` command with `--input_prompts` for each API request
-- Returns demo output as JSON with timing and error handling
-- **Now actually uses your prompts from the API!**
-
-## Step 2: Install Flask (if needed)
-
-Flask is a lightweight Python web framework. Install it if you don't have it:
+Flask is a lightweight Python web framework:
 
 ```bash
 pip install flask
@@ -77,77 +61,100 @@ pip install flask
 [📦 Install Flask](command:tenstorrent.installFlask)
 
 **What this does:**
-- Installs Flask and its dependencies via pip
+- Installs Flask and its dependencies
 - Takes just a few seconds
 - Only needed once per environment
 
+## Step 2: Create the API Server Script
+
+This command creates `~/tt-api-server-direct.py`:
+
+```bash
+# Creates the API server with direct Generator API
+cp template ~/tt-api-server-direct.py && chmod +x ~/tt-api-server-direct.py
+```
+
+[🌐 Create API Server Script](command:tenstorrent.createApiServerDirect)
+
+**What this does:**
+- Creates `~/tt-api-server-direct.py` with Flask + Generator API
+- **Opens the file in your editor** so you can see the implementation!
+- Makes it executable
+
+**What's inside:**
+- `initialize_model()` - Loads model once at server startup
+- `generate_response()` - Fast inference using the loaded model
+- Flask routes for `/health` and `/chat`
+- Proper error handling and JSON responses
+
 ## Step 3: Start the API Server
 
-Now start the Flask server:
+Now start the server (this takes 2-5 minutes to load the model):
 
 ```bash
 cd ~/tt-metal && \
-  export LLAMA_DIR="~/models/Llama-3.1-8B-Instruct/original" && \
+  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   export PYTHONPATH=$(pwd) && \
-  python3 ~/tt-api-server.py --port 8080
+  python3 ~/tt-api-server-direct.py --port 8080
 ```
 
-[🚀 Start API Server](command:tenstorrent.startApiServer)
+[🚀 Start API Server (Direct API)](command:tenstorrent.startApiServerDirect)
 
-**What this does:**
-- Starts Flask server on port 8080
-- Validates environment setup
-- Listens for incoming POST requests
-- Runs the pytest demo for each request
-- Logs all activity to the terminal
+**What you'll see:**
 
-**Expected output:**
 ```
-🌐 Llama API Server on Tenstorrent Hardware
-==================================================
-✓ LLAMA_DIR: ~/models/Llama-3.1-8B-Instruct/original
-✓ PYTHONPATH: ~/tt-metal
-✓ Demo script: models/tt_transformers/demo/simple_text_demo.py
+🔄 Importing tt-metal libraries and loading model...
+   This will take 2-5 minutes on first run...
 
-🚀 Starting server on http://127.0.0.1:8080
+📥 Initializing Tenstorrent mesh device...
+📥 Loading model into memory...
+✅ Model loaded successfully!
+
+🌐 Llama API Server (Direct API) on Tenstorrent
+============================================================
+Model: meta-llama/Llama-3.1-8B-Instruct
+
+🚀 Server ready on http://127.0.0.1:8080
 
 Available endpoints:
   • GET  http://127.0.0.1:8080/health
   • POST http://127.0.0.1:8080/chat
 
-Note: Send custom prompts via POST /chat endpoint.
-      Each request reloads the model (demo limitation).
-      First request will take several minutes for kernel compilation.
+Note: Model is loaded in memory - inference is fast!
+      No reloading between requests.
 
 Press CTRL+C to stop the server
 
  * Running on http://127.0.0.1:8080
 ```
 
+**The model is now loaded and ready!** Leave this terminal open.
+
 ## Step 4: Test with curl
 
-Now open a **second terminal** and test the API!
+Open a **second terminal** and test the API.
 
 ### Health Check
 
-First, verify the server is running:
+Verify the server is running and the model is loaded:
 
 ```bash
 curl http://localhost:8080/health
 ```
 
-You should see:
+Response:
 ```json
 {
   "status": "healthy",
-  "note": "Server is running. Send POST /chat with custom prompts.",
-  "llama_dir": "~/models/Llama-3.1-8B-Instruct/original"
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "model_loaded": true,
+  "note": "Model is loaded in memory for fast inference"
 }
 ```
 
 ### Basic Inference Query
 
-Now test inference (this will take a few minutes on first run):
+Send your first prompt (**notice how fast it is!**):
 
 ```bash
 curl -X POST http://localhost:8080/chat \
@@ -155,54 +162,66 @@ curl -X POST http://localhost:8080/chat \
   -d '{"prompt": "What is machine learning?"}'
 ```
 
-[💬 Test: Run Inference via API](command:tenstorrent.testApiBasic)
+[💬 Test: Basic Inference](command:tenstorrent.testApiBasicDirect)
 
 **Response:**
 ```json
 {
-  "success": true,
   "prompt": "What is machine learning?",
-  "output": "[Full pytest output including your custom prompt and generated response]",
-  "time_seconds": 45.2
+  "response": "Machine learning is a subset of artificial intelligence...",
+  "tokens_generated": 45,
+  "time_seconds": 1.23,
+  "tokens_per_second": 36.6
 }
 ```
 
-**Note:** Your prompt is actually used! The server creates a temporary JSON file and passes it to the demo via `--input_prompts`.
+**Notice:** Only 1-3 seconds! The model was already loaded.
 
-### Multiple Queries
+### Try Multiple Queries
 
-Try different prompts to see the model in action:
+Send several requests to see the speed:
 
 ```bash
-# Ask about Tenstorrent
+# Question about AI
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Tell me about Tenstorrent hardware"}'
+  -d '{"prompt": "Explain neural networks in simple terms"}'
 
 # Creative writing
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Write a haiku about AI"}'
+  -d '{"prompt": "Write a haiku about programming"}'
 
-# Technical explanation
+# Technical question
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "Explain how transformers work"}'
+  -d '{"prompt": "What are transformers in AI?"}'
 ```
 
-[🔄 Test: Multiple Queries](command:tenstorrent.testApiMultiple)
+[🔄 Test: Multiple Queries](command:tenstorrent.testApiMultipleDirect)
+
+**Each request takes ~1-3 seconds** because the model stays loaded!
 
 ### Custom Parameters
 
 Control generation with optional parameters:
 
 ```bash
+# Longer response
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "Write a short story",
-    "max_tokens": 256,
-    "temperature": 0.8
+    "prompt": "Explain quantum computing",
+    "max_tokens": 256
+  }'
+
+# More creative (higher temperature)
+curl -X POST http://localhost:8080/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Write a creative story",
+    "max_tokens": 200,
+    "temperature": 0.7
   }'
 ```
 
@@ -210,28 +229,35 @@ curl -X POST http://localhost:8080/chat \
 
 ### POST /chat
 
-Generates text based on the provided prompt.
+Generates text using the loaded model.
 
 **Request Body (JSON):**
 ```json
 {
-  "prompt": "Your prompt here",
+  "prompt": "Your question here",
   "max_tokens": 128,        // Optional, default: 128
-  "temperature": 0.7,       // Optional, default: 0.7
-  "top_p": 0.9             // Optional, default: 0.9
+  "temperature": 0.0        // Optional, default: 0.0 (greedy)
 }
 ```
 
 **Response (JSON):**
 ```json
 {
-  "prompt": "Your prompt here",
-  "response": "Generated text response...",
+  "prompt": "Your question here",
+  "response": "Generated response...",
   "tokens_generated": 45,
-  "time_seconds": 1.2,
-  "tokens_per_second": 37.5
+  "time_seconds": 1.23,
+  "tokens_per_second": 36.6
 }
 ```
+
+**Parameters:**
+- `prompt` (required): Your input text
+- `max_tokens` (optional): Maximum tokens to generate (1-2048, default: 128)
+- `temperature` (optional): Sampling temperature (0.0-2.0, default: 0.0)
+  - 0.0 = deterministic (greedy)
+  - 0.7 = balanced creativity
+  - 1.0+ = very creative
 
 **Error Response:**
 ```json
@@ -248,60 +274,210 @@ Health check endpoint.
 ```json
 {
   "status": "healthy",
-  "model_loaded": true
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "model_loaded": true,
+  "note": "Model is loaded in memory for fast inference"
 }
 ```
 
-## Example: Using from Python
+## Using from Python
 
-You can also query the API from Python scripts:
+Query the API from Python scripts:
 
 ```python
 import requests
 
 response = requests.post(
     "http://localhost:8080/chat",
-    json={"prompt": "What is machine learning?"}
+    json={
+        "prompt": "What is machine learning?",
+        "max_tokens": 128,
+        "temperature": 0.0
+    }
 )
 
 data = response.json()
-print(data["response"])
+print(f"Response: {data['response']}")
+print(f"Speed: {data['tokens_per_second']:.1f} tokens/sec")
 ```
 
-## Example: Using from JavaScript
+## Using from JavaScript
 
-Or from a web application:
+Query from a web application:
 
 ```javascript
 fetch('http://localhost:8080/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: 'What is machine learning?' })
+  body: JSON.stringify({
+    prompt: 'What is machine learning?',
+    max_tokens: 128
+  })
 })
 .then(res => res.json())
-.then(data => console.log(data.response));
+.then(data => {
+  console.log('Response:', data.response);
+  console.log('Speed:', data.tokens_per_second, 'tok/s');
+});
 ```
 
-## Performance Notes
+## Understanding the Code
 
-- **First request:** May be slower as kernels compile (one-time cost)
-- **Subsequent requests:** Fast inference with compiled kernels
-- **Concurrent requests:** Server handles one request at a time (single-threaded)
-- **Token speed:** ~30-40 tokens/second (varies by device)
+**Open `~/tt-api-server-direct.py` in your editor** (it opened automatically). Key sections:
 
-## Tips for Development
+### Initialization (Lines ~80-135)
 
-1. **Keep server running:** Restart only when needed (model stays loaded)
-2. **Watch logs:** Server terminal shows request details and errors
-3. **Test incrementally:** Start with simple prompts, add complexity
-4. **Use jq for formatting:** Pipe curl output through `jq` for pretty JSON
+```python
+def initialize_model():
+    """Load model once at startup"""
+    global GENERATOR, MODEL_ARGS, ...
 
-**Example with jq:**
+    # Open mesh device
+    MESH_DEVICE = ttnn.open_mesh_device(...)
+
+    # Create model
+    MODEL_ARGS, MODEL, TT_KV_CACHE, _ = create_tt_model(
+        MESH_DEVICE,
+        instruct=True,
+        optimizations=DecodersPrecision.performance,
+        ...
+    )
+
+    # Create generator
+    GENERATOR = Generator([MODEL], [MODEL_ARGS], MESH_DEVICE, ...)
+```
+
+**This runs once when the server starts!**
+
+### Request Handling (Lines ~140-200)
+
+```python
+def generate_response(prompt, max_tokens=128, temperature=0.0):
+    """Use the loaded model for fast inference"""
+    # Preprocess
+    tokens, encoded, pos, lens = preprocess_inputs_prefill([prompt], ...)
+
+    # Prefill and decode using the GLOBAL model
+    logits = GENERATOR.prefill_forward_text(...)
+    for _ in range(max_tokens):
+        logits = GENERATOR.decode_forward_text(...)
+
+    return response, tokens_generated
+```
+
+**This runs for each HTTP request - fast!**
+
+### Flask Routes (Lines ~205-250)
+
+```python
+@app.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json()
+    prompt = data['prompt']
+    max_tokens = data.get('max_tokens', 128)
+    temperature = data.get('temperature', 0.0)
+
+    response, tokens = generate_response(prompt, max_tokens, temperature)
+
+    return jsonify({
+        "prompt": prompt,
+        "response": response,
+        "tokens_generated": tokens,
+        ...
+    })
+```
+
+## Performance Metrics
+
+Watch the server logs to see real-time performance:
+
+```
+📝 Request: What is machine learning?...
+✓ Generated 45 tokens in 1.23s (36.6 tok/s)
+
+📝 Request: Explain neural networks...
+✓ Generated 52 tokens in 1.41s (36.9 tok/s)
+```
+
+**Typical performance:**
+- Latency: 1-3 seconds per request
+- Throughput: 20-40 tokens/second
+- Memory: ~8GB (model stays loaded)
+
+## Customization Ideas
+
+**1. Add authentication**
+```python
+@app.route('/chat', methods=['POST'])
+def chat():
+    auth_token = request.headers.get('Authorization')
+    if auth_token != 'Bearer your-secret-token':
+        return jsonify({"error": "Unauthorized"}), 401
+    ...
+```
+
+**2. Rate limiting**
+```python
+from flask_limiter import Limiter
+
+limiter = Limiter(app, default_limits=["10 per minute"])
+
+@app.route('/chat', methods=['POST'])
+@limiter.limit("5 per minute")
+def chat():
+    ...
+```
+
+**3. Streaming responses**
+```python
+from flask import stream_with_context
+
+@app.route('/chat/stream', methods=['POST'])
+def chat_stream():
+    def generate():
+        for token in generate_tokens(prompt):
+            yield f"data: {token}\n\n"
+
+    return Response(stream_with_context(generate()),
+                   mimetype='text/event-stream')
+```
+
+**4. Request logging**
+```python
+import logging
+
+logging.basicConfig(filename='api.log', level=logging.INFO)
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    logging.info(f"Request from {request.remote_addr}: {prompt[:50]}")
+    ...
+```
+
+## Deployment Considerations
+
+**For production:**
+
+1. **Use a production WSGI server:**
 ```bash
-curl -X POST http://localhost:8080/chat \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Hello"}' | jq
+pip install gunicorn
+gunicorn -w 1 -b 0.0.0.0:8080 tt-api-server-direct:app
 ```
+
+2. **Add HTTPS:**
+```bash
+# Use nginx or Apache as reverse proxy with SSL
+```
+
+3. **Monitor and scale:**
+- Track latency and throughput
+- Use load balancer for multiple instances
+- Monitor GPU/NPU memory usage
+
+4. **Add proper error handling:**
+- Timeout protection
+- Input validation
+- Request queuing
 
 ## Stopping the Server
 
@@ -309,71 +485,56 @@ To stop the server:
 1. Switch to the server terminal
 2. Press `Ctrl+C`
 
-The model will unload and the server will shut down gracefully.
+The model will unload and cleanup happens automatically.
 
 ## Troubleshooting
 
 **Port already in use:**
-- Change the port: `python3 ~/tt-api-server.py --port 8081`
-- Kill existing process: `lsof -ti:8080 | xargs kill`
+```bash
+python3 ~/tt-api-server-direct.py --port 8081
+```
 
 **Connection refused:**
-- Check that server is running (look for "Running on..." message)
-- Verify correct port in curl command
+- Check server is running (look for "Server ready" message)
+- Verify correct port
 - Try `http://127.0.0.1:8080` instead of `localhost`
 
 **Slow responses:**
-- First request always takes longer (kernel compilation)
+- First request may be slightly slower (cache warming)
 - Check server logs for performance metrics
 - Reduce `max_tokens` for faster responses
 
-**Import errors:**
-- Ensure Flask is installed: `pip install flask`
-- Check PYTHONPATH is set to tt-metal directory
-- Verify model path in LLAMA_DIR
+**Out of memory:**
+- Only run one server instance at a time
+- Close other programs
+- Use smaller `max_seq_len` during initialization
 
-## How This Works
+## What You Learned
 
-**Architecture:**
-- Flask HTTP server wrapping the pytest demo
-- `/health` endpoint for status checks
-- `/chat` endpoint accepts custom prompts via POST
-- Creates temporary JSON files with user prompts
-- Runs `pytest` with `--input_prompts` flag
-- Captures demo output and returns as JSON
-- Single-threaded to avoid concurrent model loading
+✅ How to build HTTP APIs with the Generator API
+✅ Model initialization vs. request handling
+✅ Flask server patterns for AI inference
+✅ API design with proper JSON responses
+✅ Performance monitoring and optimization
 
-**Key Innovation:**
-- ✅ **Accepts your actual prompts via HTTP!**
-- ✅ Uses the demo's JSON input format dynamically
-- ✅ No modification to tt-metal code needed
-- ✅ REST API with real custom input
+**Key takeaway:** Production AI APIs load the model once and handle many requests efficiently. This is the foundation for building scalable AI services.
 
-**Limitations:**
-- Runs full demo for each request (reloads model)
-- First request takes longest (kernel compilation)
-- Slower than keeping model loaded in memory
-- Shows full pytest output (verbose but complete)
+## What's Next?
 
-**Why this approach?**
-- ✅ Works immediately with installed tt-metal
-- ✅ Uses the proven demo code
-- ✅ Provides actual HTTP API with custom prompts
-- ✅ Good for learning HTTP/REST patterns
-- ✅ Foundation for building applications
+You now have:
+- ✅ Interactive chat (Lesson 4)
+- ✅ HTTP API server (Lesson 5)
 
-**For production:** You'd want to load the model once and keep it in memory using the Generator API directly, then handle multiple requests without reloading.
+Want to go even further? **Lesson 6** introduces **vLLM** - a production-grade inference engine with:
+- OpenAI-compatible API
+- Continuous batching (serve multiple users efficiently)
+- Advanced optimizations
+- Battle-tested at scale
 
-## What You Can Build
-
-Now you have a REST API foundation for:
-- Building web UIs (React, Vue, etc.)
-- Creating mobile app backends
-- Integrating with existing applications
-- Deploying to production (with proper scaling)
+Continue to Lesson 6: Production Inference with vLLM!
 
 ## Learn More
 
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [REST API Best Practices](https://restfulapi.net/)
-- [TT-Metal Deployment Guide](https://docs.tenstorrent.com/)
+- [TT-Metal Generator API](https://github.com/tenstorrent/tt-metal/blob/main/models/tt_transformers/tt/generator.py)

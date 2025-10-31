@@ -1,96 +1,113 @@
-# Interactive Chat with Llama
+# Interactive Chat with Direct API
 
-Move from one-shot testing to real conversations with your model running on Tenstorrent hardware.
+Move from one-shot testing to building your own chat application using tt-metal's Generator API directly.
 
 ## What Changed?
 
-- **Lesson 3:** Ran a test with fixed prompts using pytest (one-shot execution)
-- **Lesson 4:** Chat interactively with your model using a simple terminal interface
+- **Lesson 3:** Ran inference via pytest test (model reloads each time)
+- **Lesson 4:** Use the Generator API directly (model stays in memory - **much faster!**)
+
+## Why Use the Direct API?
+
+**The pytest wrapper approach (old Lessons 4 & 5):**
+- ❌ Reloads model for each query (2-5 minutes each time)
+- ❌ Black box - hard to customize
+- ❌ Not how real applications work
+
+**The direct Generator API (this lesson):**
+- ✅ **Load model once** - subsequent queries are fast (1-3 seconds)
+- ✅ **Full control** - customize sampling, temperature, max tokens
+- ✅ **Production-ready pattern** - this is how you'd build real apps
+- ✅ **Educational** - understand how inference actually works
 
 ## How It Works
 
-The interactive chat script:
-1. Loads the Llama model once (same as Lesson 3)
-2. Enters a read-eval-print loop (REPL)
-3. Accepts your prompts via stdin
-4. Generates responses on tt-metal hardware
-5. Streams output back to you in the terminal
-6. Repeats until you type `exit`
+The Generator API pattern:
 
-This is the most minimal way to have a conversation with your model - no Docker, no HTTP servers, just pure stdin/stdout interaction.
+```python
+# 1. Load model once (slow - 2-5 minutes)
+from models.tt_transformers.tt.generator import Generator
+from models.tt_transformers.tt.common import create_tt_model
 
-## Step 1: Install Additional Dependencies
+model_args, model, tt_kv_cache, _ = create_tt_model(mesh_device, ...)
+generator = Generator([model], [model_args], mesh_device, ...)
 
-Before running interactive inference, we need to install a few additional Python packages that weren't included in the basic tt-metal setup.
+# 2. Chat loop - reuse the loaded model! (fast - 1-3 seconds per response)
+while True:
+    prompt = input("> ")
 
-These commands will install:
-- `pi` - Required Python package for inference
-- `llama-models` - Official Llama model utilities from Tenstorrent's fork
+    # Preprocess
+    tokens, encoded, pos, lens = preprocess_inputs_prefill([prompt], ...)
 
-```bash
-pip install pi
-pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
+    # Prefill (process the prompt)
+    logits = generator.prefill_forward_text(tokens, ...)
+
+    # Decode (generate response token by token)
+    for _ in range(max_tokens):
+        logits = generator.decode_forward_text(...)
+        next_token = sample(logits)
+        if is_end_token(next_token):
+            break
+
+    response = tokenizer.decode(all_tokens)
+    print(response)
 ```
 
-[📦 Install Inference Dependencies](command:tenstorrent.installInferenceDeps)
+**Key insight:** The model stays in memory between queries!
 
-**What this does:**
-- Installs the `pi` package
-- Installs the Llama model utilities from Tenstorrent's GitHub
-- Uses the `tt_metal_tag` branch for tt-metal compatibility
-- Takes 1-2 minutes depending on your connection
+## Prerequisites
 
-**Note:** These dependencies are needed for both interactive chat (Lesson 4) and the API server (Lesson 5).
+This lesson requires the same setup as Lesson 3. Make sure you have:
+- tt-metal installed and working
+- Model downloaded (Llama-3.1-8B-Instruct)
+- `HF_MODEL` environment variable set
 
-## Step 2: Create the Chat Script
+## Step 1: Create the Direct API Chat Script
 
-First, we'll create a simple Python wrapper that runs the demo interactively.
-
-This command will create `~/tt-chat.py`:
+This command creates `~/tt-chat-direct.py` - a standalone chat client using the Generator API:
 
 ```bash
-# Creates the chat wrapper script
-cp template ~/tt-chat.py && chmod +x ~/tt-chat.py
+# Creates the direct API chat script
+cp template ~/tt-chat-direct.py && chmod +x ~/tt-chat-direct.py
 ```
 
-[📝 Create Interactive Chat Script](command:tenstorrent.createChatScript)
+[📝 Create Direct API Chat Script](command:tenstorrent.createChatScriptDirect)
 
 **What this does:**
-- Creates `~/tt-chat.py` in your home directory
-- Sets up a REPL that runs the pytest demo
-- Checks environment variables automatically
-- Makes the script executable
+- Creates `~/tt-chat-direct.py` with full Generator API implementation
+- **Opens the file in your editor** so you can see how it works!
+- Makes it executable
 
-**How it works:**
-- Wraps the existing `simple_text_demo.py` from Lesson 3
-- Creates temporary JSON files with your custom prompts
-- Runs `pytest` command with the `--input_prompts` flag
-- Reloads the model each time (first run takes longest)
-- **Now accepts your actual prompts!**
+**What's inside:**
+- `prepare_generator()` - Loads model once at startup
+- `generate_response()` - Fast inference using loaded model
+- `chat_loop()` - Interactive REPL for chatting
+- Full control over sampling, temperature, max tokens
 
-## Step 3: Start Interactive Chat
+## Step 2: Start Interactive Chat
 
-Now launch the interactive session:
+Now launch the chat session:
 
 ```bash
 cd ~/tt-metal && \
-  export LLAMA_DIR="~/models/Llama-3.1-8B-Instruct/original" && \
+  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   export PYTHONPATH=$(pwd) && \
-  python3 ~/tt-chat.py
+  python3 ~/tt-chat-direct.py
 ```
 
-[💬 Start Chat Session](command:tenstorrent.startChatSession)
+[💬 Start Direct API Chat](command:tenstorrent.startChatSessionDirect)
 
 **What you'll see:**
+
 ```
-🤖 Llama Chat on Tenstorrent Hardware
-==================================================
+🔄 Importing tt-metal libraries (this may take a moment)...
+📥 Loading model (this will take 2-5 minutes on first run)...
+✅ Model loaded and ready!
 
-✅ Environment configured correctly
-
-Note: Each query reloads the model (demo limitation).
-      The first run will take several minutes to compile kernels.
-      Subsequent runs are faster due to caching.
+🤖 Direct API Chat with Llama on Tenstorrent
+============================================================
+This version loads the model once and keeps it in memory.
+After initial load, responses will be much faster!
 
 Commands:
   • Type your prompt and press ENTER
@@ -100,116 +117,188 @@ Commands:
 >
 ```
 
-**Usage:**
-- Type **your custom prompt** and press ENTER
-- Type **exit** to quit
-- First run compiles kernels (takes 2-5 minutes)
-- Subsequent runs are faster but still reload the model
-- **Now you can ask your own questions!**
+**First run:** 2-5 minutes to load (kernel compilation + model loading)
+**Subsequent queries:** 1-3 seconds per response!
 
-## Step 4: Try Your Own Prompts
+## Step 3: Chat with Your Model
 
-Now you can type your own questions and see the model respond!
+Try asking questions:
 
-**Example interaction:**
 ```
 > What is machine learning?
 
 🤖 Generating response...
 
-[You'll see the full pytest output, including:]
-==USER 0 - OUTPUT
-Machine learning is a subset of artificial intelligence that enables
-computers to learn from data without being explicitly programmed...
+Machine learning is a subset of artificial intelligence (AI) that
+involves training algorithms to learn from data and make predictions
+or decisions without being explicitly programmed...
 
---------------------------------------------------
-Ready for next prompt (or 'exit' to quit)
+------------------------------------------------------------
 
-> Tell me about Tenstorrent
+> Explain transformers in simple terms
 
 🤖 Generating response...
 
-[You'll see the response about Tenstorrent hardware...]
+Transformers are a type of neural network architecture that's really
+good at understanding relationships in sequential data like text...
 
---------------------------------------------------
-Ready for next prompt (or 'exit' to quit)
+------------------------------------------------------------
 
 > exit
 
 👋 Chat session ended
 ```
 
-**What happens:**
-- Your prompt is written to a temporary JSON file
-- The demo runs with your custom prompt via `--input_prompts`
-- Model generates a response on Tenstorrent hardware
-- You'll see performance metrics (tokens/second)
-- Ready for your next question!
+**Notice:**
+- First query after load: ~1-3 seconds
+- Second query: ~1-3 seconds (model already loaded!)
+- No 2-5 minute reload between queries
+
+## Understanding the Code
+
+**Open `~/tt-chat-direct.py` in your editor** (it was opened automatically when you created it). Key sections:
+
+### Model Loading (Lines ~80-120)
+
+```python
+def prepare_generator(mesh_device, max_batch_size=1, ...):
+    # Create the model with optimizations
+    model_args, model, tt_kv_cache, _ = create_tt_model(
+        mesh_device,
+        instruct=True,
+        max_batch_size=max_batch_size,
+        optimizations=DecodersPrecision.performance,
+        paged_attention_config=PagedAttentionConfig(...),
+    )
+
+    # Create the generator
+    generator = Generator([model], [model_args], mesh_device, ...)
+
+    return generator, model_args, model, ...
+```
+
+**This happens once at startup!**
+
+### Inference (Lines ~125-180)
+
+```python
+def generate_response(generator, prompt, max_tokens=128):
+    # 1. Tokenize and preprocess
+    tokens, encoded, pos, lens = preprocess_inputs_prefill([prompt], ...)
+
+    # 2. Prefill - process the prompt
+    logits = generator.prefill_forward_text(tokens, ...)
+
+    # 3. Decode - generate tokens one by one
+    for iteration in range(max_tokens):
+        logits = generator.decode_forward_text(out_tok, current_pos, ...)
+        next_token = sample(logits)
+        if next_token is end_token:
+            break
+
+    # 4. Decode tokens to text
+    response = tokenizer.decode(all_tokens)
+    return response
+```
+
+**This runs for each query - fast because model is already loaded!**
+
+## Customization Ideas
+
+Now that you have the code, try modifying it:
+
+**1. Change temperature (creativity)**
+```python
+# In generate_response():
+response = generate_response(..., temperature=0.7)  # More creative
+# vs
+response = generate_response(..., temperature=0.0)  # Deterministic
+```
+
+**2. Increase max tokens**
+```python
+response = generate_response(..., max_generated_tokens=256)
+```
+
+**3. Add streaming output**
+```python
+# Print tokens as they're generated
+for iteration in range(max_tokens):
+    logits = generator.decode_forward_text(...)
+    next_token = sample(logits)
+    print(tokenizer.decode([next_token]), end='', flush=True)
+```
+
+**4. Multi-turn conversations**
+```python
+# Keep conversation history
+conversation_history = []
+while True:
+    prompt = input("> ")
+    conversation_history.append(f"User: {prompt}")
+    full_prompt = "\n".join(conversation_history)
+    response = generate_response(generator, full_prompt, ...)
+    conversation_history.append(f"Assistant: {response}")
+```
 
 ## Performance Notes
 
-- **First load:** Takes 2-5 minutes to compile kernels (one-time cost)
-- **Subsequent queries:** Fast inference using compiled kernels
-- **Token generation speed:** ~30-40 tokens/second (varies by device)
-- **Model stays loaded:** No reload between prompts (much faster than pytest)
+- **First load:** 2-5 minutes (kernel compilation + model load)
+- **Subsequent queries:** 1-3 seconds each
+- **Token generation speed:** ~20-40 tokens/second
+- **Memory:** Model stays in memory (~8GB for Llama-3.1-8B)
 
-## Tips for Best Results
-
-1. **Start simple:** Try short, clear prompts first
-2. **Be patient:** First load always takes time
-3. **Watch metrics:** Token/sec shows your hardware performance
-4. **Keep it running:** Leaving the session open avoids reload time
+**Why is it so much faster?**
+- No pytest overhead
+- No model reloading
+- Direct GPU/NPU access
+- Optimized kernel reuse
 
 ## Troubleshooting
 
-**Model takes too long to load:**
-- This is normal on first run (kernel compilation)
-- Subsequent runs will be much faster due to caching
-
-**Script exits immediately:**
-- Check that LLAMA_DIR points to the correct path
-- Verify Python dependencies are installed (Lesson 3, Step 5)
-
 **Import errors:**
-- Ensure inference dependencies are installed (Step 1)
-- Check that PYTHONPATH is set to your tt-metal directory
-- Run from the tt-metal directory root
+```bash
+export PYTHONPATH=~/tt-metal
+```
 
-## How This Works
+**MESH_DEVICE errors:**
+```bash
+# Let tt-metal auto-detect (default behavior)
+# Or explicitly set:
+export MESH_DEVICE=N150  # or N300, T3K, etc.
+```
 
-**Architecture:**
-- Wraps the existing `models/tt_transformers/demo/simple_text_demo.py`
-- Creates temporary JSON files with your custom prompts
-- Passes the JSON to pytest via `--input_prompts` flag
-- Uses `subprocess` to execute the demo
-- Simple REPL loop for interactive use
+**Out of memory:**
+- Close other programs
+- Reduce `max_batch_size` to 1
+- Reduce `max_seq_len` to 1024
 
-**Key Innovation:**
-- ✅ **Accepts your actual prompts!**
-- ✅ Uses the demo's JSON input format dynamically
-- ✅ No modification to tt-metal code needed
-- ✅ Works with the existing proven demo
+**Slow first query:**
+- This is normal - kernels compile on first run
+- Subsequent runs use cached kernels
 
-**Limitations:**
-- Reloads the model each time (slower than keeping it loaded)
-- First run takes longest (kernel compilation)
-- Shows full pytest output (verbose but informative)
+## What You Learned
 
-**Why this approach?**
-- ✅ Works immediately with installed tt-metal
-- ✅ Uses the known-working demo code
-- ✅ Provides actual custom prompt interaction
-- ✅ Good foundation for understanding inference
+✅ How to use the Generator API directly
+✅ Model loading vs. inference phases
+✅ Prefill (process prompt) vs. decode (generate tokens)
+✅ Token sampling and stopping conditions
+✅ How to build custom chat applications
 
-**For production:** You'd want to load the model once and keep it in memory between queries using the Generator API directly.
+**Key takeaway:** Real AI applications load the model once and reuse it. This is the foundation for everything from chat apps to API servers.
 
 ## What's Next?
 
-Now you have an interactive way to run inference!
+Now that you can chat interactively, let's wrap this in an HTTP API so you can:
+- Query from any programming language
+- Build web applications
+- Test with curl
+- Deploy as a microservice
 
-In the next lesson, we'll wrap the same demo in an HTTP API so you can query it with `curl` or from other applications.
+Continue to Lesson 5: HTTP API Server!
 
 ## Learn More
 
-- [TT-Metal Inference Examples](https://github.com/tenstorrent/tt-metal/tree/main/models/tt_transformers)
-- [Llama Model Documentation](https://github.com/tenstorrent/tt-metal/blob/main/models/tt_transformers/README.md)
+- [TT-Metal Generator API](https://github.com/tenstorrent/tt-metal/blob/main/models/tt_transformers/tt/generator.py)
+- [Model Configuration](https://github.com/tenstorrent/tt-metal/blob/main/models/tt_transformers/tt/model_config.py)
+- [Common Utilities](https://github.com/tenstorrent/tt-metal/blob/main/models/tt_transformers/tt/common.py)

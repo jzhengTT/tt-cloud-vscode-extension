@@ -631,6 +631,264 @@ function testApiMultiple(): void {
 }
 
 // ============================================================================
+// Direct API Commands (Lessons 4-6)
+// ============================================================================
+
+/**
+ * Command: tenstorrent.createChatScriptDirect
+ * Creates the direct API chat script and opens it in the editor
+ */
+async function createChatScriptDirect(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-chat-direct.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  const homeDir = os.homedir();
+  const destPath = path.join(homeDir, 'tt-chat-direct.py');
+
+  try {
+    fs.copyFileSync(templatePath, destPath);
+    fs.chmodSync(destPath, 0o755);
+
+    // Open the file in the editor
+    const doc = await vscode.workspace.openTextDocument(destPath);
+    await vscode.window.showTextDocument(doc);
+
+    vscode.window.showInformationMessage(
+      `✅ Created direct API chat script at ${destPath}. The file is now open - review the code!`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create chat script: ${error}`);
+  }
+}
+
+/**
+ * Command: tenstorrent.startChatSessionDirect
+ * Starts the direct API chat session
+ */
+async function startChatSessionDirect(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const ttMetalPath = path.join(homeDir, 'tt-metal');
+
+  const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
+
+  const command = `cd ${ttMetalPath} && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && export PYTHONPATH=$(pwd) && python3 ~/tt-chat-direct.py`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '💬 Starting direct API chat. Model loads once (2-5 min), then queries are fast (1-3 sec)!'
+  );
+}
+
+/**
+ * Command: tenstorrent.createApiServerDirect
+ * Creates the direct API server script and opens it in the editor
+ */
+async function createApiServerDirect(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-api-server-direct.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  const homeDir = os.homedir();
+  const destPath = path.join(homeDir, 'tt-api-server-direct.py');
+
+  try {
+    fs.copyFileSync(templatePath, destPath);
+    fs.chmodSync(destPath, 0o755);
+
+    // Open the file in the editor
+    const doc = await vscode.workspace.openTextDocument(destPath);
+    await vscode.window.showTextDocument(doc);
+
+    vscode.window.showInformationMessage(
+      `✅ Created direct API server at ${destPath}. The file is now open - review the code!`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create API server: ${error}`);
+  }
+}
+
+/**
+ * Command: tenstorrent.startApiServerDirect
+ * Starts the direct API server
+ */
+async function startApiServerDirect(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const ttMetalPath = path.join(homeDir, 'tt-metal');
+
+  const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
+
+  const command = `cd ${ttMetalPath} && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server-direct.py --port 8080`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🚀 Starting direct API server. Model loads once (2-5 min), then handles requests fast!'
+  );
+}
+
+/**
+ * Command: tenstorrent.testApiBasicDirect
+ * Tests the direct API server with a basic query
+ */
+function testApiBasicDirect(): void {
+  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+
+  const command = `curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{"prompt": "What is machine learning?"}'`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Testing direct API server. Check terminal for response!'
+  );
+}
+
+/**
+ * Command: tenstorrent.testApiMultipleDirect
+ * Tests the direct API with multiple queries
+ */
+function testApiMultipleDirect(): void {
+  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+
+  const commands = [
+    `curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{"prompt": "Explain neural networks"}'`,
+    `echo "\n--- Second query ---\n"`,
+    `curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{"prompt": "Write a haiku about programming"}'`,
+    `echo "\n--- Third query ---\n"`,
+    `curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{"prompt": "What are transformers?"}'`
+  ];
+
+  runInTerminal(terminal, commands.join(' && '));
+
+  vscode.window.showInformationMessage(
+    'Running multiple API tests. Watch the terminal for fast responses!'
+  );
+}
+
+// vLLM Commands
+
+/**
+ * Command: tenstorrent.cloneVllm
+ * Clones the TT vLLM repository
+ */
+function cloneVllm(): void {
+  const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
+
+  const command = `cd ~ && git clone --branch dev https://github.com/tenstorrent/vllm.git tt-vllm && cd tt-vllm`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Cloning TT vLLM repository. This may take 1-2 minutes...'
+  );
+}
+
+/**
+ * Command: tenstorrent.installVllm
+ * Installs vLLM and dependencies
+ */
+function installVllm(): void {
+  const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
+
+  const command = `cd ~/tt-vllm && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip3 install --upgrade pip && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Installing vLLM. This will take 5-10 minutes. Check terminal for progress.'
+  );
+}
+
+/**
+ * Command: tenstorrent.runVllmOffline
+ * Runs vLLM offline inference example
+ */
+function runVllmOffline(): void {
+  const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
+
+  const command = `cd ~/tt-vllm && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && source $PYTHON_ENV_DIR/bin/activate && python examples/offline_inference_tt.py`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Running vLLM offline inference. First run takes a few minutes...'
+  );
+}
+
+/**
+ * Command: tenstorrent.startVllmServer
+ * Starts the vLLM OpenAI-compatible server
+ */
+function startVllmServer(): void {
+  const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
+
+  const command = `cd ~/tt-vllm && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && source $PYTHON_ENV_DIR/bin/activate && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🚀 Starting vLLM OpenAI-compatible server on port 8000. First load takes 2-5 minutes...'
+  );
+}
+
+/**
+ * Command: tenstorrent.testVllmOpenai
+ * Tests vLLM with OpenAI SDK
+ */
+function testVllmOpenai(): void {
+  const terminal = getOrCreateTerminal('vLLM Test', 'apiServer');
+
+  const command = `python3 -c "from openai import OpenAI; client = OpenAI(base_url='http://localhost:8000/v1', api_key='dummy'); response = client.chat.completions.create(model='meta-llama/Llama-3.1-8B-Instruct', messages=[{'role': 'user', 'content': 'What is machine learning?'}], max_tokens=128); print(response.choices[0].message.content)"`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Testing vLLM with OpenAI SDK. Check terminal for response!'
+  );
+}
+
+/**
+ * Command: tenstorrent.testVllmCurl
+ * Tests vLLM with curl
+ */
+function testVllmCurl(): void {
+  const terminal = getOrCreateTerminal('vLLM Test', 'apiServer');
+
+  const command = `curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Explain neural networks"}], "max_tokens": 128}'`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'Testing vLLM with curl. Check terminal for OpenAI-formatted response!'
+  );
+}
+
+// ============================================================================
 // Walkthrough Management
 // ============================================================================
 
@@ -721,6 +979,24 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.startApiServer', startApiServer),
     vscode.commands.registerCommand('tenstorrent.testApiBasic', testApiBasic),
     vscode.commands.registerCommand('tenstorrent.testApiMultiple', testApiMultiple),
+
+    // Lesson 4 - Direct API Chat
+    vscode.commands.registerCommand('tenstorrent.createChatScriptDirect', createChatScriptDirect),
+    vscode.commands.registerCommand('tenstorrent.startChatSessionDirect', startChatSessionDirect),
+
+    // Lesson 5 - Direct API Server
+    vscode.commands.registerCommand('tenstorrent.createApiServerDirect', createApiServerDirect),
+    vscode.commands.registerCommand('tenstorrent.startApiServerDirect', startApiServerDirect),
+    vscode.commands.registerCommand('tenstorrent.testApiBasicDirect', testApiBasicDirect),
+    vscode.commands.registerCommand('tenstorrent.testApiMultipleDirect', testApiMultipleDirect),
+
+    // Lesson 6 - vLLM
+    vscode.commands.registerCommand('tenstorrent.cloneVllm', cloneVllm),
+    vscode.commands.registerCommand('tenstorrent.installVllm', installVllm),
+    vscode.commands.registerCommand('tenstorrent.runVllmOffline', runVllmOffline),
+    vscode.commands.registerCommand('tenstorrent.startVllmServer', startVllmServer),
+    vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
+    vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
   ];
 
   // Add all command registrations to subscriptions for proper cleanup

@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
@@ -105,6 +105,66 @@
         "command": "tenstorrent.testApiMultiple",
         "title": "Test API with Multiple Queries",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createChatScriptDirect",
+        "title": "Create Direct API Chat Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startChatSessionDirect",
+        "title": "Start Direct API Chat Session",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createApiServerDirect",
+        "title": "Create Direct API Server Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startApiServerDirect",
+        "title": "Start Direct API Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiBasicDirect",
+        "title": "Test Direct API (Basic)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiMultipleDirect",
+        "title": "Test Direct API (Multiple Queries)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.cloneVllm",
+        "title": "Clone TT vLLM Repository",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installVllm",
+        "title": "Install vLLM",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runVllmOffline",
+        "title": "Run vLLM Offline Inference",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServer",
+        "title": "Start vLLM Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testVllmOpenai",
+        "title": "Test vLLM with OpenAI SDK",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testVllmCurl",
+        "title": "Test vLLM with curl",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -148,24 +208,35 @@
           },
           {
             "id": "interactive-chat",
-            "title": "Interactive Chat Session",
-            "description": "Move from one-shot testing to conversational interaction with your model.",
+            "title": "Interactive Chat with Direct API",
+            "description": "Build a custom chat application using tt-metal's Generator API directly.",
             "media": {
               "markdown": "content/lessons/04-interactive-chat.md"
             },
             "completionEvents": [
-              "onCommand:tenstorrent.startChatSession"
+              "onCommand:tenstorrent.startChatSessionDirect"
             ]
           },
           {
             "id": "api-server",
-            "title": "HTTP API Server with curl",
-            "description": "Transform your model into a REST API for building applications.",
+            "title": "HTTP API Server with Direct API",
+            "description": "Create a production-ready Flask API with the model loaded in memory.",
             "media": {
               "markdown": "content/lessons/05-api-server.md"
             },
             "completionEvents": [
-              "onCommand:tenstorrent.testApiBasic"
+              "onCommand:tenstorrent.testApiBasicDirect"
+            ]
+          },
+          {
+            "id": "vllm-production",
+            "title": "Production Inference with vLLM",
+            "description": "Deploy with vLLM - OpenAI-compatible APIs, continuous batching, and enterprise features.",
+            "media": {
+              "markdown": "content/lessons/06-vllm-production.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.startVllmServer"
             ]
           }
         ]
