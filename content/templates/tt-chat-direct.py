@@ -154,7 +154,7 @@ def generate_response(
         logits = generator.decode_forward_text(
             out_tok,
             current_pos,
-            enable_trace=True,
+            enable_trace=False,  # Tracing disabled for simplicity (requires trace region allocation)
             page_table=page_table,
             kv_cache=[tt_kv_cache],  # Generator expects a list of kv_caches
             sampling_params=device_sampling_params,
