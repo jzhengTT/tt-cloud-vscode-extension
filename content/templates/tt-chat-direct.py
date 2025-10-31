@@ -68,7 +68,7 @@ def prepare_generator(
     print("📥 Loading model (this will take 2-5 minutes on first run)...")
 
     # Use performance optimizations for speed
-    optimizations = DecodersPrecision.performance
+    optimizations = lambda model_args: DecodersPrecision.performance(model_args.n_layers, model_args.model_name)
 
     # Configure paged attention for memory efficiency
     paged_attention_config = PagedAttentionConfig(

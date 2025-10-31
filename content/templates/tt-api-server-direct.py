@@ -92,7 +92,7 @@ def initialize_model():
     print("📥 Loading model into memory...")
 
     # Use performance optimizations
-    optimizations = DecodersPrecision.performance
+    optimizations = lambda model_args: DecodersPrecision.performance(model_args.n_layers, model_args.model_name)
 
     # Configure paged attention
     paged_attention_config = PagedAttentionConfig(

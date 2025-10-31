@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
