@@ -149,8 +149,8 @@ def generate_response(prompt, max_tokens=128, temperature=0.0):
     # Get first token
     prefilled_token = torch.argmax(logits, dim=-1)
 
-    # Collect outputs
-    all_outputs = [encoded_prompts[0][:prefill_lens[0]]]
+    # Collect outputs (encoded_prompts is already a list)
+    all_outputs = encoded_prompts[0][:prefill_lens[0]]
     all_outputs.append(int(prefilled_token[0].item()))
 
     # Decode phase
