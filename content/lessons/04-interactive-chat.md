@@ -1,24 +1,17 @@
 # Interactive Chat with Direct API
 
-Move from one-shot testing to building your own chat application using tt-metal's Generator API directly.
-
-## What Changed?
-
-- **Lesson 3:** Ran inference via pytest test (model reloads each time)
-- **Lesson 4:** Use the Generator API directly (model stays in memory - **much faster!**)
+Build your own interactive chat application using tt-metal's Generator API directly.
 
 ## Why Use the Direct API?
 
-**The pytest wrapper approach (old Lessons 4 & 5):**
-- ❌ Reloads model for each query (2-5 minutes each time)
-- ❌ Black box - hard to customize
-- ❌ Not how real applications work
+The Generator API is the foundation for building real AI applications. This lesson teaches you how to:
 
-**The direct Generator API (this lesson):**
 - ✅ **Load model once** - subsequent queries are fast (1-3 seconds)
 - ✅ **Full control** - customize sampling, temperature, max tokens
 - ✅ **Production-ready pattern** - this is how you'd build real apps
 - ✅ **Educational** - understand how inference actually works
+
+Instead of running inference once and exiting, you'll keep the model in memory and chat with it interactively - the same pattern used by ChatGPT and other conversational AI systems.
 
 ## How It Works
 
@@ -248,11 +241,11 @@ while True:
 - **Token generation speed:** ~20-40 tokens/second
 - **Memory:** Model stays in memory (~8GB for Llama-3.1-8B)
 
-**Why is it so much faster?**
-- No pytest overhead
-- No model reloading
+**What makes it fast:**
+- Model stays loaded between queries
 - Direct GPU/NPU access
 - Optimized kernel reuse
+- Efficient memory management
 
 ## Troubleshooting
 

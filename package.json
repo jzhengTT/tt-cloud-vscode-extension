@@ -170,7 +170,7 @@
     "walkthroughs": [
       {
         "id": "tenstorrent.setup",
-        "title": "Get Started with Tenstorrent",
+        "title": "Tenstorrent walkthrough",
         "description": "Set up your Tenstorrent development environment step by step",
         "steps": [
           {

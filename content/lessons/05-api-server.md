@@ -1,23 +1,20 @@
 # HTTP API Server with Direct API
 
-Transform your interactive chat into a production-ready HTTP API using the Generator API directly - perfect for building applications that need fast, reliable inference.
+Transform your interactive chat into a production-ready HTTP API using the Generator API - perfect for building applications that need fast, reliable inference.
 
-## What Changed?
+## From Chat to API
 
-- **Lesson 4:** Interactive terminal chat (stdin/stdout)
-- **Lesson 5:** HTTP API server with model loaded once in memory
-- **Key difference:** Model stays loaded between HTTP requests - **super fast!**
+In Lesson 4, you built an interactive terminal chat. Now you'll wrap that same Generator API pattern in an HTTP server, enabling:
 
-## Why an HTTP API?
-
-An HTTP server allows you to:
-- Query the model from any programming language (Python, JavaScript, Go, etc.)
+- Query the model from any programming language
 - Build web applications with AI features
 - Create microservices architectures
-- Test with curl (no coding required)
+- Test with simple curl commands
 - Deploy to production with proper scaling
 
-**This lesson:** Production-grade Flask server with the model loaded once on startup.
+The key advantage: **model stays loaded in memory between HTTP requests** for fast responses.
+
+**What you'll build:** A production-grade Flask server with the model loaded once on startup.
 
 ## Architecture
 
@@ -40,7 +37,7 @@ An HTTP server allows you to:
 **Performance:**
 - Load time (startup): 2-5 minutes
 - Per-request latency: 1-3 seconds (model already loaded!)
-- Much faster than wrapping pytest
+- Scales efficiently for multiple concurrent requests
 
 ## Prerequisites
 

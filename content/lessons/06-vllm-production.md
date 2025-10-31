@@ -15,8 +15,8 @@ Take your AI deployment to the next level with vLLM - a production-grade inferen
 
 ## Journey So Far
 
-- **Lesson 3:** pytest demo (one-shot testing)
-- **Lesson 4:** Direct API chat (custom app, model in memory)
+- **Lesson 3:** One-shot inference demo
+- **Lesson 4:** Interactive chat (custom app, model in memory)
 - **Lesson 5:** Flask HTTP API (basic server)
 - **Lesson 6:** vLLM (production-grade serving) ← **You are here**
 
@@ -62,7 +62,7 @@ Take your AI deployment to the next level with vLLM - a production-grade inferen
 
 ## Prerequisites
 
-- tt-metal installed and working (from previous lessons)
+- tt-metal installed and working
 - Model downloaded (Llama-3.1-8B-Instruct)
 - Python 3.10+ recommended
 - ~20GB disk space for vLLM installation
@@ -490,7 +490,7 @@ curl http://localhost:8000/v1/models
 
 | Approach | Speed | Control | Prod-Ready | Use Case |
 |----------|-------|---------|------------|----------|
-| **Lesson 3: pytest** | Slow | Low | ❌ | Testing |
+| **Lesson 3: One-shot** | Slow | Low | ❌ | Testing |
 | **Lesson 4: Direct API** | Fast | High | ⚠️ | Learning |
 | **Lesson 5: Flask** | Fast | High | ⚠️ | Prototyping |
 | **Lesson 6: vLLM** | Fast | Medium | ✅ | Production |
@@ -500,7 +500,7 @@ curl http://localhost:8000/v1/models
 - **Lesson 5:** Build custom APIs
 - **Lesson 6:** Deploy at scale
 
-All have their place! Use the right tool for the job.
+Each approach serves a purpose - choose based on your needs.
 
 ## Troubleshooting
 
