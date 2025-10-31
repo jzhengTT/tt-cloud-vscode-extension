@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.2",
+  "version": "0.0.9",
   "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
@@ -65,18 +65,118 @@
         "command": "tenstorrent.runInference",
         "title": "Run Llama Inference Demo",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installInferenceDeps",
+        "title": "Install Inference Dependencies",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createChatScript",
+        "title": "Create Interactive Chat Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startChatSession",
+        "title": "Start Interactive Chat Session",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createApiServer",
+        "title": "Create API Server Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installFlask",
+        "title": "Install Flask Web Framework",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startApiServer",
+        "title": "Start API Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiBasic",
+        "title": "Test API with Basic Query",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiMultiple",
+        "title": "Test API with Multiple Queries",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createChatScriptDirect",
+        "title": "Create Direct API Chat Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startChatSessionDirect",
+        "title": "Start Direct API Chat Session",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createApiServerDirect",
+        "title": "Create Direct API Server Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startApiServerDirect",
+        "title": "Start Direct API Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiBasicDirect",
+        "title": "Test Direct API (Basic)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testApiMultipleDirect",
+        "title": "Test Direct API (Multiple Queries)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.cloneVllm",
+        "title": "Clone TT vLLM Repository",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installVllm",
+        "title": "Install vLLM",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runVllmOffline",
+        "title": "Run vLLM Offline Inference",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServer",
+        "title": "Start vLLM Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testVllmOpenai",
+        "title": "Test vLLM with OpenAI SDK",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testVllmCurl",
+        "title": "Test vLLM with curl",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
       {
         "id": "tenstorrent.setup",
-        "title": "Get Started with Tenstorrent",
+        "title": "Tenstorrent walkthrough",
         "description": "Set up your Tenstorrent development environment step by step",
         "steps": [
           {
             "id": "hardware-detection",
             "title": "Hardware Detection",
-            "description": "Scan for connected Tenstorrent devices and verify they're properly recognized by the system.\n[Open Instructions](command:tenstorrent.runHardwareDetection)",
+            "description": "Scan for connected Tenstorrent devices and verify they're properly recognized by the system.",
             "media": {
               "markdown": "content/lessons/01-hardware-detection.md"
             },
@@ -87,7 +187,7 @@
           {
             "id": "verify-installation",
             "title": "Verify tt-metal Installation",
-            "description": "Test your tt-metal installation by running a sample operation on your Tenstorrent device.\n[Open Instructions](command:tenstorrent.verifyInstallation)",
+            "description": "Test your tt-metal installation by running a sample operation on your Tenstorrent device.",
             "media": {
               "markdown": "content/lessons/02-verify-installation.md"
             },
@@ -98,12 +198,45 @@
           {
             "id": "download-model",
             "title": "Download Model and Run Inference",
-            "description": "Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.\n[Open Instructions](command:tenstorrent.setHuggingFaceToken)",
+            "description": "Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.",
             "media": {
               "markdown": "content/lessons/03-download-model.md"
             },
             "completionEvents": [
               "onCommand:tenstorrent.runInference"
+            ]
+          },
+          {
+            "id": "interactive-chat",
+            "title": "Interactive Chat with Direct API",
+            "description": "Build a custom chat application using tt-metal's Generator API directly.",
+            "media": {
+              "markdown": "content/lessons/04-interactive-chat.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.startChatSessionDirect"
+            ]
+          },
+          {
+            "id": "api-server",
+            "title": "HTTP API Server with Direct API",
+            "description": "Create a production-ready Flask API with the model loaded in memory.",
+            "media": {
+              "markdown": "content/lessons/05-api-server.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.testApiBasicDirect"
+            ]
+          },
+          {
+            "id": "vllm-production",
+            "title": "Production Inference with vLLM",
+            "description": "Deploy with vLLM - OpenAI-compatible APIs, continuous batching, and enterprise features.",
+            "media": {
+              "markdown": "content/lessons/06-vllm-production.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.startVllmServer"
             ]
           }
         ]
@@ -112,7 +245,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
-    "build": "tsc -p ./",
+    "build": "tsc -p ./ && npm run copy-content",
+    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "compile": "tsc -p ./"
