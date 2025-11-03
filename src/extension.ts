@@ -50,6 +50,7 @@ const terminals = {
   modelDownload: undefined as vscode.Terminal | undefined,
   interactiveChat: undefined as vscode.Terminal | undefined,
   apiServer: undefined as vscode.Terminal | undefined,
+  vllmServer: undefined as vscode.Terminal | undefined,
 };
 
 /**
@@ -89,6 +90,21 @@ function getOrCreateTerminal(
 function runInTerminal(terminal: vscode.Terminal, command: string): void {
   terminal.show();
   terminal.sendText(command);
+}
+
+/**
+ * Checks if the vLLM server is running and accessible on localhost:8000.
+ * Used by chat integration to verify server availability before sending requests.
+ *
+ * @returns Promise<boolean> - true if server is accessible, false otherwise
+ */
+async function checkVllmServerRunning(): Promise<boolean> {
+  try {
+    const response = await fetch('http://localhost:8000/health');
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 
 // ============================================================================
@@ -889,6 +905,206 @@ function testVllmCurl(): void {
 }
 
 // ============================================================================
+// Lesson 7 - VSCode Chat Integration
+// ============================================================================
+
+/**
+ * Command: tenstorrent.startVllmForChat
+ * Starts vLLM server for use with VSCode chat integration.
+ * Checks if server is already running before starting.
+ */
+async function startVllmForChat(): Promise<void> {
+  // Check if server already running
+  const isRunning = await checkVllmServerRunning();
+
+  if (isRunning) {
+    vscode.window.showInformationMessage('✅ vLLM server already running on port 8000!');
+    return;
+  }
+
+  // Start vLLM in background terminal
+  const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
+
+  const command = `cd ~/tt-vllm && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && source $PYTHON_ENV_DIR/bin/activate && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+
+  runInTerminal(terminal, command);
+
+  const selection = await vscode.window.showInformationMessage(
+    '🚀 Starting vLLM server... This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
+    'Show Terminal'
+  );
+
+  if (selection === 'Show Terminal') {
+    terminal.show();
+  }
+}
+
+/**
+ * Command: tenstorrent.enableChatParticipant
+ * Verifies vLLM server is running and confirms chat participant is ready.
+ */
+async function enableChatParticipant(): Promise<void> {
+  // Check if server is running
+  const isRunning = await checkVllmServerRunning();
+
+  if (!isRunning) {
+    const choice = await vscode.window.showWarningMessage(
+      '⚠️ vLLM server not detected on port 8000. Start it first?',
+      'Start Server',
+      'Cancel'
+    );
+
+    if (choice === 'Start Server') {
+      await startVllmForChat();
+    }
+    return;
+  }
+
+  const selection = await vscode.window.showInformationMessage(
+    '✅ Chat participant enabled! Open chat and type "@tenstorrent" to get started.',
+    'Open Chat'
+  );
+
+  if (selection === 'Open Chat') {
+    vscode.commands.executeCommand('workbench.action.chat.open');
+  }
+}
+
+/**
+ * Command: tenstorrent.testChat
+ * Opens the VSCode chat panel with a pre-filled test prompt.
+ */
+async function testChat(): Promise<void> {
+  // Open chat with pre-filled prompt
+  await vscode.commands.executeCommand('workbench.action.chat.open', {
+    query: '@tenstorrent Explain what async/await does in JavaScript'
+  });
+}
+
+/**
+ * Chat Participant Handler
+ * Handles chat requests from the @tenstorrent participant.
+ * Forwards requests to the local vLLM server and streams responses back.
+ */
+async function handleChatRequest(
+  request: vscode.ChatRequest,
+  context: vscode.ChatContext,
+  stream: vscode.ChatResponseStream,
+  token: vscode.CancellationToken
+): Promise<void> {
+  // Check if server is running
+  const isRunning = await checkVllmServerRunning();
+  if (!isRunning) {
+    stream.markdown('⚠️ **vLLM server not running.** Please start it first using the walkthrough (Lesson 7, Step 1).\n\n');
+    stream.markdown('Run the command: `Tenstorrent: Start vLLM Server for Chat`');
+    return;
+  }
+
+  try {
+    // Show progress indicator
+    stream.progress('Thinking on Tenstorrent hardware...');
+
+    // Prepare messages (include chat history for context)
+    const messages: Array<{role: string, content: string}> = [
+      {
+        role: 'system',
+        content: 'You are a helpful coding assistant integrated into VSCode, powered by Tenstorrent hardware. Provide concise, accurate answers focused on programming and software development. When explaining code, be clear and educational.'
+      }
+    ];
+
+    // Add chat history for context
+    for (const msg of context.history) {
+      // Check if it's a user request
+      if ('prompt' in msg && msg.prompt) {
+        messages.push({role: 'user', content: msg.prompt});
+      }
+      // Check if it's an assistant response
+      else if ('response' in msg && msg.response) {
+        // Extract markdown text from response
+        let responseText = '';
+        for (const part of msg.response) {
+          // Only extract markdown parts for simplicity
+          if (part instanceof vscode.MarkdownString) {
+            responseText += part.value;
+          } else if (typeof (part as any).value === 'object' && (part as any).value.value) {
+            // Handle ChatResponseMarkdownPart
+            responseText += (part as any).value.value;
+          }
+        }
+        if (responseText) {
+          messages.push({role: 'assistant', content: responseText});
+        }
+      }
+    }
+
+    // Add current user message
+    messages.push({role: 'user', content: request.prompt});
+
+    // Call vLLM server
+    const response = await fetch('http://localhost:8000/v1/chat/completions', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'meta-llama/Llama-3.1-8B-Instruct',
+        messages,
+        max_tokens: 512,
+        stream: true,
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      stream.markdown(`❌ **Error:** Server returned status ${response.status}\n\nMake sure vLLM server is running properly.`);
+      return;
+    }
+
+    // Stream response back
+    const reader = response.body?.getReader();
+    if (!reader) {
+      stream.markdown('❌ **Error:** Could not read response from server');
+      return;
+    }
+
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+
+      // Check cancellation
+      if (token.isCancellationRequested) {
+        reader.cancel();
+        break;
+      }
+
+      // Parse SSE format (Server-Sent Events)
+      const chunk = decoder.decode(value, {stream: true});
+      const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+
+      for (const line of lines) {
+        if (line.includes('[DONE]')) continue;
+
+        try {
+          const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
+          const content = data.choices?.[0]?.delta?.content;
+
+          if (content) {
+            stream.markdown(content);
+          }
+        } catch (e) {
+          // Skip parse errors (can happen with partial chunks)
+          continue;
+        }
+      }
+    }
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    stream.markdown(`❌ **Error:** ${errorMessage}\n\nMake sure vLLM server is running on port 8000.`);
+  }
+}
+
+// ============================================================================
 // Walkthrough Management
 // ============================================================================
 
@@ -997,10 +1213,25 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.startVllmServer', startVllmServer),
     vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
+
+    // Lesson 7 - VSCode Chat Integration
+    vscode.commands.registerCommand('tenstorrent.startVllmForChat', startVllmForChat),
+    vscode.commands.registerCommand('tenstorrent.enableChatParticipant', enableChatParticipant),
+    vscode.commands.registerCommand('tenstorrent.testChat', testChat),
   ];
 
   // Add all command registrations to subscriptions for proper cleanup
   context.subscriptions.push(...commands);
+
+  // Register chat participant
+  const chatParticipant = vscode.chat.createChatParticipant(
+    'tenstorrent.chat',
+    handleChatRequest
+  );
+
+  chatParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'assets', 'icon.png');
+
+  context.subscriptions.push(chatParticipant);
 
   // Auto-open the walkthrough on first activation
   const hasSeenWalkthrough = context.globalState.get<boolean>('hasSeenWalkthrough', false);
@@ -1030,6 +1261,7 @@ export function deactivate(): void {
   terminals.modelDownload = undefined;
   terminals.interactiveChat = undefined;
   terminals.apiServer = undefined;
+  terminals.vllmServer = undefined;
 
   console.log('Tenstorrent Developer Extension has been deactivated');
 }

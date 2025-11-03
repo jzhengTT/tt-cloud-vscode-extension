@@ -15,6 +15,15 @@
     "*"
   ],
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "tenstorrent.chat",
+        "name": "tenstorrent",
+        "fullName": "Tenstorrent AI",
+        "description": "AI assistant powered by Tenstorrent hardware",
+        "isSticky": true
+      }
+    ],
     "commands": [
       {
         "command": "tenstorrent.openWalkthrough",
@@ -165,6 +174,21 @@
         "command": "tenstorrent.testVllmCurl",
         "title": "Test vLLM with curl",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmForChat",
+        "title": "Start vLLM Server for Chat",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.enableChatParticipant",
+        "title": "Enable VSCode Chat",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testChat",
+        "title": "Test Chat Integration",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -237,6 +261,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.startVllmServer"
+            ]
+          },
+          {
+            "id": "vscode-chat",
+            "title": "VSCode Chat Integration",
+            "description": "Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent hardware.",
+            "media": {
+              "markdown": "content/lessons/07-vscode-chat.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.testChat"
             ]
           }
         ]
