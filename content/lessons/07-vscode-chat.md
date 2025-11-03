@@ -35,9 +35,9 @@ This command will execute:
 
 ```bash
 cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
   export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  source $PYTHON_ENV_DIR/bin/activate && \
   python -m vllm.entrypoints.openai.api_server \
     --model $HF_MODEL \
     --host 0.0.0.0 \
@@ -47,6 +47,7 @@ cd ~/tt-vllm && \
 [🚀 Start vLLM Server](command:tenstorrent.startVllmForChat)
 
 **What this does:**
+- Activates the dedicated vLLM virtual environment
 - Starts vLLM server on port 8000
 - Loads Llama-3.1-8B into memory (takes 2-5 min first time)
 - Keeps running in background terminal

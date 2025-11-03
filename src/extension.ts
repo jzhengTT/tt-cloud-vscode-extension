@@ -826,17 +826,17 @@ function cloneVllm(): void {
 
 /**
  * Command: tenstorrent.installVllm
- * Installs vLLM and dependencies
+ * Creates a dedicated venv and installs vLLM and dependencies
  */
 function installVllm(): void {
   const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
 
-  const command = `cd ~/tt-vllm && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip3 install --upgrade pip && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
+  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    'Installing vLLM. This will take 5-10 minutes. Check terminal for progress.'
+    'Creating venv and installing vLLM. This will take 5-10 minutes. Check terminal for progress.'
   );
 }
 
@@ -847,7 +847,7 @@ function installVllm(): void {
 function runVllmOffline(): void {
   const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
 
-  const command = `cd ~/tt-vllm && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && source $PYTHON_ENV_DIR/bin/activate && python examples/offline_inference_tt.py`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
 
   runInTerminal(terminal, command);
 
@@ -863,7 +863,7 @@ function runVllmOffline(): void {
 function startVllmServer(): void {
   const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
 
-  const command = `cd ~/tt-vllm && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && source $PYTHON_ENV_DIR/bin/activate && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
 
   runInTerminal(terminal, command);
 
@@ -925,7 +925,7 @@ async function startVllmForChat(): Promise<void> {
   // Start vLLM in background terminal
   const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
 
-  const command = `cd ~/tt-vllm && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && source $PYTHON_ENV_DIR/bin/activate && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
 
   runInTerminal(terminal, command);
 

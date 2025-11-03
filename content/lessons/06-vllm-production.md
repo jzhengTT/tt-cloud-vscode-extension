@@ -86,23 +86,29 @@ cd ~ && \
 
 ## Step 2: Setup vLLM Environment
 
-Setup the environment and install vLLM:
+Create a dedicated virtual environment and install vLLM:
 
 ```bash
 cd ~/tt-vllm && \
+  python3 -m venv ~/tt-vllm-venv && \
+  source ~/tt-vllm-venv/bin/activate && \
+  pip install --upgrade pip && \
   export vllm_dir=$(pwd) && \
   source $vllm_dir/tt_metal/setup-metal.sh && \
-  pip3 install --upgrade pip && \
   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 [⚙️ Install vLLM](command:tenstorrent.installVllm)
 
 **What this does:**
-- Sets up environment variables
-- Sources tt-metal setup script
-- Installs vLLM and dependencies
+- Creates a dedicated Python virtual environment at `~/tt-vllm-venv`
+- Activates the venv (isolated from other Python packages)
+- Upgrades pip to the latest version
+- Sources tt-metal setup script for Tenstorrent support
+- Installs vLLM and all dependencies in the venv
 - Takes ~5-10 minutes
+
+**Why a separate venv?** This prevents dependency conflicts between vLLM and other Python environments (like tt-metal's). Each environment stays clean and isolated.
 
 **Note:** This installs vLLM in editable mode (`-e`), so you can modify it if needed.
 
@@ -112,9 +118,9 @@ Test vLLM with a simple offline inference example:
 
 ```bash
 cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
   export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  source $PYTHON_ENV_DIR/bin/activate && \
   python examples/offline_inference_tt.py
 ```
 
@@ -146,9 +152,9 @@ Now start vLLM as an HTTP server with OpenAI-compatible endpoints:
 
 ```bash
 cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
   export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  source $PYTHON_ENV_DIR/bin/activate && \
   python -m vllm.entrypoints.openai.api_server \
     --model $HF_MODEL \
     --host 0.0.0.0 \
@@ -507,8 +513,8 @@ Each approach serves a purpose - choose based on your needs.
 **vLLM server won't start:**
 ```bash
 # Check environment
+source ~/tt-vllm-venv/bin/activate
 source ~/tt-vllm/tt_metal/setup-metal.sh
-source $PYTHON_ENV_DIR/bin/activate
 
 # Verify model path
 echo $HF_MODEL
@@ -516,8 +522,22 @@ echo $HF_MODEL
 
 **Import errors:**
 ```bash
-# Reinstall vLLM
+# Reinstall vLLM in the venv
+source ~/tt-vllm-venv/bin/activate
 cd ~/tt-vllm
+pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+**Virtual environment issues:**
+```bash
+# Recreate the venv if it's corrupted
+rm -rf ~/tt-vllm-venv
+cd ~/tt-vllm
+python3 -m venv ~/tt-vllm-venv
+source ~/tt-vllm-venv/bin/activate
+pip install --upgrade pip
+export vllm_dir=$(pwd)
+source $vllm_dir/tt_metal/setup-metal.sh
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
