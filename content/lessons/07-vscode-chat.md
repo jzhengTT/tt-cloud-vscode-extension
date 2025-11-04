@@ -36,7 +36,7 @@ This command will execute:
 ```bash
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
-  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
+  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python -m vllm.entrypoints.openai.api_server \
     --model $HF_MODEL \
@@ -48,6 +48,7 @@ cd ~/tt-vllm && \
 
 **What this does:**
 - Activates the dedicated vLLM virtual environment
+- Uses local model from `~/models/Llama-3.1-8B-Instruct` (downloaded in Lesson 3)
 - Starts vLLM server on port 8000
 - Loads Llama-3.1-8B into memory (takes 2-5 min first time)
 - Keeps running in background terminal

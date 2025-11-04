@@ -700,7 +700,7 @@ async function startChatSessionDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && export PYTHONPATH=$(pwd) && python3 ~/tt-chat-direct.py`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-chat-direct.py`;
 
   runInTerminal(terminal, command);
 
@@ -759,7 +759,7 @@ async function startApiServerDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server-direct.py --port 8080`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server-direct.py --port 8080`;
 
   runInTerminal(terminal, command);
 
@@ -847,7 +847,7 @@ function installVllm(): void {
 function runVllmOffline(): void {
   const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
 
   runInTerminal(terminal, command);
 
@@ -863,7 +863,7 @@ function runVllmOffline(): void {
 function startVllmServer(): void {
   const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
 
   runInTerminal(terminal, command);
 
@@ -925,7 +925,7 @@ async function startVllmForChat(): Promise<void> {
   // Start vLLM in background terminal
   const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
 
   runInTerminal(terminal, command);
 

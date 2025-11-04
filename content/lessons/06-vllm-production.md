@@ -119,12 +119,14 @@ Test vLLM with a simple offline inference example:
 ```bash
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
-  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
+  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python examples/offline_inference_tt.py
 ```
 
 [🧪 Run Offline Inference](command:tenstorrent.runVllmOffline)
+
+**Note:** We're using the local model path (`~/models/Llama-3.1-8B-Instruct`) that you downloaded in Lesson 3, not the HuggingFace model ID.
 
 **What you'll see:**
 
@@ -153,7 +155,7 @@ Now start vLLM as an HTTP server with OpenAI-compatible endpoints:
 ```bash
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
-  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
+  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python -m vllm.entrypoints.openai.api_server \
     --model $HF_MODEL \
@@ -162,6 +164,8 @@ cd ~/tt-vllm && \
 ```
 
 [🚀 Start vLLM Server](command:tenstorrent.startVllmServer)
+
+**Note:** Using local model path (`~/models/Llama-3.1-8B-Instruct`) from Lesson 3.
 
 **What you'll see:**
 
