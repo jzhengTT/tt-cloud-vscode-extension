@@ -376,13 +376,47 @@ New commands follow this pattern:
 
 Each lesson builds on the previous, maintaining the Generator API understanding while adding capabilities.
 
-### Remaining Implementation
+### Model Format Requirements (IMPORTANT)
 
-See `NEXT_STEPS.md` for complete implementation details. Key tasks:
-1. Add new command functions to `src/extension.ts`
-2. Register commands in `activate()` function
-3. Update `package.json` with new commands and Lesson 6 walkthrough step
-4. Test all lessons in Extension Development Host
+**Two model formats needed:**
+- **Meta native format** (in `original/` subdirectory): Used by Direct API (Lessons 3, 4, 5)
+  - Files: `params.json`, `consolidated.00.pth`, `tokenizer.model`
+  - Downloaded with: `--include "original/*"` (OLD, deprecated)
+- **HuggingFace format** (in root directory): Used by vLLM (Lessons 6, 7)
+  - Files: `config.json`, `model.safetensors`, etc.
+  - Downloaded with: No `--include` filter (downloads everything)
+
+**Current implementation:**
+- Lesson 3 download command now downloads BOTH formats (no `--include` filter)
+- This ensures all subsequent lessons work correctly
+- Total download size: ~16GB (both formats included)
+
+**Model paths:**
+- Direct API uses: `~/models/Llama-3.1-8B-Instruct/original`
+- vLLM uses: `~/models/Llama-3.1-8B-Instruct` (root directory)
+
+### Lessons 6-7: vLLM and VSCode Chat (Implemented)
+
+**Status:** Fully implemented and working
+
+**Key features:**
+1. **Lesson 6:** vLLM production server
+   - Dedicated venv at `~/tt-vllm-venv` to avoid dependency conflicts
+   - Requires `llama-models==0.0.48` package
+   - Uses HuggingFace model format
+   - OpenAI-compatible API
+
+2. **Lesson 7:** VSCode Chat integration
+   - Chat participant: `@tenstorrent`
+   - Connects to local vLLM server on port 8000
+   - Streaming responses via Server-Sent Events
+   - Full chat history context support
+
+**Implementation files:**
+- `content/lessons/06-vllm-production.md` (621 lines)
+- `content/lessons/07-vscode-chat.md` (586 lines)
+- Added chat participant and commands to `src/extension.ts`
+- Updated `package.json` with chat participant definition
 
 ### Key Learnings
 

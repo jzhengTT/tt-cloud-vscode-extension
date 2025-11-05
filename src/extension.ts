@@ -700,7 +700,7 @@ async function startChatSessionDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-chat-direct.py`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-chat-direct.py`;
 
   runInTerminal(terminal, command);
 
@@ -759,7 +759,7 @@ async function startApiServerDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server-direct.py --port 8080`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server-direct.py --port 8080`;
 
   runInTerminal(terminal, command);
 
@@ -831,12 +831,12 @@ function cloneVllm(): void {
 function installVllm(): void {
   const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
 
-  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
+  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install llama-models==0.0.48 && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    'Creating venv and installing vLLM. This will take 5-10 minutes. Check terminal for progress.'
+    'Creating venv and installing vLLM with llama-models. This will take 5-10 minutes. Check terminal for progress.'
   );
 }
 

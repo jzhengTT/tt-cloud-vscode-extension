@@ -1,5 +1,7 @@
 # Production Inference with vLLM
 
+**⚠️ Note:** vLLM requires the HuggingFace model format. If you downloaded the model in Lesson 3 before this update, you may need to re-download to get both Meta and HuggingFace formats. The latest Lesson 3 downloads the complete model with all formats.
+
 Take your AI deployment to the next level with vLLM - a production-grade inference engine that provides OpenAI-compatible APIs, continuous batching, and enterprise features for Tenstorrent hardware.
 
 ## What is vLLM?
@@ -86,7 +88,7 @@ cd ~ && \
 
 ## Step 2: Setup vLLM Environment
 
-Create a dedicated virtual environment and install vLLM:
+Create a dedicated virtual environment and install vLLM with all required dependencies:
 
 ```bash
 cd ~/tt-vllm && \
@@ -95,6 +97,7 @@ cd ~/tt-vllm && \
   pip install --upgrade pip && \
   export vllm_dir=$(pwd) && \
   source $vllm_dir/tt_metal/setup-metal.sh && \
+  pip install llama-models==0.0.48 && \
   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
@@ -105,6 +108,7 @@ cd ~/tt-vllm && \
 - Activates the venv (isolated from other Python packages)
 - Upgrades pip to the latest version
 - Sources tt-metal setup script for Tenstorrent support
+- Installs `llama-models` package (required for Tenstorrent's Llama implementation)
 - Installs vLLM and all dependencies in the venv
 - Takes ~5-10 minutes
 
@@ -126,7 +130,7 @@ cd ~/tt-vllm && \
 
 [🧪 Run Offline Inference](command:tenstorrent.runVllmOffline)
 
-**Note:** We're using the local model path (`~/models/Llama-3.1-8B-Instruct`) that you downloaded in Lesson 3, not the HuggingFace model ID.
+**Note:** We're using the local model path (`~/models/Llama-3.1-8B-Instruct`) that you downloaded in Lesson 3. The root directory contains the HuggingFace format files vLLM expects (`config.json`, `model.safetensors`, etc.).
 
 **What you'll see:**
 
@@ -165,7 +169,7 @@ cd ~/tt-vllm && \
 
 [🚀 Start vLLM Server](command:tenstorrent.startVllmServer)
 
-**Note:** Using local model path (`~/models/Llama-3.1-8B-Instruct`) from Lesson 3.
+**Note:** Using local model path (`~/models/Llama-3.1-8B-Instruct`) from Lesson 3. The root directory contains the HuggingFace format files vLLM needs.
 
 **What you'll see:**
 
@@ -524,7 +528,14 @@ source ~/tt-vllm/tt_metal/setup-metal.sh
 echo $HF_MODEL
 ```
 
-**Import errors:**
+**Import errors (e.g., "No module named 'llama_models'"):**
+```bash
+# Install missing dependency in the venv
+source ~/tt-vllm-venv/bin/activate
+pip install llama-models==0.0.48
+```
+
+**Other import errors:**
 ```bash
 # Reinstall vLLM in the venv
 source ~/tt-vllm-venv/bin/activate
@@ -542,6 +553,7 @@ source ~/tt-vllm-venv/bin/activate
 pip install --upgrade pip
 export vllm_dir=$(pwd)
 source $vllm_dir/tt_metal/setup-metal.sh
+pip install llama-models==0.0.48
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 

@@ -49,7 +49,7 @@ cd ~/tt-vllm && \
 **What this does:**
 - Activates the dedicated vLLM virtual environment
 - Uses local model from `~/models/Llama-3.1-8B-Instruct` (downloaded in Lesson 3)
-- Starts vLLM server on port 8000
+- Starts vLLM server on port 8000 with HuggingFace format
 - Loads Llama-3.1-8B into memory (takes 2-5 min first time)
 - Keeps running in background terminal
 - Ready to handle chat requests at 1-3 sec/query

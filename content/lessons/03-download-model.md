@@ -39,7 +39,7 @@ Download the Llama-3.1-8B-Instruct model to `~/models/Llama-3.1-8B-Instruct`:
 
 ```bash
 mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
-  --include "original/*" --local-dir ~/models/Llama-3.1-8B-Instruct
+  --local-dir ~/models/Llama-3.1-8B-Instruct
 ```
 
 [⬇️ Download Llama 3.1-8B Model](command:tenstorrent.downloadModel)
@@ -47,11 +47,16 @@ mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
 ## What Gets Downloaded
 
 The model includes:
-- Model weights and configuration
-- Tokenizer files
-- Original model files from Meta
+- **HuggingFace format files** - `config.json`, `model.safetensors`, etc. (for vLLM)
+- **Meta original format files** - `params.json`, `consolidated.00.pth`, `tokenizer.model` (in `original/` subdirectory, for Direct API)
+- **Tokenizer files** - Compatible with both formats
+- **Full model weights** - ~16GB total
 
-**Note:** This download is approximately 16GB and may take several minutes depending on your internet connection.
+**Note:** This downloads the complete model with all formats. The download is approximately 16GB and may take several minutes depending on your internet connection.
+
+**Why both formats?**
+- Direct API (Lessons 4-5) uses Meta's native format in `original/` subdirectory
+- vLLM (Lessons 6-7) uses HuggingFace format in the root directory
 
 ## Step 4: Get TT-Metal Repository
 

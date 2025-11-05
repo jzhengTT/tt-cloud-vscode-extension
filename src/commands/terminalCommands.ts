@@ -70,8 +70,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     id: 'download-model',
     name: 'Download Llama Model',
     template:
-      'mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --include "original/*" --local-dir ~/models/Llama-3.1-8B-Instruct',
-    description: 'Creates ~/models directory and downloads Llama-3.1-8B-Instruct model (~16GB)',
+      'mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --local-dir ~/models/Llama-3.1-8B-Instruct',
+    description: 'Creates ~/models directory and downloads Llama-3.1-8B-Instruct model (full model with all formats, ~16GB)',
   },
 
   // Clone TT-Metal
