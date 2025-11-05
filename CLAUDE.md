@@ -460,8 +460,14 @@ Each lesson builds on the previous, maintaining the Generator API understanding 
 **Hardware Target:**
 - N150 (Wormhole) single chip
 - Cloud environment
-- tt-metal commit: 27e3db3f4c6ca007672995d14cfe32157700771f (v0.62.0-rc9)
-- vLLM branch: dev (HEAD)
+- tt-metal: **latest main branch** (must be rebuilt after updates)
+- vLLM branch: **dev (HEAD)**
+
+**⚠️ Version Strategy Change:**
+- Initially tried pinning to tt-metal v0.62.0-rc9 (August 2025)
+- Found that vLLM dev requires latest tt-metal APIs
+- **Solution:** Use latest on both repos (simpler, better tested)
+- **Critical:** Must rebuild tt-metal after git pull with `./build_metal.sh`
 
 **Model Configuration:**
 - Model: Llama-3.1-8B-Instruct
@@ -471,14 +477,22 @@ Each lesson builds on the previous, maintaining the Generator API understanding 
 
 **Required Environment Variables:**
 ```bash
-export MESH_DEVICE=N150              # Target N150 hardware
-export HF_MODEL=~/models/Llama-3.1-8B-Instruct
+export TT_METAL_HOME=~/tt-metal                # Point to tt-metal (required by setup-metal.sh)
+export MESH_DEVICE=N150                        # Target N150 hardware
+export HF_MODEL=~/models/Llama-3.1-8B-Instruct # Model path
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH   # Critical: Find TTLlamaForCausalLM
 ```
 
 **Required vLLM Flags:**
 ```bash
 --max-model-len 65536                # 64K context limit for N150
 ```
+
+**Why TT_METAL_HOME + PYTHONPATH matter:**
+- `TT_METAL_HOME`: setup-metal.sh uses this to set PYTHON_ENV_DIR correctly
+- `PYTHONPATH`: vLLM needs to import `TTLlamaForCausalLM` from tt-metal
+- Without these, you get: "Cannot find model module 'TTLlamaForCausalLM'"
+- The tt-metal directory contains the model implementation in `models/tt_transformers/tt/generator_vllm.py`
 
 **Why This Configuration:**
 1. Llama-3.1-8B officially supported on N150 (per vLLM tt_metal/README.md)
@@ -493,14 +507,65 @@ export HF_MODEL=~/models/Llama-3.1-8B-Instruct
 - Larger models exceed N150 memory capacity
 
 **Commands Updated:**
-- `tenstorrent.runVllmOffline`: Includes MESH_DEVICE=N150 and --max-model-len 65536
-- `tenstorrent.startVllmServer`: Includes MESH_DEVICE=N150 and --max-model-len 65536
-- `tenstorrent.startVllmForChat`: Includes MESH_DEVICE=N150 and --max-model-len 65536
+- `tenstorrent.runVllmOffline`: Includes MESH_DEVICE=N150 and --max_model_len 65536 (underscores)
+- `tenstorrent.startVllmServer`: Includes MESH_DEVICE=N150 and --max-model-len 65536 (hyphens)
+- `tenstorrent.startVllmForChat`: Includes MESH_DEVICE=N150 and --max-model-len 65536 (hyphens)
+- `tenstorrent.installVllm`: Includes all discovered dependencies
+
+**Note:** offline_inference_tt.py uses underscores `--max_model_len`, API server uses hyphens `--max-model-len`
+
+**Complete Dependency List (discovered through testing):**
+```bash
+pip install --upgrade ttnn pytest  # Critical: must upgrade ttnn for v0.62.0-rc9
+pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
+```
 
 **Documentation Updated:**
 - Lesson 6: Added "Hardware Configuration: N150 Golden Path" section
 - Lesson 6: Updated all vLLM commands with N150 configuration
+- Lesson 6: Added ttnn, pytest, and pytz to dependency list
 - All commands now explicitly set MESH_DEVICE=N150 and context limit
+- Troubleshooting section updated with ttnn upgrade instructions
+
+### CRITICAL: vLLM TT Model Registration (2025-11-05)
+
+**Problem Discovered:**
+When users ran `python -m vllm.entrypoints.openai.api_server` directly, they got:
+```
+ValidationError: Cannot find model module. 'TTLlamaForCausalLM' is not a registered model
+WARNING: TTLlamaForCausalLM has no vLLM implementation, falling back to Transformers
+```
+
+**Root Cause:**
+vLLM doesn't automatically know about TT-specific model implementations (TTLlamaForCausalLM, etc.) in the tt-metal repository. These models must be explicitly registered using vLLM's `ModelRegistry.register_model()` API before starting the server.
+
+**Solution:**
+Use `examples/server_example_tt.py` instead of calling the API server directly. This script:
+
+1. Calls `register_tt_models()` which registers all TT models:
+   ```python
+   ModelRegistry.register_model("TTLlamaForCausalLM",
+       "models.tt_transformers.tt.generator_vllm:LlamaForCausalLM")
+   ```
+
+2. Then starts the API server with the correct parameters
+
+**Updated Command (Step 4 in Lesson 6):**
+```bash
+python examples/server_example_tt.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --max_num_seqs 16 \
+    --block_size 64
+```
+
+**Key Insight:**
+The example scripts (`offline_inference_tt.py`, `server_example_tt.py`) all include `register_tt_models()` at the top. This is not optional - without it, vLLM cannot find the TT model implementations even with correct PYTHONPATH and TT_METAL_HOME settings.
+
+**Environment variables still required:**
+- `TT_METAL_HOME=~/tt-metal` - Required by setup-metal.sh
+- `PYTHONPATH=$TT_METAL_HOME` - Allows Python to import from tt-metal
+- `MESH_DEVICE=N150` - Hardware target
+- Must source `~/tt-vllm/tt_metal/setup-metal.sh`
 
 ## File Structure
 

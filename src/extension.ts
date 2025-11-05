@@ -837,6 +837,27 @@ function testApiMultipleDirect(): void {
 // vLLM Commands
 
 /**
+ * Command: tenstorrent.updateTTMetal
+ * Updates and rebuilds TT-Metal to latest main branch
+ */
+async function updateTTMetal(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const ttMetalPath = path.join(homeDir, 'tt-metal');
+
+  const terminal = getOrCreateTerminal('TT-Metal Update', 'apiServer');
+
+  const command = `cd ${ttMetalPath} && git checkout main && git pull origin main && git submodule update --init --recursive && ./build_metal.sh`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔧 Updating and rebuilding TT-Metal. This takes 5-10 minutes. Watch terminal for progress.'
+  );
+}
+
+/**
  * Command: tenstorrent.cloneVllm
  * Clones the TT vLLM repository
  */
@@ -859,44 +880,46 @@ function cloneVllm(): void {
 function installVllm(): void {
   const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
 
-  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48 && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
+  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install --upgrade ttnn pytest && pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48 && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    'Creating venv and installing vLLM with all dependencies. This will take 5-10 minutes. Check terminal for progress.'
+    'Creating venv and installing vLLM with all dependencies (ttnn, pytest, etc). This will take 5-10 minutes. Check terminal for progress.'
   );
 }
 
 /**
  * Command: tenstorrent.runVllmOffline
  * Runs vLLM offline inference example with N150 configuration
+ * Note: Offline script may show 128K context warnings - this is expected
  */
 function runVllmOffline(): void {
   const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py --max-model-len 65536`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    'Running vLLM offline inference on N150. First run takes a few minutes...'
+    'Running vLLM offline inference (may show context length warnings - this is expected). You can skip to API server if preferred.'
   );
 }
 
 /**
  * Command: tenstorrent.startVllmServer
- * Starts the vLLM OpenAI-compatible server with N150 configuration
+ * Starts the vLLM OpenAI-compatible server with N150 configuration.
+ * Uses server_example_tt.py which registers TT models before starting the server.
  */
 function startVllmServer(): void {
   const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000 --max-model-len 65536`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/server_example_tt.py --model ~/models/Llama-3.1-8B-Instruct --max_num_seqs 16 --block_size 64`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '🚀 Starting vLLM OpenAI-compatible server on N150 (port 8000, 64K context). First load takes 2-5 minutes...'
+    '🚀 Starting vLLM server on N150 with TT model registration. First load takes 2-5 minutes...'
   );
 }
 
@@ -951,14 +974,15 @@ async function startVllmForChat(): Promise<void> {
   }
 
   // Start vLLM in background terminal with N150 configuration
+  // Uses server_example_tt.py which registers TT models before starting the server
   const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000 --max-model-len 65536`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/server_example_tt.py --model ~/models/Llama-3.1-8B-Instruct --max_num_seqs 16 --block_size 64`;
 
   runInTerminal(terminal, command);
 
   const selection = await vscode.window.showInformationMessage(
-    '🚀 Starting vLLM server on N150 (64K context)... This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
+    '🚀 Starting vLLM server on N150 with TT model registration... This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
     'Show Terminal'
   );
 
@@ -1295,6 +1319,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testApiMultipleDirect', testApiMultipleDirect),
 
     // Lesson 6 - vLLM
+    vscode.commands.registerCommand('tenstorrent.updateTTMetal', updateTTMetal),
     vscode.commands.registerCommand('tenstorrent.cloneVllm', cloneVllm),
     vscode.commands.registerCommand('tenstorrent.installVllm', installVllm),
     vscode.commands.registerCommand('tenstorrent.runVllmOffline', runVllmOffline),

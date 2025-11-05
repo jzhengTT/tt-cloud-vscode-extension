@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "publisher": "tenstorrent",
   "engines": {
     "vscode": "^1.93.0"
@@ -150,6 +150,11 @@
       {
         "command": "tenstorrent.testApiMultipleDirect",
         "title": "Test Direct API (Multiple Queries)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.updateTTMetal",
+        "title": "Update and Build TT-Metal",
         "category": "Tenstorrent"
       },
       {
