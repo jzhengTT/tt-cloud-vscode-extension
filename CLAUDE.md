@@ -527,6 +527,36 @@ pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
 - All commands now explicitly set MESH_DEVICE=N150 and context limit
 - Troubleshooting section updated with ttnn upgrade instructions
 
+### ✅ WORKING: N150 vLLM Golden Path (2025-11-05)
+
+**Status:** Successfully tested and working on N150 hardware in cloud environment.
+
+**Complete Working Command:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
+```
+
+**Key Success Factors:**
+1. ✅ Custom starter script with `if __name__ == '__main__':` guard (prevents multiprocessing errors)
+2. ✅ Local model path (avoids HuggingFace gated repo authentication)
+3. ✅ TT model registration via `register_tt_models()`
+4. ✅ N150-specific configuration (64K context, appropriate batch size)
+5. ✅ All environment variables set correctly (TT_METAL_HOME, MESH_DEVICE, PYTHONPATH)
+
+**Version:** Extension v0.0.20 includes all fixes and tested configuration.
+
 ### CRITICAL: vLLM TT Model Registration (2025-11-05)
 
 **Problem Discovered:**
