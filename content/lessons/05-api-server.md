@@ -64,17 +64,17 @@ pip install flask
 
 ## Step 2: Create the API Server Script
 
-This command creates `~/tt-api-server-direct.py`:
+This command creates `~/tt-scratchpad/tt-api-server-direct.py`:
 
 ```bash
 # Creates the API server with direct Generator API
-cp template ~/tt-api-server-direct.py && chmod +x ~/tt-api-server-direct.py
+mkdir -p ~/tt-scratchpad && cp template ~/tt-scratchpad/tt-api-server-direct.py && chmod +x ~/tt-scratchpad/tt-api-server-direct.py
 ```
 
 [🌐 Create API Server Script](command:tenstorrent.createApiServerDirect)
 
 **What this does:**
-- Creates `~/tt-api-server-direct.py` with Flask + Generator API
+- Creates `~/tt-scratchpad/tt-api-server-direct.py` with Flask + Generator API
 - **Opens the file in your editor** so you can see the implementation!
 - Makes it executable
 
@@ -92,7 +92,7 @@ Now start the server (this takes 2-5 minutes to load the model):
 cd ~/tt-metal && \
   export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   export PYTHONPATH=$(pwd) && \
-  python3 ~/tt-api-server-direct.py --port 8080
+  python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080
 ```
 
 [🚀 Start API Server (Direct API)](command:tenstorrent.startApiServerDirect)
@@ -320,7 +320,7 @@ fetch('http://localhost:8080/chat', {
 
 ## Understanding the Code
 
-**Open `~/tt-api-server-direct.py` in your editor** (it opened automatically). Key sections:
+**Open `~/tt-scratchpad/tt-api-server-direct.py` in your editor** (it opened automatically). Key sections:
 
 ### Initialization (Lines ~80-135)
 
@@ -488,7 +488,7 @@ The model will unload and cleanup happens automatically.
 
 **Port already in use:**
 ```bash
-python3 ~/tt-api-server-direct.py --port 8081
+python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8081
 ```
 
 **Connection refused:**

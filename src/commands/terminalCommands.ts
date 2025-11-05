@@ -114,8 +114,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   CREATE_CHAT_SCRIPT: {
     id: 'create-chat-script',
     name: 'Create Interactive Chat Script',
-    template: 'cp "{{templatePath}}" ~/tt-chat.py && chmod +x ~/tt-chat.py',
-    description: 'Copies the chat script template to home directory and makes it executable',
+    template: 'mkdir -p ~/tt-scratchpad && cp "{{templatePath}}" ~/tt-scratchpad/tt-chat.py && chmod +x ~/tt-scratchpad/tt-chat.py',
+    description: 'Copies the chat script template to ~/tt-scratchpad and makes it executable',
     variables: ['templatePath'],
   },
 
@@ -123,7 +123,7 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     id: 'start-chat-session',
     name: 'Start Interactive Chat',
     template:
-      'cd "{{ttMetalPath}}" && export LLAMA_DIR="{{modelPath}}" && export PYTHONPATH=$(pwd) && python3 ~/tt-chat.py',
+      'cd "{{ttMetalPath}}" && export LLAMA_DIR="{{modelPath}}" && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat.py',
     description: 'Starts the interactive chat REPL with the Llama model on tt-metal',
     variables: ['ttMetalPath', 'modelPath'],
   },
@@ -132,8 +132,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   CREATE_API_SERVER: {
     id: 'create-api-server',
     name: 'Create API Server Script',
-    template: 'cp "{{templatePath}}" ~/tt-api-server.py && chmod +x ~/tt-api-server.py',
-    description: 'Copies the API server script template to home directory and makes it executable',
+    template: 'mkdir -p ~/tt-scratchpad && cp "{{templatePath}}" ~/tt-scratchpad/tt-api-server.py && chmod +x ~/tt-scratchpad/tt-api-server.py',
+    description: 'Copies the API server script template to ~/tt-scratchpad and makes it executable',
     variables: ['templatePath'],
   },
 
@@ -148,7 +148,7 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     id: 'start-api-server',
     name: 'Start API Server',
     template:
-      'cd "{{ttMetalPath}}" && export LLAMA_DIR="{{modelPath}}" && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server.py --port 8080',
+      'cd "{{ttMetalPath}}" && export LLAMA_DIR="{{modelPath}}" && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server.py --port 8080',
     description: 'Starts the Flask API server with the Llama model on tt-metal',
     variables: ['ttMetalPath', 'modelPath'],
   },

@@ -444,7 +444,7 @@ function installInferenceDeps(): void {
 /**
  * Command: tenstorrent.createChatScript
  *
- * Creates the interactive chat script by copying the template to ~/tt-chat.py
+ * Creates the interactive chat script by copying the template to ~/tt-scratchpad/tt-chat.py
  * This is Step 4-2 in the walkthrough - Interactive Chat
  */
 async function createChatScript(): Promise<void> {
@@ -464,12 +464,19 @@ async function createChatScript(): Promise<void> {
     return;
   }
 
-  // Destination path in user's home directory
+  // Destination path in ~/tt-scratchpad/
   const homeDir = os.homedir();
-  const destPath = path.join(homeDir, 'tt-chat.py');
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  // Create scratchpad directory if it doesn't exist
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-chat.py');
 
   try {
-    // Copy the template to home directory
+    // Copy the template to scratchpad directory
     fs.copyFileSync(templatePath, destPath);
 
     // Make it executable
@@ -520,7 +527,7 @@ async function startChatSession(): Promise<void> {
 /**
  * Command: tenstorrent.createApiServer
  *
- * Creates the API server script by copying the template to ~/tt-api-server.py
+ * Creates the API server script by copying the template to ~/tt-scratchpad/tt-api-server.py
  * This is Step 5a in the walkthrough - HTTP API Server
  */
 async function createApiServer(): Promise<void> {
@@ -540,12 +547,19 @@ async function createApiServer(): Promise<void> {
     return;
   }
 
-  // Destination path in user's home directory
+  // Destination path in ~/tt-scratchpad/
   const homeDir = os.homedir();
-  const destPath = path.join(homeDir, 'tt-api-server.py');
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  // Create scratchpad directory if it doesn't exist
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-api-server.py');
 
   try {
-    // Copy the template to home directory
+    // Copy the template to scratchpad directory
     fs.copyFileSync(templatePath, destPath);
 
     // Make it executable
@@ -670,7 +684,14 @@ async function createChatScriptDirect(): Promise<void> {
   }
 
   const homeDir = os.homedir();
-  const destPath = path.join(homeDir, 'tt-chat-direct.py');
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  // Create scratchpad directory if it doesn't exist
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-chat-direct.py');
 
   try {
     fs.copyFileSync(templatePath, destPath);
@@ -700,7 +721,7 @@ async function startChatSessionDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-chat-direct.py`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat-direct.py`;
 
   runInTerminal(terminal, command);
 
@@ -729,7 +750,14 @@ async function createApiServerDirect(): Promise<void> {
   }
 
   const homeDir = os.homedir();
-  const destPath = path.join(homeDir, 'tt-api-server-direct.py');
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  // Create scratchpad directory if it doesn't exist
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-api-server-direct.py');
 
   try {
     fs.copyFileSync(templatePath, destPath);
@@ -759,7 +787,7 @@ async function startApiServerDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-api-server-direct.py --port 8080`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080`;
 
   runInTerminal(terminal, command);
 
@@ -1105,6 +1133,63 @@ async function handleChatRequest(
 }
 
 // ============================================================================
+// Welcome Page
+// ============================================================================
+
+/**
+ * Command: tenstorrent.showWelcome
+ *
+ * Opens a welcome page in a webview panel with an overview of the extension,
+ * links to all walkthroughs, and quick actions.
+ */
+async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
+  const panel = vscode.window.createWebviewPanel(
+    'tenstorrentWelcome',
+    'Welcome to Tenstorrent',
+    vscode.ViewColumn.One,
+    {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'welcome')]
+    }
+  );
+
+  // Load welcome HTML
+  const fs = await import('fs');
+  const path = await import('path');
+  const welcomePath = path.join(context.extensionPath, 'content', 'welcome', 'welcome.html');
+
+  if (fs.existsSync(welcomePath)) {
+    panel.webview.html = fs.readFileSync(welcomePath, 'utf8');
+  } else {
+    panel.webview.html = '<html><body><h1>Welcome to Tenstorrent</h1><p>Welcome content not found.</p></body></html>';
+  }
+
+  // Handle messages from the webview
+  panel.webview.onDidReceiveMessage(
+    async (message) => {
+      switch (message.command) {
+        case 'openWalkthrough':
+          // Open the main walkthrough at a specific step
+          vscode.commands.executeCommand(
+            'workbench.action.openWalkthrough',
+            {
+              category: 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup',
+              step: message.stepId
+            }
+          );
+          break;
+        case 'executeCommand':
+          // Execute a command by ID
+          vscode.commands.executeCommand(message.commandId);
+          break;
+      }
+    },
+    undefined,
+    context.subscriptions
+  );
+}
+
+// ============================================================================
 // Walkthrough Management
 // ============================================================================
 
@@ -1174,6 +1259,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register all commands (walkthrough management + step commands)
   const commands = [
+    // Welcome page
+    vscode.commands.registerCommand('tenstorrent.showWelcome', () => showWelcome(context)),
+
     // Walkthrough management commands
     vscode.commands.registerCommand('tenstorrent.openWalkthrough', openWalkthrough),
     vscode.commands.registerCommand('tenstorrent.resetProgress', resetProgress),

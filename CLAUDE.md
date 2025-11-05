@@ -31,6 +31,27 @@ To manually open the walkthrough:
 2. Search for "Welcome: Open Walkthrough"
 3. Select "Get Started with Tenstorrent"
 
+Alternatively, open the welcome page:
+1. Open Command Palette
+2. Run "Tenstorrent: Show Welcome Page"
+3. The welcome page provides an overview and links to all walkthroughs
+
+## Working Directory Structure
+
+The extension creates a dedicated directory for all generated scripts and files:
+
+**Scratchpad Directory:** `~/tt-scratchpad/`
+- All Python scripts created from templates are saved here
+- Examples: `tt-chat-direct.py`, `tt-api-server-direct.py`
+- Keeps user workspace organized and scripts easy to find
+- Directory is automatically created when first script is generated
+
+**Benefits:**
+- ✅ Clear separation between extension-generated code and user projects
+- ✅ All scripts in one predictable location
+- ✅ Easy to customize, backup, or delete generated files
+- ✅ No clutter in home directory root
+
 ## Architecture
 
 ### Content-First Design
@@ -436,12 +457,20 @@ tt-vscode-ext-clean/
 │   │   ├── 02-verify-installation.md
 │   │   ├── 03-download-model.md
 │   │   ├── 04-interactive-chat.md
-│   │   └── 05-api-server.md
-│   └── templates/         # Python script templates deployed with extension
-│       ├── tt-chat.py     # Interactive REPL wrapper
-│       └── tt-api-server.py  # Flask HTTP API wrapper
+│   │   ├── 05-api-server.md
+│   │   ├── 06-vllm-production.md
+│   │   └── 07-vscode-chat.md
+│   ├── templates/         # Python script templates deployed with extension
+│   │   ├── tt-chat.py              # Interactive REPL wrapper
+│   │   ├── tt-api-server.py        # Flask HTTP API wrapper
+│   │   ├── tt-chat-direct.py       # Direct Generator API chat
+│   │   └── tt-api-server-direct.py # Direct Generator API server
+│   └── welcome/           # Welcome page content
+│       └── welcome.html   # Welcome page HTML with walkthrough links
 ├── src/
-│   ├── extension.ts       # Main extension code (command handlers only)
+│   ├── extension.ts       # Main extension code (command handlers + webview)
+│   ├── commands/
+│   │   └── terminalCommands.ts  # Terminal command definitions
 │   └── types/
 │       └── lesson.ts      # Legacy type definitions (not currently used)
 ├── vendor/
@@ -449,6 +478,13 @@ tt-vscode-ext-clean/
 ├── package.json           # Extension manifest with walkthrough definitions
 ├── tsconfig.json          # TypeScript configuration
 └── CLAUDE.md             # This file
+```
+
+**Generated Files (User System):**
+```
+~/tt-scratchpad/           # Extension-generated scripts (auto-created)
+├── tt-chat-direct.py      # Direct API chat script
+└── tt-api-server-direct.py # Direct API server script
 ```
 
 ## Migration Notes

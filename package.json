@@ -28,6 +28,11 @@
     ],
     "commands": [
       {
+        "command": "tenstorrent.showWelcome",
+        "title": "Show Welcome Page",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.openWalkthrough",
         "title": "Open Setup Walkthrough",
         "category": "Tenstorrent"
@@ -283,7 +288,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "tsc -p ./ && npm run copy-content",
-    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/",
+    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/welcome dist/content/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "compile": "tsc -p ./"

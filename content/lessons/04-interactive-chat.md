@@ -57,17 +57,17 @@ This lesson requires the same setup as Lesson 3. Make sure you have:
 
 ## Step 1: Create the Direct API Chat Script
 
-This command creates `~/tt-chat-direct.py` - a standalone chat client using the Generator API:
+This command creates `~/tt-scratchpad/tt-chat-direct.py` - a standalone chat client using the Generator API:
 
 ```bash
 # Creates the direct API chat script
-cp template ~/tt-chat-direct.py && chmod +x ~/tt-chat-direct.py
+mkdir -p ~/tt-scratchpad && cp template ~/tt-scratchpad/tt-chat-direct.py && chmod +x ~/tt-scratchpad/tt-chat-direct.py
 ```
 
 [📝 Create Direct API Chat Script](command:tenstorrent.createChatScriptDirect)
 
 **What this does:**
-- Creates `~/tt-chat-direct.py` with full Generator API implementation
+- Creates `~/tt-scratchpad/tt-chat-direct.py` with full Generator API implementation
 - **Opens the file in your editor** so you can see how it works!
 - Makes it executable
 
@@ -85,7 +85,7 @@ Now launch the chat session:
 cd ~/tt-metal && \
   export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
   export PYTHONPATH=$(pwd) && \
-  python3 ~/tt-chat-direct.py
+  python3 ~/tt-scratchpad/tt-chat-direct.py
 ```
 
 [💬 Start Direct API Chat](command:tenstorrent.startChatSessionDirect)
@@ -149,7 +149,7 @@ good at understanding relationships in sequential data like text...
 
 ## Understanding the Code
 
-**Open `~/tt-chat-direct.py` in your editor** (it was opened automatically when you created it). Key sections:
+**Open `~/tt-scratchpad/tt-chat-direct.py` in your editor** (it was opened automatically when you created it). Key sections:
 
 ### Model Loading (Lines ~80-120)
 
