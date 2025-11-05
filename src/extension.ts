@@ -859,44 +859,44 @@ function cloneVllm(): void {
 function installVllm(): void {
   const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
 
-  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install llama-models==0.0.48 && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
+  const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48 && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    'Creating venv and installing vLLM with llama-models. This will take 5-10 minutes. Check terminal for progress.'
+    'Creating venv and installing vLLM with all dependencies. This will take 5-10 minutes. Check terminal for progress.'
   );
 }
 
 /**
  * Command: tenstorrent.runVllmOffline
- * Runs vLLM offline inference example
+ * Runs vLLM offline inference example with N150 configuration
  */
 function runVllmOffline(): void {
   const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py --max-model-len 65536`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    'Running vLLM offline inference. First run takes a few minutes...'
+    'Running vLLM offline inference on N150. First run takes a few minutes...'
   );
 }
 
 /**
  * Command: tenstorrent.startVllmServer
- * Starts the vLLM OpenAI-compatible server
+ * Starts the vLLM OpenAI-compatible server with N150 configuration
  */
 function startVllmServer(): void {
   const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000 --max-model-len 65536`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '🚀 Starting vLLM OpenAI-compatible server on port 8000. First load takes 2-5 minutes...'
+    '🚀 Starting vLLM OpenAI-compatible server on N150 (port 8000, 64K context). First load takes 2-5 minutes...'
   );
 }
 
@@ -950,15 +950,15 @@ async function startVllmForChat(): Promise<void> {
     return;
   }
 
-  // Start vLLM in background terminal
+  // Start vLLM in background terminal with N150 configuration
   const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && source ~/tt-vllm/tt_metal/setup-metal.sh && python -m vllm.entrypoints.openai.api_server --model $HF_MODEL --host 0.0.0.0 --port 8000 --max-model-len 65536`;
 
   runInTerminal(terminal, command);
 
   const selection = await vscode.window.showInformationMessage(
-    '🚀 Starting vLLM server... This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
+    '🚀 Starting vLLM server on N150 (64K context)... This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
     'Show Terminal'
   );
 

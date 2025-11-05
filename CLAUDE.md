@@ -424,7 +424,12 @@ Each lesson builds on the previous, maintaining the Generator API understanding 
 **Key features:**
 1. **Lesson 6:** vLLM production server
    - Dedicated venv at `~/tt-vllm-venv` to avoid dependency conflicts
-   - Requires `llama-models==0.0.48` package
+   - Requires dependencies: `fairscale`, `termcolor`, `loguru`, `blobfile`, `fire`, and `llama-models==0.0.48`
+     - These are optional dependencies of `llama-models` that must be installed separately
+     - `fairscale`: Required for model parallelism in llama3 reference implementation
+     - `termcolor`: Required for colored terminal output in llama3/generation.py
+     - `loguru`: Required by Tenstorrent's tt-metal vision demo code
+     - `blobfile`, `fire`: Additional llama3 requirements
    - Uses HuggingFace model format
    - OpenAI-compatible API
 
@@ -447,6 +452,55 @@ Each lesson builds on the previous, maintaining the Generator API understanding 
 - Opening files in editor is crucial for learning
 - Performance matters - 2-5 min per query is unacceptable for iteration
 - Need clear progression: learn → prototype → production
+
+## N150 Hardware Golden Path (Lesson 6-7)
+
+**Status:** Configured for N150 single-chip cloud deployment
+
+**Hardware Target:**
+- N150 (Wormhole) single chip
+- Cloud environment
+- tt-metal commit: 27e3db3f4c6ca007672995d14cfe32157700771f (v0.62.0-rc9)
+- vLLM branch: dev (HEAD)
+
+**Model Configuration:**
+- Model: Llama-3.1-8B-Instruct
+- Size: 8B parameters (perfect for N150)
+- Tensor Parallelism: Not needed (single chip)
+- Context Length: 64K tokens (N150 limit)
+
+**Required Environment Variables:**
+```bash
+export MESH_DEVICE=N150              # Target N150 hardware
+export HF_MODEL=~/models/Llama-3.1-8B-Instruct
+```
+
+**Required vLLM Flags:**
+```bash
+--max-model-len 65536                # 64K context limit for N150
+```
+
+**Why This Configuration:**
+1. Llama-3.1-8B officially supported on N150 (per vLLM tt_metal/README.md)
+2. Single chip = simpler deployment (no multi-chip tensor parallelism)
+3. Already downloaded in Lesson 3 (no additional downloads)
+4. Compatible with tt-metal v0.62.0 family
+5. Best balance of model capability vs hardware constraints
+
+**Alternative Models (NOT recommended for N150):**
+- Qwen 2.5 7B: Requires N300 (2 chips, TP=2)
+- Llama 3.3 70B: Requires QuietBox (8 chips, TP=8)
+- Larger models exceed N150 memory capacity
+
+**Commands Updated:**
+- `tenstorrent.runVllmOffline`: Includes MESH_DEVICE=N150 and --max-model-len 65536
+- `tenstorrent.startVllmServer`: Includes MESH_DEVICE=N150 and --max-model-len 65536
+- `tenstorrent.startVllmForChat`: Includes MESH_DEVICE=N150 and --max-model-len 65536
+
+**Documentation Updated:**
+- Lesson 6: Added "Hardware Configuration: N150 Golden Path" section
+- Lesson 6: Updated all vLLM commands with N150 configuration
+- All commands now explicitly set MESH_DEVICE=N150 and context limit
 
 ## File Structure
 

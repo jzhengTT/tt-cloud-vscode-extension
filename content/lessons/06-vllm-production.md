@@ -64,10 +64,34 @@ Take your AI deployment to the next level with vLLM - a production-grade inferen
 
 ## Prerequisites
 
-- tt-metal installed and working
+- tt-metal installed and working (commit 27e3db3f4c / v0.62.0-rc9 or compatible)
 - Model downloaded (Llama-3.1-8B-Instruct)
 - Python 3.10+ recommended
 - ~20GB disk space for vLLM installation
+
+## Hardware Configuration: N150 Golden Path
+
+This tutorial is optimized for **N150 (Wormhole) single-chip hardware** in cloud environments.
+
+**Model:** Llama-3.1-8B-Instruct
+- ✅ Officially supported on N150
+- ✅ No tensor parallelism needed (single chip)
+- ✅ Already downloaded in Lesson 3
+- ⚠️ Context limit: 64K tokens (vs 128K on larger hardware)
+
+**Configuration:**
+```bash
+export MESH_DEVICE=N150              # Target N150 hardware
+--max-model-len 65536                # 64K context limit for N150
+```
+
+**Why Llama-3.1-8B?**
+- Perfect size for N150 (8B parameters)
+- Single chip deployment (no complex multi-chip setup)
+- Best compatibility with tt-metal v0.62.0 family
+- Production-ready performance
+
+**Other hardware:** If using N300, T3K, or TG hardware, adjust `MESH_DEVICE` and remove the `--max-model-len` constraint (you can use full 128K context).
 
 ## Step 1: Clone TT vLLM Fork
 
@@ -97,7 +121,7 @@ cd ~/tt-vllm && \
   pip install --upgrade pip && \
   export vllm_dir=$(pwd) && \
   source $vllm_dir/tt_metal/setup-metal.sh && \
-  pip install llama-models==0.0.48 && \
+  pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48 && \
   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
@@ -108,7 +132,8 @@ cd ~/tt-vllm && \
 - Activates the venv (isolated from other Python packages)
 - Upgrades pip to the latest version
 - Sources tt-metal setup script for Tenstorrent support
-- Installs `llama-models` package (required for Tenstorrent's Llama implementation)
+- Installs required dependencies: `fairscale`, `termcolor`, `loguru`, `blobfile`, `fire`
+- Installs `llama-models==0.0.48` package (required for Tenstorrent's Llama implementation)
 - Installs vLLM and all dependencies in the venv
 - Takes ~5-10 minutes
 
@@ -124,13 +149,16 @@ Test vLLM with a simple offline inference example:
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
   export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
+  export MESH_DEVICE=N150 && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python examples/offline_inference_tt.py
+  python examples/offline_inference_tt.py --max-model-len 65536
 ```
 
 [🧪 Run Offline Inference](command:tenstorrent.runVllmOffline)
 
 **Note:** We're using the local model path (`~/models/Llama-3.1-8B-Instruct`) that you downloaded in Lesson 3. The root directory contains the HuggingFace format files vLLM expects (`config.json`, `model.safetensors`, etc.).
+
+**N150 Configuration:** Set `MESH_DEVICE=N150` and `--max-model-len 65536` for single-chip N150 hardware with 64K context limit.
 
 **What you'll see:**
 
@@ -160,16 +188,22 @@ Now start vLLM as an HTTP server with OpenAI-compatible endpoints:
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
   export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
+  export MESH_DEVICE=N150 && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python -m vllm.entrypoints.openai.api_server \
     --model $HF_MODEL \
     --host 0.0.0.0 \
-    --port 8000
+    --port 8000 \
+    --max-model-len 65536
 ```
 
 [🚀 Start vLLM Server](command:tenstorrent.startVllmServer)
 
 **Note:** Using local model path (`~/models/Llama-3.1-8B-Instruct`) from Lesson 3. The root directory contains the HuggingFace format files vLLM needs.
+
+**N150 Configuration:**
+- `MESH_DEVICE=N150` - Targets single-chip N150 hardware
+- `--max-model-len 65536` - N150 supports 64K context max (vs 128K on larger hardware)
 
 **What you'll see:**
 
@@ -528,11 +562,33 @@ source ~/tt-vllm/tt_metal/setup-metal.sh
 echo $HF_MODEL
 ```
 
-**Import errors (e.g., "No module named 'llama_models'"):**
+**Import errors (e.g., "No module named 'llama_models'", "No module named 'fairscale'", "No module named 'loguru'", etc.):**
 ```bash
-# Install missing dependency in the venv
+# Install all required dependencies in the venv
 source ~/tt-vllm-venv/bin/activate
-pip install llama-models==0.0.48
+pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48
+```
+
+**AttributeError: module 'ttnn' has no attribute 'bfloat8_b':**
+This indicates a version mismatch between tt-metal and ttnn. Possible solutions:
+```bash
+# Option 1: Update tt-metal to the latest version
+cd ~/tt-metal
+git pull origin main
+git submodule update --init --recursive
+
+# Option 2: Check tt-vllm compatibility
+cd ~/tt-vllm
+git pull origin dev
+```
+
+**Note:** This error suggests the tt-metal and tt-vllm repositories may be out of sync. Check the Tenstorrent documentation or GitHub issues for compatible versions.
+
+**If you encounter other import errors (e.g., "No module named 'xyz'"):**
+```bash
+# Install the missing package
+source ~/tt-vllm-venv/bin/activate
+pip install <missing-package-name>
 ```
 
 **Other import errors:**
@@ -553,7 +609,7 @@ source ~/tt-vllm-venv/bin/activate
 pip install --upgrade pip
 export vllm_dir=$(pwd)
 source $vllm_dir/tt_metal/setup-metal.sh
-pip install llama-models==0.0.48
+pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
