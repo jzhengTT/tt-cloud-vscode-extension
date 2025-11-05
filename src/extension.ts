@@ -721,7 +721,7 @@ async function startChatSessionDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat-direct.py`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat-direct.py`;
 
   runInTerminal(terminal, command);
 
@@ -787,7 +787,7 @@ async function startApiServerDirect(): Promise<void> {
 
   const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080`;
 
   runInTerminal(terminal, command);
 
@@ -1146,7 +1146,7 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
   const panel = vscode.window.createWebviewPanel(
     'tenstorrentWelcome',
     'Welcome to Tenstorrent',
-    vscode.ViewColumn.One,
+    vscode.ViewColumn.Active,
     {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'welcome')]

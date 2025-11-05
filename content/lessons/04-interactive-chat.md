@@ -83,7 +83,7 @@ Now launch the chat session:
 
 ```bash
 cd ~/tt-metal && \
-  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
+  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
   export PYTHONPATH=$(pwd) && \
   python3 ~/tt-scratchpad/tt-chat-direct.py
 ```

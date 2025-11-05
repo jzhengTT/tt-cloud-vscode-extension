@@ -400,21 +400,22 @@ Each lesson builds on the previous, maintaining the Generator API understanding 
 ### Model Format Requirements (IMPORTANT)
 
 **Two model formats needed:**
-- **Meta native format** (in `original/` subdirectory): Used by Direct API (Lessons 3, 4, 5)
+- **Meta native format** (in `original/` subdirectory): Used by pytest demos (Lesson 3)
   - Files: `params.json`, `consolidated.00.pth`, `tokenizer.model`
-  - Downloaded with: `--include "original/*"` (OLD, deprecated)
-- **HuggingFace format** (in root directory): Used by vLLM (Lessons 6, 7)
+  - Environment variable: `LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original`
+- **HuggingFace format** (in root directory): Used by Direct API and vLLM (Lessons 4-7)
   - Files: `config.json`, `model.safetensors`, etc.
-  - Downloaded with: No `--include` filter (downloads everything)
+  - Environment variable: `HF_MODEL=~/models/Llama-3.1-8B-Instruct`
 
 **Current implementation:**
-- Lesson 3 download command now downloads BOTH formats (no `--include` filter)
+- Lesson 3 download command downloads BOTH formats (no `--include` filter)
 - This ensures all subsequent lessons work correctly
 - Total download size: ~16GB (both formats included)
 
-**Model paths:**
-- Direct API uses: `~/models/Llama-3.1-8B-Instruct/original`
-- vLLM uses: `~/models/Llama-3.1-8B-Instruct` (root directory)
+**Model paths by lesson:**
+- **Lesson 3** (pytest demos): `LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original`
+- **Lessons 4-5** (Direct API): `HF_MODEL=~/models/Llama-3.1-8B-Instruct`
+- **Lessons 6-7** (vLLM): `HF_MODEL=~/models/Llama-3.1-8B-Instruct`
 
 ### Lessons 6-7: vLLM and VSCode Chat (Implemented)
 
