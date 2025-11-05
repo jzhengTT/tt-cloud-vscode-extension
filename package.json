@@ -12,7 +12,9 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "*"
+    "onStartupFinished",
+    "onWalkthrough:tenstorrent.setup",
+    "onLanguageModelTool:tenstorrent-chat"
   ],
   "contributes": {
     "chatParticipants": [
