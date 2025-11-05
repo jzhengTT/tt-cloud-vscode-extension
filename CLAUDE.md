@@ -552,11 +552,21 @@ Use `examples/server_example_tt.py` instead of calling the API server directly. 
 
 **Updated Command (Step 4 in Lesson 6):**
 ```bash
-python examples/server_example_tt.py \
+python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-8B-Instruct \
-    --max_num_seqs 16 \
-    --block_size 64
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-num-seqs 16 \
+    --block-size 64
 ```
+
+**Why a custom starter script?**
+The example scripts validate model names against a hardcoded list and try to download from HuggingFace. Our custom script (`start-vllm-server.py`):
+1. Registers TT models with vLLM (required)
+2. Accepts local model paths without validation
+3. Passes all args directly to the API server
+
+The extension automatically creates this script in `~/tt-scratchpad/` from a template.
 
 **Key Insight:**
 The example scripts (`offline_inference_tt.py`, `server_example_tt.py`) all include `register_tt_models()` at the top. This is not optional - without it, vLLM cannot find the TT model implementations even with correct PYTHONPATH and TT_METAL_HOME settings.
@@ -566,6 +576,8 @@ The example scripts (`offline_inference_tt.py`, `server_example_tt.py`) all incl
 - `PYTHONPATH=$TT_METAL_HOME` - Allows Python to import from tt-metal
 - `MESH_DEVICE=N150` - Hardware target
 - Must source `~/tt-vllm/tt_metal/setup-metal.sh`
+
+**Model path:** Use the local path `~/models/Llama-3.1-8B-Instruct` (not HF model name). The model has HuggingFace format files in the root directory.
 
 ## File Structure
 

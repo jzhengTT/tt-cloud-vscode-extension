@@ -230,26 +230,31 @@ cd ~/tt-vllm && \
   export MESH_DEVICE=N150 && \
   export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python examples/server_example_tt.py \
+  python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-8B-Instruct \
-    --max_num_seqs 16 \
-    --block_size 64
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
 ```
 
 [🚀 Start vLLM Server](command:tenstorrent.startVllmServer)
 
-**Why use `server_example_tt.py`?**
+**Why a custom starter script?**
 
-vLLM needs to register TT-specific models before starting the server. The example script calls `register_tt_models()` which tells vLLM how to find TTLlamaForCausalLM and other TT model implementations in the tt-metal repository.
+vLLM needs to register TT-specific models before starting the server. Our custom script (`~/tt-scratchpad/start-vllm-server.py`) calls `register_tt_models()` which tells vLLM how to find TTLlamaForCausalLM and other TT model implementations in the tt-metal repository. This allows us to use a local model path without the validation checks in the example scripts.
 
-**Note:** Using local model path (`~/models/Llama-3.1-8B-Instruct`) from Lesson 3. The root directory contains the HuggingFace format files vLLM needs.
+**Note:** Using local model path (`~/models/Llama-3.1-8B-Instruct`) from Lesson 3. The extension will create the starter script automatically when you click the button.
 
 **N150 Configuration:**
 - `TT_METAL_HOME=~/tt-metal` - Points to tt-metal installation (required by setup-metal.sh)
 - `MESH_DEVICE=N150` - Targets single-chip N150 hardware
 - `PYTHONPATH=$TT_METAL_HOME` - Required so Python can import TT model classes from tt-metal
-- `--max_num_seqs 16` - Maximum concurrent sequences for N150
-- `--block_size 64` - KV cache block size (suitable for N150)
+- `--model ~/models/Llama-3.1-8B-Instruct` - Local model path (already downloaded in Lesson 3)
+- `--max-model-len 65536` - N150 supports 64K context max (vs 128K on larger hardware)
+- `--max-num-seqs 16` - Maximum concurrent sequences for N150
+- `--block-size 64` - KV cache block size (suitable for N150)
 
 **What you'll see:**
 

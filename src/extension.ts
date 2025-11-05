@@ -909,17 +909,40 @@ function runVllmOffline(): void {
 /**
  * Command: tenstorrent.startVllmServer
  * Starts the vLLM OpenAI-compatible server with N150 configuration.
- * Uses server_example_tt.py which registers TT models before starting the server.
+ * Creates a custom starter script that registers TT models and uses local model path.
  */
-function startVllmServer(): void {
+async function startVllmServer(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  // Create starter script if it doesn't exist
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+  const starterPath = path.join(scratchpadDir, 'start-vllm-server.py');
+
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(starterPath)) {
+    const extensionPath = extensionContext.extensionPath;
+    const templatePath = path.join(extensionPath, 'content', 'templates', 'start-vllm-server.py');
+
+    if (fs.existsSync(templatePath)) {
+      fs.copyFileSync(templatePath, starterPath);
+      fs.chmodSync(starterPath, 0o755);
+    }
+  }
+
   const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/server_example_tt.py --model ~/models/Llama-3.1-8B-Instruct --max_num_seqs 16 --block_size 64`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '🚀 Starting vLLM server on N150 with TT model registration. First load takes 2-5 minutes...'
+    '🚀 Starting vLLM server on N150 with local model. First load takes 2-5 minutes...'
   );
 }
 
@@ -974,10 +997,32 @@ async function startVllmForChat(): Promise<void> {
   }
 
   // Start vLLM in background terminal with N150 configuration
-  // Uses server_example_tt.py which registers TT models before starting the server
+  // Create starter script if it doesn't exist
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+  const starterPath = path.join(scratchpadDir, 'start-vllm-server.py');
+
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(starterPath)) {
+    const extensionPath = extensionContext.extensionPath;
+    const templatePath = path.join(extensionPath, 'content', 'templates', 'start-vllm-server.py');
+
+    if (fs.existsSync(templatePath)) {
+      fs.copyFileSync(templatePath, starterPath);
+      fs.chmodSync(starterPath, 0o755);
+    }
+  }
+
   const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/server_example_tt.py --model ~/models/Llama-3.1-8B-Instruct --max_num_seqs 16 --block_size 64`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
 
   runInTerminal(terminal, command);
 
