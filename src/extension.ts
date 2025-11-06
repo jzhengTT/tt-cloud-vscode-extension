@@ -1589,30 +1589,9 @@ async function generateRetroImage(): Promise<void> {
   // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
   const os = await import('os');
   const path = await import('path');
-  const fs = await import('fs');
   const homeDir = os.homedir();
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
-
-  // Ensure tt-scratchpad exists and add to workspace
-  const scratchpadPath = path.join(homeDir, 'tt-scratchpad');
-  if (!fs.existsSync(scratchpadPath)) {
-    fs.mkdirSync(scratchpadPath, { recursive: true });
-  }
-
-  // Add tt-scratchpad to workspace if not already present
-  const workspaceFolders = vscode.workspace.workspaceFolders || [];
-  const alreadyInWorkspace = workspaceFolders.some(
-    folder => folder.uri.fsPath === scratchpadPath
-  );
-
-  if (!alreadyInWorkspace) {
-    vscode.workspace.updateWorkspaceFolders(
-      workspaceFolders.length,
-      0,
-      { uri: vscode.Uri.file(scratchpadPath), name: 'tt-scratchpad' }
-    );
-  }
 
   const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
 
@@ -1623,6 +1602,7 @@ async function generateRetroImage(): Promise<void> {
   runInTerminal(terminal, command);
 
   // Image will be saved to ~/tt-scratchpad/sd35_1024_1024.png
+  const scratchpadPath = path.join(homeDir, 'tt-scratchpad');
   const imagePath = path.join(scratchpadPath, 'sd35_1024_1024.png');
 
   const message = await vscode.window.showInformationMessage(
@@ -1680,30 +1660,9 @@ async function startInteractiveImageGen(): Promise<void> {
   // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
   const os = await import('os');
   const path = await import('path');
-  const fs = await import('fs');
   const homeDir = os.homedir();
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
-
-  // Ensure tt-scratchpad exists and add to workspace
-  const scratchpadPath = path.join(homeDir, 'tt-scratchpad');
-  if (!fs.existsSync(scratchpadPath)) {
-    fs.mkdirSync(scratchpadPath, { recursive: true });
-  }
-
-  // Add tt-scratchpad to workspace if not already present
-  const workspaceFolders = vscode.workspace.workspaceFolders || [];
-  const alreadyInWorkspace = workspaceFolders.some(
-    folder => folder.uri.fsPath === scratchpadPath
-  );
-
-  if (!alreadyInWorkspace) {
-    vscode.workspace.updateWorkspaceFolders(
-      workspaceFolders.length,
-      0,
-      { uri: vscode.Uri.file(scratchpadPath), name: 'tt-scratchpad' }
-    );
-  }
 
   const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
 
@@ -2009,6 +1968,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Start periodic device status updates
   startStatusUpdateTimer();
+
+  // Create a persistent terminal for user convenience
+  // This terminal stays open and can be reused for any commands
+  const defaultTerminal = vscode.window.createTerminal({
+    name: 'Tenstorrent',
+    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+  });
+  // Don't show it immediately - let user open it when needed
+  context.subscriptions.push(defaultTerminal);
 
   // Auto-open the walkthrough on first activation
   const hasSeenWalkthrough = context.globalState.get<boolean>('hasSeenWalkthrough', false);

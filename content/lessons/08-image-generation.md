@@ -140,7 +140,7 @@ Decoding with VAE...
 Generation time: 12.2 seconds
 ```
 
-The generated image will be saved to `~/tt-scratchpad/sd35_1024_1024.png` and the tt-scratchpad folder will be automatically added to your VSCode workspace for easy access.
+The generated image will be saved to `~/tt-scratchpad/sd35_1024_1024.png`.
 
 ## Step 5: Interactive Mode - Try Your Own Prompts
 
