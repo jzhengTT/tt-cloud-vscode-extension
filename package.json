@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.21",
+  "version": "0.0.25",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -224,6 +224,16 @@
         "command": "tenstorrent.showDeviceActions",
         "title": "Show Device Actions",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.generateRetroImage",
+        "title": "Generate Sample Image with SD 3.5 Large",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startInteractiveImageGen",
+        "title": "Start Interactive SD 3.5 Image Generation",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -307,6 +317,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.testChat"
+            ]
+          },
+          {
+            "id": "image-generation",
+            "title": "Image Generation with SD 3.5 Large",
+            "description": "Generate high-resolution 1024x1024 images using Stable Diffusion 3.5 Large running natively on your Tenstorrent hardware!",
+            "media": {
+              "markdown": "content/lessons/08-image-generation.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.generateRetroImage"
             ]
           }
         ]

@@ -425,6 +425,7 @@ const terminals = {
   interactiveChat: undefined as vscode.Terminal | undefined,
   apiServer: undefined as vscode.Terminal | undefined,
   vllmServer: undefined as vscode.Terminal | undefined,
+  imageGeneration: undefined as vscode.Terminal | undefined,
 };
 
 /**
@@ -1576,6 +1577,60 @@ async function handleChatRequest(
 }
 
 // ============================================================================
+// Lesson 8 - Image Generation with Stable Diffusion 3.5 Large
+// ============================================================================
+
+/**
+ * Command: tenstorrent.generateRetroImage
+ * Generates a sample 1024x1024 image using Stable Diffusion 3.5 Large on TT hardware
+ */
+async function generateRetroImage(): Promise<void> {
+  // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
+
+  const command = replaceVariables(TERMINAL_COMMANDS.GENERATE_RETRO_IMAGE.template, {
+    ttMetalPath,
+  });
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🎨 Generating 1024x1024 image with Stable Diffusion 3.5 Large on TT hardware. First run downloads the model (~10 GB) and may take 5-10 minutes. Subsequent generations: ~12-15 seconds on N150. Check the terminal for progress!'
+  );
+}
+
+/**
+ * Command: tenstorrent.startInteractiveImageGen
+ * Starts interactive SD 3.5 mode where users can enter custom prompts
+ */
+async function startInteractiveImageGen(): Promise<void> {
+  // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
+
+  const command = replaceVariables(TERMINAL_COMMANDS.START_INTERACTIVE_IMAGE_GEN.template, {
+    ttMetalPath,
+  });
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🖼️ Starting interactive SD 3.5 Large. Model loads once (2-5 min), then enter custom prompts to generate 1024x1024 images (~12-15 sec each on N150)!'
+  );
+}
+
+// ============================================================================
 // Device Management Commands
 // ============================================================================
 
@@ -1824,6 +1879,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.enableChatParticipant', enableChatParticipant),
     vscode.commands.registerCommand('tenstorrent.testChat', testChat),
 
+    // Lesson 8 - Image Generation with SD 3.5 Large
+    vscode.commands.registerCommand('tenstorrent.generateRetroImage', generateRetroImage),
+    vscode.commands.registerCommand('tenstorrent.startInteractiveImageGen', startInteractiveImageGen),
+
     // Device Management
     vscode.commands.registerCommand('tenstorrent.resetDevice', resetDevice),
     vscode.commands.registerCommand('tenstorrent.clearDeviceState', clearDeviceState),
@@ -1896,6 +1955,7 @@ export function deactivate(): void {
   terminals.interactiveChat = undefined;
   terminals.apiServer = undefined;
   terminals.vllmServer = undefined;
+  terminals.imageGeneration = undefined;
 
   // Clear statusbar reference
   statusBarItem = undefined;

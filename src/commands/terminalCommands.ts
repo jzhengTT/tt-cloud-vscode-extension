@@ -168,6 +168,25 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
       'echo "Testing Tenstorrent query..." && curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "Tell me about Tenstorrent hardware"}\' && echo "\n\nTesting haiku..." && curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "Write a haiku about AI"}\'',
     description: 'Tests the API server with multiple sequential curl requests',
   },
+
+  // Image Generation (Lesson 8) - Stable Diffusion 3.5 Large
+  GENERATE_RETRO_IMAGE: {
+    id: 'generate-retro-image',
+    name: 'Generate Sample Image with SD 3.5',
+    template:
+      'cd "{{ttMetalPath}}" && export MESH_DEVICE=N150 && export NO_PROMPT=1 && pytest models/experimental/stable_diffusion_35_large/demo.py',
+    description: 'Generates a sample 1024x1024 image using Stable Diffusion 3.5 Large on TT hardware',
+    variables: ['ttMetalPath'],
+  },
+
+  START_INTERACTIVE_IMAGE_GEN: {
+    id: 'start-interactive-image-gen',
+    name: 'Start Interactive SD 3.5 Mode',
+    template:
+      'cd "{{ttMetalPath}}" && export MESH_DEVICE=N150 && export NO_PROMPT=0 && pytest models/experimental/stable_diffusion_35_large/demo.py',
+    description: 'Starts interactive mode where you can enter custom prompts for image generation',
+    variables: ['ttMetalPath'],
+  },
 };
 
 /**
