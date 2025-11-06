@@ -64,49 +64,85 @@ let statusUpdateTimer: NodeJS.Timeout | undefined;
 
 /**
  * Parses tt-smi output to extract device information.
+ * Supports both JSON format (tt-smi -s) and text format.
  *
  * @param output - Raw output from tt-smi command
  * @returns DeviceInfo object with parsed data
  */
 function parseDeviceInfo(output: string): DeviceInfo {
-  const lines = output.split('\n');
-
   let deviceType: string | null = null;
   let firmwareVersion: string | null = null;
   let status: 'healthy' | 'warning' | 'error' | 'unknown' = 'unknown';
 
-  for (const line of lines) {
-    // Parse device type from board type line
-    // Example: "Board Type: N150"
-    if (line.includes('Board Type:')) {
-      const match = line.match(/Board Type:\s*(\S+)/);
-      if (match) {
-        deviceType = match[1];
+  // Check for error indicators first
+  const hasError = output.toLowerCase().includes('error') ||
+                   output.toLowerCase().includes('failed') ||
+                   output.toLowerCase().includes('timeout');
+
+  // Try to parse as JSON first (tt-smi -s format)
+  try {
+    const jsonMatch = output.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const data = JSON.parse(jsonMatch[0]);
+
+      // Extract device info from JSON
+      if (data.device_info && Array.isArray(data.device_info) && data.device_info.length > 0) {
+        const device = data.device_info[0];
+
+        // Get board type (e.g., "n150 L" -> "N150")
+        if (device.board_info && device.board_info.board_type) {
+          const boardType = device.board_info.board_type.toUpperCase();
+          // Extract just the device model (N150, N300, etc.)
+          const match = boardType.match(/([NP]\d+)/);
+          deviceType = match ? match[1] : boardType.split(' ')[0];
+        }
+
+        // Get firmware version
+        if (device.firmwares && device.firmwares.fw_bundle_version) {
+          firmwareVersion = device.firmwares.fw_bundle_version;
+        }
+
+        // Check DRAM and device status
+        if (device.board_info) {
+          const dramStatus = device.board_info.dram_status;
+          if (dramStatus === true || dramStatus === 'true') {
+            status = hasError ? 'warning' : 'healthy';
+          } else {
+            status = 'warning';
+          }
+        } else {
+          status = hasError ? 'error' : 'healthy';
+        }
+      }
+    }
+  } catch (e) {
+    // Not JSON, try text parsing
+    const lines = output.split('\n');
+
+    for (const line of lines) {
+      // Parse device type from board type line
+      // Example: "Board Type: N150" or "board_type": "n150 L"
+      if (line.includes('Board Type:') || line.includes('board_type')) {
+        const match = line.match(/(?:Board Type:|board_type.*?):\s*["\']?([nNpP]\d+)/i);
+        if (match) {
+          deviceType = match[1].toUpperCase();
+        }
+      }
+
+      // Parse firmware version
+      // Example: "FW Version: 18.7.0" or "fw_bundle_version": "18.7.0.0"
+      if (line.includes('FW Version:') || line.includes('fw_bundle_version') || line.includes('Firmware Version:')) {
+        const match = line.match(/(?:FW|Firmware|fw_bundle_version).*?:\s*["\']?(\d+\.\d+\.\d+)/i);
+        if (match) {
+          firmwareVersion = match[1];
+        }
       }
     }
 
-    // Parse firmware version
-    // Example: "FW Version: 18.7.0"
-    if (line.includes('FW Version:') || line.includes('Firmware Version:')) {
-      const match = line.match(/(?:FW|Firmware) Version:\s*(\S+)/);
-      if (match) {
-        firmwareVersion = match[1];
-      }
+    // If we found device info and no errors, mark as healthy
+    if (deviceType) {
+      status = hasError ? 'warning' : 'healthy';
     }
-
-    // Check for error indicators
-    if (line.toLowerCase().includes('error') ||
-        line.toLowerCase().includes('failed') ||
-        line.toLowerCase().includes('timeout')) {
-      status = 'error';
-    }
-  }
-
-  // If we found device info and no errors, mark as healthy
-  if (deviceType && !output.toLowerCase().includes('error')) {
-    status = 'healthy';
-  } else if (deviceType) {
-    status = 'warning';
   }
 
   return {
@@ -120,6 +156,7 @@ function parseDeviceInfo(output: string): DeviceInfo {
 /**
  * Runs tt-smi and updates cached device info.
  * Uses child_process.exec to capture output without showing terminal.
+ * Uses tt-smi -s for structured JSON output.
  *
  * @returns Promise<DeviceInfo> - Updated device information
  */
@@ -129,7 +166,8 @@ async function updateDeviceStatus(): Promise<DeviceInfo> {
   const execAsync = promisify(exec);
 
   try {
-    const { stdout, stderr } = await execAsync('tt-smi', { timeout: 5000 });
+    // Use tt-smi -s for structured JSON output
+    const { stdout, stderr } = await execAsync('tt-smi -s', { timeout: 10000 });
     const output = stdout + stderr;
 
     cachedDeviceInfo = parseDeviceInfo(output);
