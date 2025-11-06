@@ -31,7 +31,7 @@ def setup_model(model_path=None, low_memory=False):
     if not os.path.exists(model_path):
         print(f"Error: Model not found at {model_path}")
         print("Please download the model first using:")
-        print("  huggingface-cli download CompVis/stable-diffusion-v1-4 --local-dir ~/models/stable-diffusion-v1-4")
+        print("  hf download CompVis/stable-diffusion-v1-4 --local-dir ~/models/stable-diffusion-v1-4")
         return None
 
     # Load pipeline

@@ -38,7 +38,7 @@ huggingface-cli login --token "$HF_TOKEN"
 Download the Llama-3.1-8B-Instruct model to `~/models/Llama-3.1-8B-Instruct`:
 
 ```bash
-mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
+mkdir -p ~/models && hf download meta-llama/Llama-3.1-8B-Instruct \
   --local-dir ~/models/Llama-3.1-8B-Instruct
 ```
 

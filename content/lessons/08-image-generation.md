@@ -269,33 +269,46 @@ warm lighting, film photograph, detailed, high quality"
 
 ## Troubleshooting
 
-**Out of memory:**
-```bash
-# Reduce resolution
---width 256 --height 256
+**Device reset between models (optional):**
 
-# Enable more aggressive optimizations
---low-memory
+If you experience issues after running other models (like Llama from earlier lessons), you can reset the device:
+
+```bash
+tt-smi -r
 ```
+
+This clears device state and memory. **Usually not needed** between pytest demos, but useful if:
+- Previous demo crashed or hung
+- You see "out of memory" or device errors
+- Device behaves unexpectedly
+- Switching between very different workloads
+
+Most pytest tests automatically clean up the device, so this is only needed if something went wrong.
 
 **Model download fails:**
 ```bash
 # Check Hugging Face authentication
 huggingface-cli whoami
 
-# Re-download specific files
-huggingface-cli download CompVis/stable-diffusion-v1-4 --local-dir ~/models/stable-diffusion-v1-4
+# Make sure you granted access at HuggingFace
+# Visit: https://huggingface.co/stabilityai/stable-diffusion-3.5-large
 ```
 
-**Slow generation:**
-- Verify tt-metal is properly installed (Lesson 2)
-- Check device is detected: `tt-smi`
-- First generation is slower (model loading), subsequent ones are faster
+**Slow first generation:**
+- First run downloads the model (~10 GB) which takes 5-10 minutes
+- First generation loads model into device (2-5 min)
+- Subsequent generations are much faster (~12-15 sec)
+- This is normal behavior
 
-**Black images:**
-- Some prompts trigger safety filters
-- Try different wording
-- Avoid sensitive content
+**Device hangs or crashes:**
+```bash
+# Reset the device
+tt-smi -r
+
+# If that doesn't work, clear device state completely
+sudo rm -rf /dev/shm/tenstorrent* /dev/shm/tt_*
+tt-smi -r
+```
 
 ## What You Learned
 

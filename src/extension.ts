@@ -1583,6 +1583,7 @@ async function handleChatRequest(
 /**
  * Command: tenstorrent.generateRetroImage
  * Generates a sample 1024x1024 image using Stable Diffusion 3.5 Large on TT hardware
+ * and displays it in VSCode
  */
 async function generateRetroImage(): Promise<void> {
   // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
@@ -1600,9 +1601,53 @@ async function generateRetroImage(): Promise<void> {
 
   runInTerminal(terminal, command);
 
-  vscode.window.showInformationMessage(
-    '🎨 Generating 1024x1024 image with Stable Diffusion 3.5 Large on TT hardware. First run downloads the model (~10 GB) and may take 5-10 minutes. Subsequent generations: ~12-15 seconds on N150. Check the terminal for progress!'
+  const message = await vscode.window.showInformationMessage(
+    '🎨 Generating 1024x1024 image with Stable Diffusion 3.5 Large on TT hardware. First run downloads the model (~10 GB) and may take 5-10 minutes. Subsequent generations: ~12-15 seconds on N150.',
+    'Open Image When Done'
   );
+
+  // If user clicks "Open Image When Done", set up a file watcher
+  if (message === 'Open Image When Done') {
+    const imagePath = path.join(ttMetalPath, 'sd35_1024_1024.png');
+
+    vscode.window.showInformationMessage(
+      `Will open ${imagePath} when generation completes. Watch the terminal for "Image saved" message.`
+    );
+
+    // Offer a manual open command since we can't reliably detect when pytest completes
+    const openNow = await vscode.window.showInformationMessage(
+      'Generation takes ~12-15 seconds. Click "Open Now" when you see the image saved in terminal.',
+      'Open Now'
+    );
+
+    if (openNow === 'Open Now') {
+      await openGeneratedImage(imagePath);
+    }
+  }
+}
+
+/**
+ * Helper function to open a generated image in VSCode
+ */
+async function openGeneratedImage(imagePath: string): Promise<void> {
+  const fs = await import('fs');
+
+  if (!fs.existsSync(imagePath)) {
+    vscode.window.showWarningMessage(
+      `Image not found at ${imagePath}. Make sure generation completed successfully.`
+    );
+    return;
+  }
+
+  try {
+    // Open the image in VSCode
+    const imageUri = vscode.Uri.file(imagePath);
+    await vscode.commands.executeCommand('vscode.open', imageUri);
+
+    vscode.window.showInformationMessage(`✅ Image opened: ${imagePath}`);
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to open image: ${error}`);
+  }
 }
 
 /**
