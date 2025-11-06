@@ -10,6 +10,40 @@
  */
 
 /**
+ * Model configuration type
+ */
+interface ModelConfig {
+  huggingfaceId: string;
+  localDirName: string;
+  displayName: string;
+}
+
+/**
+ * Model Registry
+ * Must match MODEL_REGISTRY in extension.ts
+ */
+const MODEL_REGISTRY: Record<string, ModelConfig> = {
+  'llama-3.1-8b': {
+    huggingfaceId: 'meta-llama/Llama-3.1-8B-Instruct',
+    localDirName: 'Llama-3.1-8B-Instruct',
+    displayName: 'Llama 3.1 8B Instruct',
+  },
+  // Future models can be added here
+} as const;
+
+/**
+ * Default model key
+ */
+const DEFAULT_MODEL_KEY = 'llama-3.1-8b';
+
+/**
+ * Get the default model config
+ */
+function getDefaultModel(): ModelConfig {
+  return MODEL_REGISTRY[DEFAULT_MODEL_KEY];
+}
+
+/**
  * Command template that can include variables to be replaced at runtime
  */
 export interface CommandTemplate {
@@ -69,9 +103,14 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   DOWNLOAD_MODEL: {
     id: 'download-model',
     name: 'Download Llama Model',
-    template:
-      'mkdir -p ~/models && hf download meta-llama/Llama-3.1-8B-Instruct --local-dir ~/models/Llama-3.1-8B-Instruct',
-    description: 'Creates ~/models directory and downloads Llama-3.1-8B-Instruct model (full model with all formats, ~16GB)',
+    template: (() => {
+      const model = getDefaultModel();
+      return `mkdir -p ~/models && hf download ${model.huggingfaceId} --local-dir ~/models/${model.localDirName}`;
+    })(),
+    description: (() => {
+      const model = getDefaultModel();
+      return `Creates ~/models directory and downloads ${model.displayName} model (full model with all formats, ~16GB)`;
+    })(),
   },
 
   // Clone TT-Metal

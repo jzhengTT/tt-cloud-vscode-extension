@@ -38,6 +38,95 @@ const STATE_KEYS = {
   STATUSBAR_ENABLED: 'statusbarEnabled',
 };
 
+/**
+ * Model configuration type
+ */
+interface ModelConfig {
+  /** HuggingFace model ID (used for downloading and API requests) */
+  huggingfaceId: string;
+  /** Local directory name (where model is stored) */
+  localDirName: string;
+  /** Subdirectory for Meta's original format (used by Direct API), if applicable */
+  originalSubdir?: string;
+  /** Display name for UI */
+  displayName: string;
+  /** Model size for user information */
+  size: string;
+  /** Model type (llm, image, etc.) */
+  type: 'llm' | 'image' | 'multimodal';
+}
+
+/**
+ * Model Registry
+ * Extensible registry of all models supported by the extension.
+ * Add new models here to make them available throughout the extension.
+ */
+const MODEL_REGISTRY: Record<string, ModelConfig> = {
+  'llama-3.1-8b': {
+    huggingfaceId: 'meta-llama/Llama-3.1-8B-Instruct',
+    localDirName: 'Llama-3.1-8B-Instruct',
+    originalSubdir: 'original',
+    displayName: 'Llama 3.1 8B Instruct',
+    size: '~16GB',
+    type: 'llm',
+  },
+  // Future models can be added here:
+  // 'llama-3.2-9b': {
+  //   huggingfaceId: 'meta-llama/Llama-3.2-9B-Instruct',
+  //   localDirName: 'Llama-3.2-9B-Instruct',
+  //   originalSubdir: 'original',
+  //   displayName: 'Llama 3.2 9B Instruct',
+  //   size: '~18GB',
+  //   type: 'llm',
+  // },
+  // 'sd-3.5-large': {
+  //   huggingfaceId: 'stabilityai/stable-diffusion-3.5-large',
+  //   localDirName: 'stable-diffusion-3.5-large',
+  //   displayName: 'Stable Diffusion 3.5 Large',
+  //   size: '~10GB',
+  //   type: 'image',
+  // },
+} as const;
+
+/**
+ * Default model key used throughout the extension
+ * Change this to switch the default model for all lessons
+ */
+const DEFAULT_MODEL_KEY = 'llama-3.1-8b';
+
+/**
+ * Helper function to get a model config by key
+ */
+function getModelConfig(modelKey: string = DEFAULT_MODEL_KEY): ModelConfig {
+  const config = MODEL_REGISTRY[modelKey];
+  if (!config) {
+    throw new Error(`Model '${modelKey}' not found in MODEL_REGISTRY. Available models: ${Object.keys(MODEL_REGISTRY).join(', ')}`);
+  }
+  return config;
+}
+
+/**
+ * Helper functions for model paths
+ */
+async function getModelBasePath(modelKey: string = DEFAULT_MODEL_KEY): Promise<string> {
+  const os = await import('os');
+  const path = await import('path');
+  const config = getModelConfig(modelKey);
+  return path.join(os.homedir(), 'models', config.localDirName);
+}
+
+async function getModelOriginalPath(modelKey: string = DEFAULT_MODEL_KEY): Promise<string> {
+  const path = await import('path');
+  const config = getModelConfig(modelKey);
+  const basePath = await getModelBasePath(modelKey);
+
+  if (!config.originalSubdir) {
+    throw new Error(`Model '${modelKey}' does not have an originalSubdir. This model may not support Direct API.`);
+  }
+
+  return path.join(basePath, config.originalSubdir);
+}
+
 // ============================================================================
 // Device Status Monitoring
 // ============================================================================
@@ -267,6 +356,11 @@ async function showDeviceActionsMenu(): Promise<void> {
   }
 
   // Configuration options
+  const autoUpdateEnabled = extensionContext.globalState.get<boolean>(
+    STATE_KEYS.STATUSBAR_ENABLED,
+    false
+  );
+
   items.push(
     {
       label: '$(settings-gear) Configure Update Interval',
@@ -274,8 +368,8 @@ async function showDeviceActionsMenu(): Promise<void> {
       detail: 'Set how often device status is checked automatically',
     },
     {
-      label: cachedDeviceInfo.status !== 'unknown' ? '$(debug-pause) Disable Auto-Update' : '$(debug-start) Enable Auto-Update',
-      description: 'Toggle automatic status checks',
+      label: autoUpdateEnabled ? '$(debug-pause) Disable Auto-Update' : '$(debug-start) Enable Auto-Update',
+      description: autoUpdateEnabled ? 'Currently: ON' : 'Currently: OFF',
       detail: 'Turn periodic device status updates on or off',
     }
   );
@@ -351,7 +445,7 @@ async function configureUpdateInterval(): Promise<void> {
 async function toggleAutoUpdate(): Promise<void> {
   const currentEnabled = extensionContext.globalState.get<boolean>(
     STATE_KEYS.STATUSBAR_ENABLED,
-    true
+    false  // Default is false (disabled)
   );
 
   await extensionContext.globalState.update(
@@ -362,11 +456,11 @@ async function toggleAutoUpdate(): Promise<void> {
   if (!currentEnabled) {
     // Enabling
     startStatusUpdateTimer();
-    vscode.window.showInformationMessage('✓ Auto-update enabled');
+    vscode.window.showInformationMessage('✓ Auto-update enabled. Device status will refresh automatically.');
   } else {
     // Disabling
     stopStatusUpdateTimer();
-    vscode.window.showInformationMessage('Auto-update disabled');
+    vscode.window.showInformationMessage('✓ Auto-update disabled. Click "Refresh Status" to check device manually.');
   }
 }
 
@@ -377,10 +471,10 @@ function startStatusUpdateTimer(): void {
   // Stop existing timer
   stopStatusUpdateTimer();
 
-  // Check if auto-update is enabled
+  // Check if auto-update is enabled (default: false)
   const enabled = extensionContext.globalState.get<boolean>(
     STATE_KEYS.STATUSBAR_ENABLED,
-    true
+    false  // Changed from true to false - auto-polling disabled by default
   );
 
   if (!enabled) return;
@@ -780,8 +874,8 @@ async function runInference(): Promise<void> {
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
-  // Model is downloaded to ~/models/Llama-3.1-8B-Instruct
-  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct', 'original');
+  // Model path using constants
+  const modelPath = await getModelOriginalPath();
 
   const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
 
@@ -881,8 +975,8 @@ async function startChatSession(): Promise<void> {
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
-  // Model is downloaded to ~/models/Llama-3.1-8B-Instruct
-  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct', 'original');
+  // Model path using constants
+  const modelPath = await getModelOriginalPath();
 
   const terminal = getOrCreateTerminal('Interactive Chat', 'interactiveChat');
 
@@ -981,8 +1075,8 @@ async function startApiServer(): Promise<void> {
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
-  // Model is downloaded to ~/models/Llama-3.1-8B-Instruct
-  const modelPath = path.join(homeDir, 'models', 'Llama-3.1-8B-Instruct', 'original');
+  // Model path using constants
+  const modelPath = await getModelOriginalPath();
 
   const terminal = getOrCreateTerminal('API Server', 'apiServer');
 
@@ -1093,10 +1187,11 @@ async function startChatSessionDirect(): Promise<void> {
   const path = await import('path');
   const homeDir = os.homedir();
   const ttMetalPath = path.join(homeDir, 'tt-metal');
+  const modelPath = await getModelBasePath();
 
   const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat-direct.py`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=${modelPath} && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat-direct.py`;
 
   runInTerminal(terminal, command);
 
@@ -1159,10 +1254,11 @@ async function startApiServerDirect(): Promise<void> {
   const path = await import('path');
   const homeDir = os.homedir();
   const ttMetalPath = path.join(homeDir, 'tt-metal');
+  const modelPath = await getModelBasePath();
 
   const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
 
-  const command = `cd ${ttMetalPath} && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080`;
+  const command = `cd ${ttMetalPath} && export HF_MODEL=${modelPath} && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080`;
 
   runInTerminal(terminal, command);
 
@@ -1269,10 +1365,11 @@ function installVllm(): void {
  * Runs vLLM offline inference example with N150 configuration
  * Note: Offline script may show 128K context warnings - this is expected
  */
-function runVllmOffline(): void {
+async function runVllmOffline(): Promise<void> {
+  const modelPath = await getModelBasePath();
   const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export HF_MODEL=~/models/Llama-3.1-8B-Instruct && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export HF_MODEL=${modelPath} && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
 
   runInTerminal(terminal, command);
 
@@ -1310,9 +1407,10 @@ async function startVllmServer(): Promise<void> {
     }
   }
 
+  const modelPath = await getModelBasePath();
   const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
 
   runInTerminal(terminal, command);
 
@@ -1327,8 +1425,9 @@ async function startVllmServer(): Promise<void> {
  */
 function testVllmOpenai(): void {
   const terminal = getOrCreateTerminal('vLLM Test', 'apiServer');
+  const modelConfig = getModelConfig(DEFAULT_MODEL_KEY);
 
-  const command = `python3 -c "from openai import OpenAI; client = OpenAI(base_url='http://localhost:8000/v1', api_key='dummy'); response = client.chat.completions.create(model='meta-llama/Llama-3.1-8B-Instruct', messages=[{'role': 'user', 'content': 'What is machine learning?'}], max_tokens=128); print(response.choices[0].message.content)"`;
+  const command = `python3 -c "from openai import OpenAI; client = OpenAI(base_url='http://localhost:8000/v1', api_key='dummy'); response = client.chat.completions.create(model='${modelConfig.huggingfaceId}', messages=[{'role': 'user', 'content': 'What is machine learning?'}], max_tokens=128); print(response.choices[0].message.content)"`;
 
   runInTerminal(terminal, command);
 
@@ -1343,8 +1442,9 @@ function testVllmOpenai(): void {
  */
 function testVllmCurl(): void {
   const terminal = getOrCreateTerminal('vLLM Test', 'apiServer');
+  const modelConfig = getModelConfig(DEFAULT_MODEL_KEY);
 
-  const command = `curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Explain neural networks"}], "max_tokens": 128}'`;
+  const command = `curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "${modelConfig.huggingfaceId}", "messages": [{"role": "user", "content": "Explain neural networks"}], "max_tokens": 128}'`;
 
   runInTerminal(terminal, command);
 
@@ -1395,9 +1495,10 @@ async function startVllmForChat(): Promise<void> {
     }
   }
 
+  const modelPath = await getModelBasePath();
   const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
 
   runInTerminal(terminal, command);
 
@@ -1513,11 +1614,12 @@ async function handleChatRequest(
     messages.push({role: 'user', content: request.prompt});
 
     // Call vLLM server
+    const modelConfig = getModelConfig(DEFAULT_MODEL_KEY);
     const response = await fetch('http://localhost:8000/v1/chat/completions', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        model: 'meta-llama/Llama-3.1-8B-Instruct',
+        model: modelConfig.huggingfaceId,
         messages,
         max_tokens: 512,
         stream: true,
@@ -1966,7 +2068,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.showDeviceActions', showDeviceActionsMenu)
   );
 
-  // Start periodic device status updates
+  // Run initial device status check (but don't start auto-polling)
+  updateDeviceStatus();
+
+  // Start periodic updates only if enabled (default: disabled)
   startStatusUpdateTimer();
 
   // Create a persistent terminal for user convenience
