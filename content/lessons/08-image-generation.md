@@ -114,11 +114,13 @@ export MESH_DEVICE=N150
 Run the Stable Diffusion 3.5 demo with a sample prompt:
 
 ```bash
-cd ~/tt-metal
+mkdir -p ~/tt-scratchpad
+cd ~/tt-scratchpad
+export PYTHONPATH=~/tt-metal:$PYTHONPATH
 export MESH_DEVICE=N150
 
 # Run with default prompt
-pytest models/experimental/stable_diffusion_35_large/demo.py
+pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
 ```
 
 [🎨 Generate Sample Image](command:tenstorrent.generateRetroImage)
@@ -138,18 +140,20 @@ Decoding with VAE...
 Generation time: 12.2 seconds
 ```
 
-The generated image will be saved as `sd35_1024_1024.png` in your current directory.
+The generated image will be saved to `~/tt-scratchpad/sd35_1024_1024.png` and the tt-scratchpad folder will be automatically added to your VSCode workspace for easy access.
 
 ## Step 5: Interactive Mode - Try Your Own Prompts
 
 Run in interactive mode to generate multiple images with custom prompts:
 
 ```bash
-cd ~/tt-metal
+mkdir -p ~/tt-scratchpad
+cd ~/tt-scratchpad
+export PYTHONPATH=~/tt-metal:$PYTHONPATH
 export MESH_DEVICE=N150
 
 # Run interactive mode
-pytest models/experimental/stable_diffusion_35_large/demo.py
+pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
 ```
 
 [🖼️ Start Interactive Image Generation](command:tenstorrent.startInteractiveImageGen)
@@ -160,7 +164,7 @@ pytest models/experimental/stable_diffusion_35_large/demo.py
 Enter the input prompt, or q to exit: If Tenstorrent were a company in the 1960s and 1970s, retro corporate office, vintage computers, orange and brown color scheme
 ```
 
-The model will generate a new image for each prompt. Type `q` to exit.
+The model will generate a new image for each prompt and save it to `~/tt-scratchpad/sd35_1024_1024.png`. Type `q` to exit.
 
 **Example prompts to try:**
 

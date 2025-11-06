@@ -174,8 +174,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     id: 'generate-retro-image',
     name: 'Generate Sample Image with SD 3.5',
     template:
-      'cd "{{ttMetalPath}}" && export MESH_DEVICE=N150 && export NO_PROMPT=1 && pytest models/experimental/stable_diffusion_35_large/demo.py',
-    description: 'Generates a sample 1024x1024 image using Stable Diffusion 3.5 Large on TT hardware',
+      'mkdir -p ~/tt-scratchpad && cd ~/tt-scratchpad && export PYTHONPATH="{{ttMetalPath}}":$PYTHONPATH && export MESH_DEVICE=N150 && export NO_PROMPT=1 && pytest "{{ttMetalPath}}"/models/experimental/stable_diffusion_35_large/demo.py',
+    description: 'Generates a sample 1024x1024 image using Stable Diffusion 3.5 Large on TT hardware, saves to ~/tt-scratchpad',
     variables: ['ttMetalPath'],
   },
 
@@ -183,8 +183,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     id: 'start-interactive-image-gen',
     name: 'Start Interactive SD 3.5 Mode',
     template:
-      'cd "{{ttMetalPath}}" && export MESH_DEVICE=N150 && export NO_PROMPT=0 && pytest models/experimental/stable_diffusion_35_large/demo.py',
-    description: 'Starts interactive mode where you can enter custom prompts for image generation',
+      'mkdir -p ~/tt-scratchpad && cd ~/tt-scratchpad && export PYTHONPATH="{{ttMetalPath}}":$PYTHONPATH && export MESH_DEVICE=N150 && export NO_PROMPT=0 && pytest "{{ttMetalPath}}"/models/experimental/stable_diffusion_35_large/demo.py',
+    description: 'Starts interactive mode where you can enter custom prompts for image generation, saves to ~/tt-scratchpad',
     variables: ['ttMetalPath'],
   },
 };

@@ -1589,9 +1589,30 @@ async function generateRetroImage(): Promise<void> {
   // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
   const os = await import('os');
   const path = await import('path');
+  const fs = await import('fs');
   const homeDir = os.homedir();
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  // Ensure tt-scratchpad exists and add to workspace
+  const scratchpadPath = path.join(homeDir, 'tt-scratchpad');
+  if (!fs.existsSync(scratchpadPath)) {
+    fs.mkdirSync(scratchpadPath, { recursive: true });
+  }
+
+  // Add tt-scratchpad to workspace if not already present
+  const workspaceFolders = vscode.workspace.workspaceFolders || [];
+  const alreadyInWorkspace = workspaceFolders.some(
+    folder => folder.uri.fsPath === scratchpadPath
+  );
+
+  if (!alreadyInWorkspace) {
+    vscode.workspace.updateWorkspaceFolders(
+      workspaceFolders.length,
+      0,
+      { uri: vscode.Uri.file(scratchpadPath), name: 'tt-scratchpad' }
+    );
+  }
 
   const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
 
@@ -1601,15 +1622,16 @@ async function generateRetroImage(): Promise<void> {
 
   runInTerminal(terminal, command);
 
+  // Image will be saved to ~/tt-scratchpad/sd35_1024_1024.png
+  const imagePath = path.join(scratchpadPath, 'sd35_1024_1024.png');
+
   const message = await vscode.window.showInformationMessage(
-    '🎨 Generating 1024x1024 image with Stable Diffusion 3.5 Large on TT hardware. First run downloads the model (~10 GB) and may take 5-10 minutes. Subsequent generations: ~12-15 seconds on N150.',
+    '🎨 Generating 1024x1024 image with Stable Diffusion 3.5 Large on TT hardware. Image will be saved to ~/tt-scratchpad/sd35_1024_1024.png. First run downloads the model (~10 GB) and may take 5-10 minutes. Subsequent generations: ~12-15 seconds on N150.',
     'Open Image When Done'
   );
 
   // If user clicks "Open Image When Done", set up a file watcher
   if (message === 'Open Image When Done') {
-    const imagePath = path.join(ttMetalPath, 'sd35_1024_1024.png');
-
     vscode.window.showInformationMessage(
       `Will open ${imagePath} when generation completes. Watch the terminal for "Image saved" message.`
     );
@@ -1658,9 +1680,30 @@ async function startInteractiveImageGen(): Promise<void> {
   // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
   const os = await import('os');
   const path = await import('path');
+  const fs = await import('fs');
   const homeDir = os.homedir();
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  // Ensure tt-scratchpad exists and add to workspace
+  const scratchpadPath = path.join(homeDir, 'tt-scratchpad');
+  if (!fs.existsSync(scratchpadPath)) {
+    fs.mkdirSync(scratchpadPath, { recursive: true });
+  }
+
+  // Add tt-scratchpad to workspace if not already present
+  const workspaceFolders = vscode.workspace.workspaceFolders || [];
+  const alreadyInWorkspace = workspaceFolders.some(
+    folder => folder.uri.fsPath === scratchpadPath
+  );
+
+  if (!alreadyInWorkspace) {
+    vscode.workspace.updateWorkspaceFolders(
+      workspaceFolders.length,
+      0,
+      { uri: vscode.Uri.file(scratchpadPath), name: 'tt-scratchpad' }
+    );
+  }
 
   const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
 
@@ -1671,7 +1714,7 @@ async function startInteractiveImageGen(): Promise<void> {
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '🖼️ Starting interactive SD 3.5 Large. Model loads once (2-5 min), then enter custom prompts to generate 1024x1024 images (~12-15 sec each on N150)!'
+    '🖼️ Starting interactive SD 3.5 Large. Model loads once (2-5 min), then enter custom prompts to generate 1024x1024 images (~12-15 sec each on N150)! Images will be saved to ~/tt-scratchpad/sd35_1024_1024.png'
   );
 }
 
