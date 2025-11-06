@@ -28,7 +28,7 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     localDirName: 'Llama-3.1-8B-Instruct',
     displayName: 'Llama 3.1 8B Instruct',
   },
-  // Future models can be added here
+  // Future models can be added here as they become compatible with tt-metal
 } as const;
 
 /**
@@ -225,6 +225,28 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
       'mkdir -p ~/tt-scratchpad && cd ~/tt-scratchpad && export PYTHONPATH="{{ttMetalPath}}":$PYTHONPATH && export MESH_DEVICE=N150 && export NO_PROMPT=0 && pytest "{{ttMetalPath}}"/models/experimental/stable_diffusion_35_large/demo.py',
     description: 'Starts interactive mode where you can enter custom prompts for image generation, saves to ~/tt-scratchpad',
     variables: ['ttMetalPath'],
+  },
+
+  // Coding Assistant with Prompt Engineering (Lesson 9)
+  VERIFY_CODING_MODEL: {
+    id: 'verify-coding-model',
+    name: 'Verify Llama 3.1 8B',
+    template: 'ls -lh ~/models/Llama-3.1-8B-Instruct/original/',
+    description: 'Verifies Llama 3.1 8B model is downloaded (should be from Lesson 3)',
+  },
+
+  CREATE_CODING_ASSISTANT_SCRIPT: {
+    id: 'create-coding-assistant-script',
+    name: 'Create Coding Assistant Script',
+    template: 'mkdir -p ~/tt-scratchpad',
+    description: 'Creates the coding assistant script with prompt engineering in ~/tt-scratchpad',
+  },
+
+  START_CODING_ASSISTANT: {
+    id: 'start-coding-assistant',
+    name: 'Start Coding Assistant',
+    template: 'cd ~/tt-metal && export LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-coding-assistant.py',
+    description: 'Starts interactive CLI coding assistant with Llama 3.1 8B using Direct API and prompt engineering',
   },
 };
 

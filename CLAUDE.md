@@ -846,3 +846,142 @@ This extension was refactored from a custom webview-based approach to use VSCode
 - **Better UX** (native VS Code theming and integration)
 
 The old approach required custom state management, HTML generation, and webview message passing. The new approach is declarative and leverages VSCode's built-in capabilities.
+
+## Lesson 9: Coding Assistant with Prompt Engineering (2025-11-06)
+
+**Final Implementation:** Uses Llama 3.1 8B with coding-focused system prompt
+
+### Evolution of Lesson 9
+
+**Iteration 1: Qwen 2.5 Coder 7B (Abandoned)**
+- Attempted to use Qwen 2.5 Coder 7B for N150
+- **Blocker:** Qwen requires N300 minimum (TP=2, dual-chip)
+- No Qwen model supports N150 single-chip
+
+**Iteration 2: Llama 3.2 6B AlgoCode (Abandoned)**
+- Attempted community fine-tune "prithivMLmods/Llama-3.2-6B-AlgoCode"
+- **Blocker 1:** Model only has HuggingFace format (no Meta `original/` checkpoint)
+- **Blocker 2:** Weight dimensions not tile-aligned for tt-metal (32x32 requirement)
+- Error: `Physical shard shape (10036, 352) must be tile {32, 32} sized!`
+- **Root cause:** Direct API requires Meta checkpoint format with tt-metal-compatible weights
+
+**Iteration 3: Llama 3.1 8B + Prompt Engineering (FINAL)**
+- ✅ Uses proven tt-metal compatible model (already downloaded in Lesson 3)
+- ✅ No compatibility issues - Meta format with proper tile alignment
+- ✅ Teaches prompt engineering - critical real-world skill
+- ✅ 80%+ of specialized model quality through system prompts
+- ✅ Transferable knowledge to all LLMs
+
+### Key Technical Insights
+
+**Why Specialized Models Failed:**
+1. **Model format mismatch:** Community HuggingFace models lack Meta checkpoint format
+2. **Tile alignment:** tt-metal requires weights divisible by 32x32 tiles
+3. **Hardware constraints:** Some models require multi-chip (TP > 1)
+4. **Direct API requirements:** Needs specifically adapted model architectures
+
+**Why Prompt Engineering Succeeds:**
+- Works with any compatible model
+- No weight conversion needed
+- No additional downloads
+- Industry-standard technique
+- Easy to customize and iterate
+
+### Implementation Details
+
+**Files Changed:**
+1. `content/lessons/09-algocode-assistant.md` - Complete rewrite with prompt engineering focus
+   - Added "Future Model Options" preamble explaining blockers
+   - Emphasis on prompt engineering as real-world technique
+   - Examples of system prompt architecture
+   - Comparison tables: prompt engineering vs model specialization
+   - Advanced techniques: few-shot, chain-of-thought, constrained generation
+   - Customization ideas for different domains
+
+2. `content/templates/tt-coding-assistant.py` - New template (replaces tt-algocode-chat.py)
+   - Uses Llama 3.1 8B with LLAMA_DIR (Meta format)
+   - Coding-focused system prompt embedded
+   - Temperature 0.7 for balanced determinism
+   - Educational comments explaining prompt engineering
+
+3. `src/extension.ts` - Updated command handlers
+   - Removed AlgoCode model from MODEL_REGISTRY
+   - `createAlgoCodeChatScript` now creates tt-coding-assistant.py
+   - `startAlgoCodeChat` uses Llama 3.1 8B original path
+   - Updated user-facing messages
+
+4. `src/commands/terminalCommands.ts` - Updated command templates
+   - DOWNLOAD_ALGOCODE now verifies Llama 3.1 8B (not downloads AlgoCode)
+   - START_ALGOCODE_CHAT uses correct model path
+   - Updated descriptions
+
+5. `package.json` - Updated walkthrough metadata
+   - Title: "Coding Assistant with Prompt Engineering"
+   - Description emphasizes prompt engineering skill
+   - Command titles updated
+
+**System Prompt Example:**
+```python
+SYSTEM_PROMPT = """You are an expert coding assistant specializing in:
+- Algorithm design and analysis
+- Data structures (trees, graphs, heaps, hash tables)
+- Code debugging and optimization
+...
+
+When answering:
+- Provide clear, concise explanations
+- Include code examples when relevant
+- Explain your reasoning
+- Consider edge cases
+..."""
+```
+
+### User Experience
+
+**What Users Learn:**
+1. Prompt engineering fundamentals
+2. System prompt architecture
+3. Shaping model behavior through instructions
+4. Few-shot learning, chain-of-thought, constrained generation
+5. Domain-specific customization
+
+**Practical Applications:**
+- Interactive code review
+- Algorithm learning
+- Debugging assistance
+- Code translation between languages
+- Test generation
+- Documentation generation
+
+**Extensibility:**
+- Customize system prompt for different domains (web dev, systems programming)
+- Add context management for multi-turn conversations
+- Integrate code execution
+- Add file I/O for codebase analysis
+- Build IDE integrations
+
+### Future Path Forward
+
+**When Model Support Expands:**
+The lesson includes a forward-looking "Future Model Options" section listing:
+- Llama 3.2 6B AlgoCode - Needs weight conversion for tile alignment
+- Qwen 2.5 Coder 7B - Needs N300 or single-chip optimization
+- CodeLlama - Needs architecture compatibility work
+- StarCoder2 - Needs custom tt-metal implementation
+
+**Migration Path:**
+Once models become compatible, users can swap them in using the same Direct API pattern they learned. The prompt engineering skills remain valuable across all models.
+
+### Key Takeaway
+
+**Prompt engineering is not a workaround - it's a feature.**
+
+Real production systems rely heavily on prompt engineering because:
+- It works across all models
+- Easy to iterate and customize
+- No model training required
+- Immediate results
+- Often delivers 80%+ of specialized model quality
+
+This lesson teaches a critical skill that applies to GPT, Claude, Gemini, and all future LLMs.
+

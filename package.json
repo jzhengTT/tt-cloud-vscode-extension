@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.28",
+  "version": "0.0.31",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -234,6 +234,21 @@
         "command": "tenstorrent.startInteractiveImageGen",
         "title": "Start Interactive SD 3.5 Image Generation",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.verifyCodingModel",
+        "title": "Verify Llama 3.1 8B Model",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createCodingAssistantScript",
+        "title": "Create Coding Assistant Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startCodingAssistant",
+        "title": "Start Coding Assistant",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -328,6 +343,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.generateRetroImage"
+            ]
+          },
+          {
+            "id": "coding-assistant",
+            "title": "Coding Assistant with Prompt Engineering",
+            "description": "Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn how to shape model behavior through system prompts - a critical real-world skill!",
+            "media": {
+              "markdown": "content/lessons/09-coding-assistant.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.startCodingAssistant"
             ]
           }
         ]

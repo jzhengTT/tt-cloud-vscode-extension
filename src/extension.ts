@@ -70,7 +70,7 @@ const MODEL_REGISTRY: Record<string, ModelConfig> = {
     size: '~16GB',
     type: 'llm',
   },
-  // Future models can be added here:
+  // Future models can be added here as they become compatible with tt-metal:
   // 'llama-3.2-9b': {
   //   huggingfaceId: 'meta-llama/Llama-3.2-9B-Instruct',
   //   localDirName: 'Llama-3.2-9B-Instruct',
@@ -1780,6 +1780,95 @@ async function startInteractiveImageGen(): Promise<void> {
 }
 
 // ============================================================================
+// Lesson 9 - Coding Assistant with Prompt Engineering
+// ============================================================================
+
+/**
+ * Command: tenstorrent.verifyCodingModel
+ * Verifies Llama 3.1 8B model is available for coding assistant
+ */
+function verifyCodingModel(): void {
+  const terminal = getOrCreateTerminal('Coding Assistant Setup', 'modelDownload');
+  const command = TERMINAL_COMMANDS.VERIFY_CODING_MODEL.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔍 Checking for Llama 3.1 8B model. Should be installed from Lesson 3.'
+  );
+}
+
+/**
+ * Command: tenstorrent.createCodingAssistantScript
+ * Creates the coding assistant CLI script and opens it in editor
+ */
+async function createCodingAssistantScript(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-coding-assistant.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  // Create scratchpad directory if it doesn't exist
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-coding-assistant.py');
+
+  try {
+    fs.copyFileSync(templatePath, destPath);
+    fs.chmodSync(destPath, 0o755);
+
+    // Open the file in the editor
+    const doc = await vscode.workspace.openTextDocument(destPath);
+    await vscode.window.showTextDocument(doc);
+
+    vscode.window.showInformationMessage(
+      `✅ Created coding assistant script at ${destPath}. The file is now open - review the code!`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create coding assistant script: ${error}`);
+  }
+}
+
+/**
+ * Command: tenstorrent.startCodingAssistant
+ * Starts the coding assistant CLI using Llama 3.1 8B with Direct API and prompt engineering
+ */
+async function startCodingAssistant(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  // Model path for Llama 3.1 8B (original subdirectory for Direct API)
+  const modelPath = await getModelOriginalPath();
+
+  const terminal = getOrCreateTerminal('Coding Assistant', 'interactiveChat');
+
+  const command = `cd "${ttMetalPath}" && export LLAMA_DIR="${modelPath}" && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-coding-assistant.py`;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '💬 Starting coding assistant with prompt engineering. Model loads once (2-5 min), then fast responses (1-3 sec)!'
+  );
+}
+
+// ============================================================================
 // Device Management Commands
 // ============================================================================
 
@@ -2031,6 +2120,11 @@ export function activate(context: vscode.ExtensionContext): void {
     // Lesson 8 - Image Generation with SD 3.5 Large
     vscode.commands.registerCommand('tenstorrent.generateRetroImage', generateRetroImage),
     vscode.commands.registerCommand('tenstorrent.startInteractiveImageGen', startInteractiveImageGen),
+
+    // Lesson 9 - Coding Assistant with Prompt Engineering
+    vscode.commands.registerCommand('tenstorrent.verifyCodingModel', verifyCodingModel),
+    vscode.commands.registerCommand('tenstorrent.createCodingAssistantScript', createCodingAssistantScript),
+    vscode.commands.registerCommand('tenstorrent.startCodingAssistant', startCodingAssistant),
 
     // Device Management
     vscode.commands.registerCommand('tenstorrent.resetDevice', resetDevice),
