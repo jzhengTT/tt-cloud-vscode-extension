@@ -2,8 +2,16 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "publisher": "tenstorrent",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jzhengTT/tt-cloud-vscode-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jzhengTT/tt-cloud-vscode-extension/issues"
+  },
+  "homepage": "https://github.com/jzhengTT/tt-cloud-vscode-extension#readme",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -200,6 +208,21 @@
       {
         "command": "tenstorrent.testChat",
         "title": "Test Chat Integration",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.resetDevice",
+        "title": "Reset Device",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.clearDeviceState",
+        "title": "Clear Device State",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.showDeviceActions",
+        "title": "Show Device Actions",
         "category": "Tenstorrent"
       }
     ],

@@ -6,10 +6,19 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
     <title>Welcome to Tenstorrent</title>
     <style>
+        /* Tenstorrent Brand Colors */
+        :root {
+            --tt-orange: #FF6B35;
+            --tt-dark-bg: #1a1a1a;
+            --tt-darker-bg: #0d0d0d;
+            --tt-light-orange: #FF8C5A;
+            --tt-accent: #FFB088;
+        }
+
         body {
             font-family: var(--vscode-font-family);
-            color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
+            color: #ffffff;
+            background-color: var(--tt-darker-bg);
             padding: 20px;
             line-height: 1.6;
             max-width: 900px;
@@ -17,25 +26,44 @@
         }
 
         h1 {
-            color: var(--vscode-foreground);
-            border-bottom: 1px solid var(--vscode-panel-border);
+            color: #ffffff;
+            border-bottom: 2px solid var(--tt-orange);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
 
         h2 {
-            color: var(--vscode-foreground);
+            color: #ffffff;
             margin-top: 30px;
             margin-bottom: 15px;
         }
 
         p {
             margin: 10px 0;
+            color: #ffffff;
+        }
+
+        a {
+            color: var(--tt-orange);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: var(--tt-light-orange);
+            text-decoration: underline;
+        }
+
+        ul li {
+            color: #ffffff;
+        }
+
+        strong {
+            color: #ffffff;
         }
 
         .hero {
-            background-color: var(--vscode-textBlockQuote-background);
-            border-left: 4px solid var(--vscode-textLink-foreground);
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 107, 53, 0.05) 100%);
+            border-left: 4px solid var(--tt-orange);
             padding: 20px;
             margin: 20px 0;
             border-radius: 4px;
@@ -48,8 +76,8 @@
         }
 
         .walkthrough-item {
-            background-color: var(--vscode-list-hoverBackground);
-            border: 1px solid var(--vscode-panel-border);
+            background-color: var(--tt-dark-bg);
+            border: 1px solid rgba(255, 107, 53, 0.3);
             border-radius: 6px;
             padding: 16px;
             margin: 10px 0;
@@ -58,19 +86,20 @@
         }
 
         .walkthrough-item:hover {
-            background-color: var(--vscode-list-activeSelectionBackground);
-            border-color: var(--vscode-textLink-foreground);
+            background-color: rgba(255, 107, 53, 0.1);
+            border-color: var(--tt-orange);
+            transform: translateX(4px);
         }
 
         .walkthrough-item h3 {
             margin: 0 0 8px 0;
-            color: var(--vscode-textLink-foreground);
+            color: var(--tt-orange);
             font-size: 16px;
         }
 
         .walkthrough-item p {
             margin: 0;
-            color: var(--vscode-descriptionForeground);
+            color: #cccccc;
             font-size: 14px;
         }
 
@@ -92,32 +121,35 @@
         }
 
         .quick-link {
-            background-color: var(--vscode-button-secondaryBackground);
-            color: var(--vscode-button-secondaryForeground);
+            background-color: var(--tt-dark-bg);
+            color: var(--tt-orange);
             padding: 12px 16px;
             border-radius: 4px;
             text-align: center;
             cursor: pointer;
-            border: 1px solid transparent;
+            border: 1px solid rgba(255, 107, 53, 0.4);
             transition: all 0.2s;
         }
 
         .quick-link:hover {
-            background-color: var(--vscode-button-secondaryHoverBackground);
-            border-color: var(--vscode-textLink-foreground);
+            background-color: var(--tt-orange);
+            color: var(--tt-darker-bg);
+            border-color: var(--tt-orange);
+            transform: scale(1.05);
         }
 
         .directory-info {
-            background-color: var(--vscode-textCodeBlock-background);
+            background-color: var(--tt-dark-bg);
             border-radius: 4px;
             padding: 12px;
             font-family: var(--vscode-editor-font-family);
             font-size: 13px;
             margin: 15px 0;
+            border: 1px solid rgba(255, 107, 53, 0.3);
         }
 
         .directory-info code {
-            color: var(--vscode-textPreformat-foreground);
+            color: var(--tt-orange);
         }
 
         .section {
@@ -129,23 +161,25 @@
         }
 
         .ascii-logo {
+            margin: 20px 0;
+        }
+
+        .ascii-logo pre {
             font-family: 'Courier New', Courier, monospace;
             font-size: 10px;
             line-height: 1.1;
-            color: var(--vscode-textLink-foreground);
-            background-color: var(--vscode-textCodeBlock-background);
+            color: var(--tt-orange);
+            background-color: var(--tt-dark-bg);
             padding: 20px;
             border-radius: 8px;
             overflow-x: auto;
-            white-space: pre;
-            text-align: center;
-            margin: 20px 0;
-            border: 2px solid var(--vscode-textLink-foreground);
+            margin: 0;
+            border: 2px solid var(--tt-orange);
         }
     </style>
 </head>
 <body>
-    <div class="ascii-logo">
+    <div class="ascii-logo"><pre>
 ████████╗███████╗███╗   ██╗███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗███╗   ██╗████████╗
 ╚══██╔══╝██╔════╝████╗  ██║██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝████╗  ██║╚══██╔══╝
    ██║   █████╗  ██╔██╗ ██║███████╗   ██║   ██║   ██║██████╔╝██████╔╝█████╗  ██╔██╗ ██║   ██║
@@ -155,8 +189,8 @@
 
         ╔═══╗ ╔═══╗ ╔═══╗     ╔═══╗ ╔═══╗ ╔═══╗     DEVELOPMENT ENVIRONMENT
         ║ █ ║ ║ █ ║ ║ █ ║     ║ █ ║ ║ █ ║ ║ █ ║
-        ╚═══╝ ╚═══╝ ╚═══╝     ╚═══╝ ╚═══╝ ╚═══╝     
-    </div>
+        ╚═══╝ ╚═══╝ ╚═══╝     ╚═══╝ ╚═══╝ ╚═══╝
+</pre></div>
 
     <h1>🚀 Welcome to Tenstorrent</h1>
 

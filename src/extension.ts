@@ -34,7 +34,343 @@ let extensionContext: vscode.ExtensionContext;
 const STATE_KEYS = {
   TT_METAL_PATH: 'ttMetalPath',
   MODEL_PATH: 'modelPath',
+  STATUSBAR_UPDATE_INTERVAL: 'statusbarUpdateInterval',
+  STATUSBAR_ENABLED: 'statusbarEnabled',
 };
+
+// ============================================================================
+// Device Status Monitoring
+// ============================================================================
+
+/**
+ * Cached device information to avoid excessive tt-smi calls
+ */
+interface DeviceInfo {
+  deviceType: string | null;    // e.g., "N150", "N300", "T3K"
+  firmwareVersion: string | null;
+  status: 'healthy' | 'warning' | 'error' | 'unknown';
+  lastChecked: number;
+}
+
+let cachedDeviceInfo: DeviceInfo = {
+  deviceType: null,
+  firmwareVersion: null,
+  status: 'unknown',
+  lastChecked: 0,
+};
+
+let statusBarItem: vscode.StatusBarItem | undefined;
+let statusUpdateTimer: NodeJS.Timeout | undefined;
+
+/**
+ * Parses tt-smi output to extract device information.
+ *
+ * @param output - Raw output from tt-smi command
+ * @returns DeviceInfo object with parsed data
+ */
+function parseDeviceInfo(output: string): DeviceInfo {
+  const lines = output.split('\n');
+
+  let deviceType: string | null = null;
+  let firmwareVersion: string | null = null;
+  let status: 'healthy' | 'warning' | 'error' | 'unknown' = 'unknown';
+
+  for (const line of lines) {
+    // Parse device type from board type line
+    // Example: "Board Type: N150"
+    if (line.includes('Board Type:')) {
+      const match = line.match(/Board Type:\s*(\S+)/);
+      if (match) {
+        deviceType = match[1];
+      }
+    }
+
+    // Parse firmware version
+    // Example: "FW Version: 18.7.0"
+    if (line.includes('FW Version:') || line.includes('Firmware Version:')) {
+      const match = line.match(/(?:FW|Firmware) Version:\s*(\S+)/);
+      if (match) {
+        firmwareVersion = match[1];
+      }
+    }
+
+    // Check for error indicators
+    if (line.toLowerCase().includes('error') ||
+        line.toLowerCase().includes('failed') ||
+        line.toLowerCase().includes('timeout')) {
+      status = 'error';
+    }
+  }
+
+  // If we found device info and no errors, mark as healthy
+  if (deviceType && !output.toLowerCase().includes('error')) {
+    status = 'healthy';
+  } else if (deviceType) {
+    status = 'warning';
+  }
+
+  return {
+    deviceType,
+    firmwareVersion,
+    status,
+    lastChecked: Date.now(),
+  };
+}
+
+/**
+ * Runs tt-smi and updates cached device info.
+ * Uses child_process.exec to capture output without showing terminal.
+ *
+ * @returns Promise<DeviceInfo> - Updated device information
+ */
+async function updateDeviceStatus(): Promise<DeviceInfo> {
+  const { exec } = await import('child_process');
+  const { promisify } = await import('util');
+  const execAsync = promisify(exec);
+
+  try {
+    const { stdout, stderr } = await execAsync('tt-smi', { timeout: 5000 });
+    const output = stdout + stderr;
+
+    cachedDeviceInfo = parseDeviceInfo(output);
+    updateStatusBarItem();
+
+    return cachedDeviceInfo;
+  } catch (error) {
+    // tt-smi not found or failed
+    cachedDeviceInfo = {
+      deviceType: null,
+      firmwareVersion: null,
+      status: 'error',
+      lastChecked: Date.now(),
+    };
+    updateStatusBarItem();
+
+    return cachedDeviceInfo;
+  }
+}
+
+/**
+ * Updates the statusbar item text and icon based on cached device info.
+ */
+function updateStatusBarItem(): void {
+  if (!statusBarItem) return;
+
+  const { deviceType, status } = cachedDeviceInfo;
+
+  // Set icon based on status
+  let icon = '$(question)'; // unknown
+  if (status === 'healthy') {
+    icon = '$(check)';
+  } else if (status === 'warning') {
+    icon = '$(warning)';
+  } else if (status === 'error') {
+    icon = '$(x)';
+  }
+
+  // Set text
+  if (deviceType) {
+    statusBarItem.text = `${icon} TT: ${deviceType}`;
+    statusBarItem.tooltip = `Tenstorrent ${deviceType} - Click for device actions`;
+  } else {
+    statusBarItem.text = `${icon} TT: No device`;
+    statusBarItem.tooltip = 'No Tenstorrent device detected - Click for options';
+  }
+
+  statusBarItem.show();
+}
+
+/**
+ * Shows quick actions menu when statusbar item is clicked.
+ */
+async function showDeviceActionsMenu(): Promise<void> {
+  const { deviceType, firmwareVersion, lastChecked } = cachedDeviceInfo;
+
+  // Calculate time since last check
+  const minutesAgo = Math.floor((Date.now() - lastChecked) / 60000);
+  const timeStr = minutesAgo === 0 ? 'just now' : `${minutesAgo}m ago`;
+
+  const items: vscode.QuickPickItem[] = [
+    {
+      label: '$(sync) Refresh Status',
+      description: `Last checked: ${timeStr}`,
+      detail: 'Run tt-smi to update device status',
+    },
+    {
+      label: '$(terminal) Check Device Status',
+      description: 'Open terminal',
+      detail: 'Run tt-smi in a terminal window to see full output',
+    },
+  ];
+
+  // Add firmware info if available
+  if (firmwareVersion) {
+    items.push({
+      label: '$(info) Firmware Version',
+      description: firmwareVersion,
+      detail: 'Current firmware version on the device',
+    });
+  }
+
+  // Add device-specific actions
+  if (deviceType) {
+    items.push(
+      {
+        label: '$(debug-restart) Reset Device',
+        description: 'Run tt-smi -r',
+        detail: 'Software reset of the Tenstorrent device',
+      },
+      {
+        label: '$(clear-all) Clear Device State',
+        description: 'Clear /dev/shm and device state',
+        detail: 'Remove cached data and device state (requires sudo)',
+      }
+    );
+  }
+
+  // Configuration options
+  items.push(
+    {
+      label: '$(settings-gear) Configure Update Interval',
+      description: 'Change auto-update frequency',
+      detail: 'Set how often device status is checked automatically',
+    },
+    {
+      label: cachedDeviceInfo.status !== 'unknown' ? '$(debug-pause) Disable Auto-Update' : '$(debug-start) Enable Auto-Update',
+      description: 'Toggle automatic status checks',
+      detail: 'Turn periodic device status updates on or off',
+    }
+  );
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: deviceType
+      ? `Tenstorrent ${deviceType} Device Actions`
+      : 'Tenstorrent Device Actions',
+  });
+
+  if (!selected) return;
+
+  // Handle selection
+  if (selected.label.includes('Refresh Status')) {
+    statusBarItem!.text = '$(sync~spin) TT: Checking...';
+    await updateDeviceStatus();
+    vscode.window.showInformationMessage(
+      cachedDeviceInfo.deviceType
+        ? `✓ Device found: ${cachedDeviceInfo.deviceType}`
+        : '⚠️ No Tenstorrent device detected'
+    );
+  } else if (selected.label.includes('Check Device Status')) {
+    vscode.commands.executeCommand('tenstorrent.runHardwareDetection');
+  } else if (selected.label.includes('Firmware Version')) {
+    vscode.window.showInformationMessage(
+      `Firmware Version: ${firmwareVersion || 'Unknown'}`
+    );
+  } else if (selected.label.includes('Reset Device')) {
+    vscode.commands.executeCommand('tenstorrent.resetDevice');
+  } else if (selected.label.includes('Clear Device State')) {
+    vscode.commands.executeCommand('tenstorrent.clearDeviceState');
+  } else if (selected.label.includes('Configure Update Interval')) {
+    await configureUpdateInterval();
+  } else if (selected.label.includes('Auto-Update')) {
+    await toggleAutoUpdate();
+  }
+}
+
+/**
+ * Allows user to configure the auto-update interval.
+ */
+async function configureUpdateInterval(): Promise<void> {
+  const intervals = [
+    { label: '30 seconds', value: 30 },
+    { label: '1 minute', value: 60 },
+    { label: '2 minutes', value: 120 },
+    { label: '5 minutes', value: 300 },
+    { label: '10 minutes', value: 600 },
+  ];
+
+  const selected = await vscode.window.showQuickPick(intervals, {
+    placeHolder: 'Select how often to check device status',
+  });
+
+  if (selected) {
+    await extensionContext.globalState.update(
+      STATE_KEYS.STATUSBAR_UPDATE_INTERVAL,
+      selected.value
+    );
+
+    // Restart the update timer
+    startStatusUpdateTimer();
+
+    vscode.window.showInformationMessage(
+      `Device status will update every ${selected.label}`
+    );
+  }
+}
+
+/**
+ * Toggles auto-update on or off.
+ */
+async function toggleAutoUpdate(): Promise<void> {
+  const currentEnabled = extensionContext.globalState.get<boolean>(
+    STATE_KEYS.STATUSBAR_ENABLED,
+    true
+  );
+
+  await extensionContext.globalState.update(
+    STATE_KEYS.STATUSBAR_ENABLED,
+    !currentEnabled
+  );
+
+  if (!currentEnabled) {
+    // Enabling
+    startStatusUpdateTimer();
+    vscode.window.showInformationMessage('✓ Auto-update enabled');
+  } else {
+    // Disabling
+    stopStatusUpdateTimer();
+    vscode.window.showInformationMessage('Auto-update disabled');
+  }
+}
+
+/**
+ * Starts the periodic status update timer.
+ */
+function startStatusUpdateTimer(): void {
+  // Stop existing timer
+  stopStatusUpdateTimer();
+
+  // Check if auto-update is enabled
+  const enabled = extensionContext.globalState.get<boolean>(
+    STATE_KEYS.STATUSBAR_ENABLED,
+    true
+  );
+
+  if (!enabled) return;
+
+  // Get update interval (default 60 seconds)
+  const intervalSeconds = extensionContext.globalState.get<number>(
+    STATE_KEYS.STATUSBAR_UPDATE_INTERVAL,
+    60
+  );
+
+  // Run initial check
+  updateDeviceStatus();
+
+  // Start periodic updates
+  statusUpdateTimer = setInterval(() => {
+    updateDeviceStatus();
+  }, intervalSeconds * 1000);
+}
+
+/**
+ * Stops the periodic status update timer.
+ */
+function stopStatusUpdateTimer(): void {
+  if (statusUpdateTimer) {
+    clearInterval(statusUpdateTimer);
+    statusUpdateTimer = undefined;
+  }
+}
 
 // ============================================================================
 // Terminal Management
@@ -1202,6 +1538,79 @@ async function handleChatRequest(
 }
 
 // ============================================================================
+// Device Management Commands
+// ============================================================================
+
+/**
+ * Command: tenstorrent.resetDevice
+ * Performs a software reset of the Tenstorrent device using tt-smi -r
+ */
+async function resetDevice(): Promise<void> {
+  const choice = await vscode.window.showWarningMessage(
+    'This will reset the Tenstorrent device. Any running processes using the device will be interrupted. Continue?',
+    'Reset Device',
+    'Cancel'
+  );
+
+  if (choice !== 'Reset Device') {
+    return;
+  }
+
+  const terminal = getOrCreateTerminal('Device Management', 'hardwareDetection');
+  runInTerminal(terminal, 'tt-smi -r');
+
+  vscode.window.showInformationMessage(
+    '🔄 Resetting device... Check terminal for status.'
+  );
+
+  // Refresh status after a short delay
+  setTimeout(async () => {
+    await updateDeviceStatus();
+  }, 3000);
+}
+
+/**
+ * Command: tenstorrent.clearDeviceState
+ * Clears device state by removing cached data and performing cleanup
+ */
+async function clearDeviceState(): Promise<void> {
+  const choice = await vscode.window.showWarningMessage(
+    'This will:\n• Kill any processes using the device\n• Clear /dev/shm Tenstorrent data\n• Reset device state\n\nThis operation requires sudo. Continue?',
+    'Clear State',
+    'Cancel'
+  );
+
+  if (choice !== 'Clear State') {
+    return;
+  }
+
+  const terminal = getOrCreateTerminal('Device Management', 'hardwareDetection');
+
+  // Multi-step cleanup command
+  const commands = [
+    'echo "=== Killing processes using Tenstorrent devices ==="',
+    'pgrep -f tt-metal && pkill -9 -f tt-metal || echo "No tt-metal processes found"',
+    'pgrep -f vllm && pkill -9 -f vllm || echo "No vllm processes found"',
+    'echo "=== Clearing /dev/shm ==="',
+    'sudo rm -rf /dev/shm/tenstorrent* /dev/shm/tt_* || echo "No shared memory files found"',
+    'echo "=== Resetting device ==="',
+    'tt-smi -r',
+    'echo "=== Cleanup complete ==="',
+  ];
+
+  runInTerminal(terminal, commands.join(' && '));
+
+  vscode.window.showInformationMessage(
+    '🧹 Clearing device state... Check terminal for progress. You may need to enter your sudo password.'
+  );
+
+  // Refresh status after cleanup
+  setTimeout(async () => {
+    await updateDeviceStatus();
+  }, 5000);
+}
+
+// ============================================================================
 // Welcome Page
 // ============================================================================
 
@@ -1376,6 +1785,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.startVllmForChat', startVllmForChat),
     vscode.commands.registerCommand('tenstorrent.enableChatParticipant', enableChatParticipant),
     vscode.commands.registerCommand('tenstorrent.testChat', testChat),
+
+    // Device Management
+    vscode.commands.registerCommand('tenstorrent.resetDevice', resetDevice),
+    vscode.commands.registerCommand('tenstorrent.clearDeviceState', clearDeviceState),
   ];
 
   // Add all command registrations to subscriptions for proper cleanup
@@ -1390,6 +1803,27 @@ export function activate(context: vscode.ExtensionContext): void {
   chatParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'assets', 'icon.png');
 
   context.subscriptions.push(chatParticipant);
+
+  // Initialize statusbar item
+  statusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100 // Priority (higher = further left)
+  );
+
+  statusBarItem.command = {
+    title: 'Show Device Actions',
+    command: 'tenstorrent.showDeviceActions',
+  };
+
+  context.subscriptions.push(statusBarItem);
+
+  // Register statusbar click command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('tenstorrent.showDeviceActions', showDeviceActionsMenu)
+  );
+
+  // Start periodic device status updates
+  startStatusUpdateTimer();
 
   // Auto-open the walkthrough on first activation
   const hasSeenWalkthrough = context.globalState.get<boolean>('hasSeenWalkthrough', false);
@@ -1407,11 +1841,15 @@ export function activate(context: vscode.ExtensionContext): void {
 /**
  * Called when the extension is deactivated.
  *
- * Cleans up terminal references. Note that VS Code automatically disposes
- * of terminals when the extension is deactivated, but we explicitly clear
- * our references for good measure.
+ * Cleans up terminal references and stops status monitoring.
+ * Note that VS Code automatically disposes of terminals and statusbar items
+ * when the extension is deactivated, but we explicitly clear our references
+ * for good measure.
  */
 export function deactivate(): void {
+  // Stop status update timer
+  stopStatusUpdateTimer();
+
   // Clear all terminal references
   // VS Code will handle actual disposal
   terminals.hardwareDetection = undefined;
@@ -1420,6 +1858,9 @@ export function deactivate(): void {
   terminals.interactiveChat = undefined;
   terminals.apiServer = undefined;
   terminals.vllmServer = undefined;
+
+  // Clear statusbar reference
+  statusBarItem = undefined;
 
   console.log('Tenstorrent Developer Extension has been deactivated');
 }

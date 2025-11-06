@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a VS Code extension for Tenstorrent hardware setup and development. The extension uses **VSCode's native Walkthroughs API** to provide an interactive, step-by-step onboarding experience that guides users through hardware detection, installation verification, and model downloading.
+This is a VS Code extension for Tenstorrent hardware setup and development. The extension provides:
+
+1. **Interactive Walkthroughs** - Step-by-step guides using VSCode's native Walkthroughs API
+2. **Device Status Monitoring** - Real-time statusbar integration with tt-smi for device monitoring
+3. **VSCode Chat Integration** - @tenstorrent chat participant powered by local vLLM server
+4. **Template Scripts** - Production-ready Python scripts for inference and API servers
 
 ## Build and Development Commands
 
@@ -123,6 +128,114 @@ This declarative structure defines:
 - No webview/HTML generation (uses native walkthrough UI)
 - No custom UI code (leverages VSCode theming)
 - Commands are simple: create terminal → send command → show feedback
+
+### Device Status Monitoring (Statusbar Integration)
+
+**Overview:**
+The extension includes a non-obtrusive statusbar item that monitors Tenstorrent device status in real-time using tt-smi. This provides quick access to device information and actions without cluttering the UI.
+
+**Statusbar Display States:**
+- `$(check) TT: N150` - Device healthy (green checkmark)
+- `$(warning) TT: N150` - Device has issues (yellow warning)
+- `$(sync~spin) TT: Checking...` - Currently checking status
+- `$(x) TT: No device` - No device detected (red X)
+- `$(question) TT: Unknown` - Status unknown
+
+**Architecture:**
+
+1. **Cached Status Updates:**
+   - Device status is cached to minimize tt-smi calls
+   - Default update interval: 60 seconds (configurable: 30s, 1m, 2m, 5m, 10m)
+   - Updates run in background using `child_process.exec()`
+   - Timeout: 5 seconds to prevent blocking
+   - Can be enabled/disabled by user
+
+2. **Parsing tt-smi Output:**
+   - Extracts device type (N150, N300, T3K, etc.) from "Board Type:" line
+   - Extracts firmware version from "FW Version:" or "Firmware Version:" line
+   - Detects errors by searching for keywords: "error", "failed", "timeout"
+   - Status determination:
+     - `healthy`: Device found, no errors
+     - `warning`: Device found but has issues
+     - `error`: tt-smi failed or errors detected
+     - `unknown`: Initial state or parsing failed
+
+3. **Quick Actions Menu (on click):**
+   Opens QuickPick menu with contextual actions:
+   - **Refresh Status** - Manually trigger tt-smi update (shows time since last check)
+   - **Check Device Status** - Open terminal and run tt-smi for full output
+   - **Firmware Version** - Display firmware version in info message (if available)
+   - **Reset Device** - Run `tt-smi -r` with confirmation
+   - **Clear Device State** - Kill processes, clear /dev/shm, reset device (requires sudo)
+   - **Configure Update Interval** - Change auto-update frequency
+   - **Enable/Disable Auto-Update** - Toggle periodic status checks
+
+4. **Device Management Commands:**
+
+   **tenstorrent.resetDevice:**
+   ```typescript
+   async function resetDevice(): Promise<void> {
+     // Confirms with user before resetting
+     // Runs tt-smi -r in terminal
+     // Refreshes statusbar after 3 seconds
+   }
+   ```
+
+   **tenstorrent.clearDeviceState:**
+   ```typescript
+   async function clearDeviceState(): Promise<void> {
+     // Confirms with user (warns about sudo requirement)
+     // Multi-step cleanup:
+     //   1. Kill tt-metal and vllm processes
+     //   2. Clear /dev/shm/tenstorrent* and /dev/shm/tt_*
+     //   3. Reset device with tt-smi -r
+     // Refreshes statusbar after 5 seconds
+   }
+   ```
+
+**Implementation Details:**
+
+**File:** `src/extension.ts` (lines 41-374)
+
+**Key Functions:**
+- `parseDeviceInfo(output: string)` - Parses tt-smi output into DeviceInfo object
+- `updateDeviceStatus()` - Runs tt-smi async and updates cache
+- `updateStatusBarItem()` - Updates statusbar text/icon based on cached status
+- `showDeviceActionsMenu()` - Displays QuickPick menu with actions
+- `configureUpdateInterval()` - Allows user to set update frequency
+- `toggleAutoUpdate()` - Enable/disable periodic updates
+- `startStatusUpdateTimer()` - Starts setInterval timer for updates
+- `stopStatusUpdateTimer()` - Clears update timer
+- `resetDevice()` - Soft reset via tt-smi -r
+- `clearDeviceState()` - Full cleanup (processes, /dev/shm, reset)
+
+**Persistent State:**
+Stored in VSCode globalState (survives extension restarts):
+- `STATUSBAR_UPDATE_INTERVAL` - Update interval in seconds (default: 60)
+- `STATUSBAR_ENABLED` - Whether auto-update is enabled (default: true)
+
+**Lifecycle:**
+- Initialized in `activate()` - Creates statusbar item, registers commands, starts timer
+- Cleaned up in `deactivate()` - Stops timer, clears references
+
+**Error Handling:**
+- tt-smi not found: Shows "No device" status
+- tt-smi timeout (>5s): Shows "error" status
+- Parse errors: Falls back to "unknown" status
+- All errors are handled gracefully without blocking UI
+
+**Benefits:**
+- ✅ Non-obtrusive - Single statusbar item, doesn't take much space
+- ✅ Efficient - Cached updates, configurable intervals
+- ✅ Contextual - Only shows relevant actions based on device state
+- ✅ Safe - Confirms before destructive operations
+- ✅ Informative - Shows device type, firmware, last check time
+
+**Use Cases:**
+1. **Quick health check** - Glance at statusbar to see if device is healthy
+2. **Firmware debugging** - View firmware version without running tt-smi
+3. **Recovery from errors** - Reset device or clear state when initialization fails
+4. **Development workflow** - Monitor device during development without manual checks
 
 ### VSCode Walkthroughs API Features Used
 
