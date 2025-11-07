@@ -248,6 +248,85 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     template: 'cd ~/tt-metal && export LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-coding-assistant.py',
     description: 'Starts interactive CLI coding assistant with Llama 3.1 8B using Direct API and prompt engineering',
   },
+
+  // Environment Management with TT-Jukebox (Lesson 10)
+  COPY_JUKEBOX: {
+    id: 'copy-jukebox',
+    name: 'Copy TT-Jukebox to Scratchpad',
+    template: 'mkdir -p ~/tt-scratchpad && cp \"{{templatePath}}\" ~/tt-scratchpad/tt-jukebox.py && chmod +x ~/tt-scratchpad/tt-jukebox.py',
+    description: 'Copies tt-jukebox.py script to ~/tt-scratchpad and makes it executable',
+    variables: ['templatePath'],
+  },
+
+  LIST_JUKEBOX_MODELS: {
+    id: 'list-jukebox-models',
+    name: 'List Compatible Models',
+    template: 'python3 ~/tt-scratchpad/tt-jukebox.py --list',
+    description: 'Lists all models compatible with detected hardware',
+  },
+
+  JUKEBOX_FIND_CHAT: {
+    id: 'jukebox-find-chat',
+    name: 'Find Chat Models',
+    template: 'python3 ~/tt-scratchpad/tt-jukebox.py chat',
+    description: 'Finds models suitable for chat tasks',
+  },
+
+  JUKEBOX_SEARCH_LLAMA: {
+    id: 'jukebox-search-llama',
+    name: 'Search for Llama Models',
+    template: 'python3 ~/tt-scratchpad/tt-jukebox.py --model llama',
+    description: 'Fuzzy search for Llama model variants',
+  },
+
+  JUKEBOX_SETUP_LLAMA: {
+    id: 'jukebox-setup-llama',
+    name: 'Generate Setup Script for Llama',
+    template: 'python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup',
+    description: 'Generates setup script for Llama 3.1 8B environment',
+  },
+
+  RUN_JUKEBOX_SETUP: {
+    id: 'run-jukebox-setup',
+    name: 'Run Setup Script',
+    template: 'bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh',
+    description: 'Executes generated setup script to build environment',
+  },
+
+  VERIFY_JUKEBOX_ENV: {
+    id: 'verify-jukebox-env',
+    name: 'Verify Environment',
+    template: 'cd ~/tt-metal && echo "tt-metal commit: $(git rev-parse --short HEAD)" && cd ~/tt-vllm && echo "vLLM commit: $(git rev-parse --short HEAD)" && source ~/tt-vllm-venv/bin/activate && python -c "import ttnn; import vllm; print(\'✓ Environment ready!\')"',
+    description: 'Verifies tt-metal and vLLM commits match and imports work',
+  },
+
+  START_JUKEBOX_VLLM: {
+    id: 'start-jukebox-vllm',
+    name: 'Start vLLM Server',
+    template: 'cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 32 --block-size 64',
+    description: 'Starts vLLM server with configuration from model spec',
+  },
+
+  TEST_JUKEBOX_OPENAI: {
+    id: 'test-jukebox-openai',
+    name: 'Test with OpenAI SDK',
+    template: 'python3 -c "from openai import OpenAI; client = OpenAI(base_url=\'http://localhost:8000/v1\', api_key=\'dummy\'); response = client.chat.completions.create(model=\'meta-llama/Llama-3.1-8B-Instruct\', messages=[{\'role\': \'user\', \'content\': \'What is machine learning?\'}], max_tokens=128); print(response.choices[0].message.content)"',
+    description: 'Tests vLLM server with OpenAI SDK',
+  },
+
+  TEST_JUKEBOX_CURL: {
+    id: 'test-jukebox-curl',
+    name: 'Test with curl',
+    template: 'curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d \'{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Explain neural networks in one sentence"}], "max_tokens": 64}\'',
+    description: 'Tests vLLM server with curl HTTP request',
+  },
+
+  MONITOR_JUKEBOX_PV: {
+    id: 'monitor-jukebox-pv',
+    name: 'Monitor with pv',
+    template: 'curl -N http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d \'{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Write a story about AI"}], "max_tokens": 512, "stream": true}\' | pv -l -i 0.1',
+    description: 'Monitors streaming API response with pv (pipe viewer)',
+  },
 };
 
 /**

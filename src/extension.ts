@@ -1869,6 +1869,200 @@ async function startCodingAssistant(): Promise<void> {
 }
 
 // ============================================================================
+// Lesson 10 - Environment Management with TT-Jukebox
+// ============================================================================
+
+/**
+ * Command: tenstorrent.copyJukebox
+ * Copies tt-jukebox.py script to ~/tt-scratchpad
+ */
+async function copyJukebox(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-jukebox.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-jukebox.py');
+
+  try {
+    fs.copyFileSync(templatePath, destPath);
+    fs.chmodSync(destPath, 0o755);
+
+    vscode.window.showInformationMessage(
+      `✅ Copied tt-jukebox.py to ${destPath}. Run it to explore compatible models!`
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to copy tt-jukebox: ${error}`);
+  }
+}
+
+/**
+ * Command: tenstorrent.listJukeboxModels
+ * Lists all models compatible with detected hardware
+ */
+function listJukeboxModels(): void {
+  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const command = TERMINAL_COMMANDS.LIST_JUKEBOX_MODELS.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📜 Listing compatible models. Check terminal for results.'
+  );
+}
+
+/**
+ * Command: tenstorrent.jukeboxFindChat
+ * Finds models suitable for chat tasks
+ */
+function jukeboxFindChat(): void {
+  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const command = TERMINAL_COMMANDS.JUKEBOX_FIND_CHAT.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '💬 Finding chat models. Check terminal for matches.'
+  );
+}
+
+/**
+ * Command: tenstorrent.jukeboxSearchLlama
+ * Fuzzy search for Llama model variants
+ */
+function jukeboxSearchLlama(): void {
+  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const command = TERMINAL_COMMANDS.JUKEBOX_SEARCH_LLAMA.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔍 Searching for Llama models. Check terminal for results.'
+  );
+}
+
+/**
+ * Command: tenstorrent.jukeboxSetupLlama
+ * Generates setup script for Llama 3.1 8B environment
+ */
+function jukeboxSetupLlama(): void {
+  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const command = TERMINAL_COMMANDS.JUKEBOX_SETUP_LLAMA.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🛠️ Generating setup script. Setup script will be saved to ~/tt-scratchpad/setup-scripts/'
+  );
+}
+
+/**
+ * Command: tenstorrent.runJukeboxSetup
+ * Executes generated setup script to build environment
+ */
+function runJukeboxSetup(): void {
+  const terminal = getOrCreateTerminal('TT-Jukebox Setup', 'apiServer');
+  const command = TERMINAL_COMMANDS.RUN_JUKEBOX_SETUP.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '⚙️ Running setup script. This will take 10-15 minutes. Watch terminal for progress.'
+  );
+}
+
+/**
+ * Command: tenstorrent.verifyJukeboxEnv
+ * Verifies tt-metal and vLLM commits match specifications
+ */
+function verifyJukeboxEnv(): void {
+  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const command = TERMINAL_COMMANDS.VERIFY_JUKEBOX_ENV.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '✅ Verifying environment. Check terminal for commit hashes and imports.'
+  );
+}
+
+/**
+ * Command: tenstorrent.startJukeboxVllm
+ * Starts vLLM server with configuration from model spec
+ */
+function startJukeboxVllm(): void {
+  const terminal = getOrCreateTerminal('vLLM Server', 'vllmServer');
+  const command = TERMINAL_COMMANDS.START_JUKEBOX_VLLM.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🚀 Starting vLLM with spec-based configuration. First load takes 2-5 minutes.'
+  );
+}
+
+/**
+ * Command: tenstorrent.testJukeboxOpenai
+ * Tests vLLM server with OpenAI SDK
+ */
+function testJukeboxOpenai(): void {
+  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const command = TERMINAL_COMMANDS.TEST_JUKEBOX_OPENAI.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🧪 Testing with OpenAI SDK. Check terminal for response.'
+  );
+}
+
+/**
+ * Command: tenstorrent.testJukeboxCurl
+ * Tests vLLM server with curl HTTP request
+ */
+function testJukeboxCurl(): void {
+  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const command = TERMINAL_COMMANDS.TEST_JUKEBOX_CURL.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📡 Testing with curl. Check terminal for JSON response.'
+  );
+}
+
+/**
+ * Command: tenstorrent.monitorJukeboxPv
+ * Monitors streaming API response with pv (pipe viewer)
+ */
+function monitorJukeboxPv(): void {
+  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const command = TERMINAL_COMMANDS.MONITOR_JUKEBOX_PV.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📊 Monitoring with pv. Watch terminal for streaming rate statistics.'
+  );
+}
+
+// ============================================================================
 // Device Management Commands
 // ============================================================================
 
@@ -2125,6 +2319,19 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.verifyCodingModel', verifyCodingModel),
     vscode.commands.registerCommand('tenstorrent.createCodingAssistantScript', createCodingAssistantScript),
     vscode.commands.registerCommand('tenstorrent.startCodingAssistant', startCodingAssistant),
+
+    // Lesson 10 - Environment Management with TT-Jukebox
+    vscode.commands.registerCommand('tenstorrent.copyJukebox', copyJukebox),
+    vscode.commands.registerCommand('tenstorrent.listJukeboxModels', listJukeboxModels),
+    vscode.commands.registerCommand('tenstorrent.jukeboxFindChat', jukeboxFindChat),
+    vscode.commands.registerCommand('tenstorrent.jukeboxSearchLlama', jukeboxSearchLlama),
+    vscode.commands.registerCommand('tenstorrent.jukeboxSetupLlama', jukeboxSetupLlama),
+    vscode.commands.registerCommand('tenstorrent.runJukeboxSetup', runJukeboxSetup),
+    vscode.commands.registerCommand('tenstorrent.verifyJukeboxEnv', verifyJukeboxEnv),
+    vscode.commands.registerCommand('tenstorrent.startJukeboxVllm', startJukeboxVllm),
+    vscode.commands.registerCommand('tenstorrent.testJukeboxOpenai', testJukeboxOpenai),
+    vscode.commands.registerCommand('tenstorrent.testJukeboxCurl', testJukeboxCurl),
+    vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
 
     // Device Management
     vscode.commands.registerCommand('tenstorrent.resetDevice', resetDevice),

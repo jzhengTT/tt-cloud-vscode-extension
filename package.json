@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.31",
+  "version": "0.0.32",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -249,6 +249,61 @@
         "command": "tenstorrent.startCodingAssistant",
         "title": "Start Coding Assistant",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.copyJukebox",
+        "title": "Copy TT-Jukebox to Scratchpad",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.listJukeboxModels",
+        "title": "List Compatible Models",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.jukeboxFindChat",
+        "title": "Find Chat Models with Jukebox",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.jukeboxSearchLlama",
+        "title": "Search for Llama Models with Jukebox",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.jukeboxSetupLlama",
+        "title": "Generate Setup Script for Llama",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runJukeboxSetup",
+        "title": "Run Jukebox Setup Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.verifyJukeboxEnv",
+        "title": "Verify Jukebox Environment",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startJukeboxVllm",
+        "title": "Start vLLM with Jukebox Config",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testJukeboxOpenai",
+        "title": "Test Jukebox vLLM with OpenAI SDK",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testJukeboxCurl",
+        "title": "Test Jukebox vLLM with curl",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.monitorJukeboxPv",
+        "title": "Monitor Jukebox vLLM with pv",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -354,6 +409,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.startCodingAssistant"
+            ]
+          },
+          {
+            "id": "jukebox-environment",
+            "title": "Environment Management with TT-Jukebox",
+            "description": "Use TT-Jukebox to intelligently match models to your hardware, generate reproducible setup scripts, and build tested environments with exact commit SHAs. Eliminate version mismatch errors forever!",
+            "media": {
+              "markdown": "content/lessons/10-jukebox-environment.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.copyJukebox"
             ]
           }
         ]
