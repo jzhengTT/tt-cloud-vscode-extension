@@ -985,3 +985,101 @@ Real production systems rely heavily on prompt engineering because:
 
 This lesson teaches a critical skill that applies to GPT, Claude, Gemini, and all future LLMs.
 
+## Lesson 10: Environment Management with TT-Jukebox
+
+### The Version Mismatch Problem
+
+Each model in production has been tested with SPECIFIC commits of tt-metal and vLLM. Using the wrong versions leads to compilation failures, runtime errors, and crashes.
+
+### TT-Jukebox Solution
+
+TT-Jukebox is an intelligent environment manager that:
+1. Detects your hardware automatically (tt-smi)
+2. Fetches official model specifications from GitHub
+3. Matches your task/model to compatible configurations
+4. **Checks if models are downloaded** (NEW in v0.0.32)
+5. Generates setup scripts with EXACT commit SHAs
+6. **Downloads models from HuggingFace if missing** (NEW in v0.0.32)
+7. Builds reproducible environments
+
+### Model Download Detection (v0.0.32)
+
+**Added Functions:**
+
+1. **detect_model_download()** - Checks if model exists:
+   - Location 1: `~/models/{model_name}/`
+   - Location 2: `~/.cache/huggingface/hub/models--{repo}/`
+   - Validates by checking for: `config.json`, `model.safetensors`, `pytorch_model.bin`
+
+2. **check_hf_token()** - Finds HuggingFace authentication:
+   - Checks `HF_TOKEN` environment variable
+   - Checks `~/.cache/huggingface/token` file
+   - Returns token or None
+
+3. **Modified generate_setup_script()** - Includes model download:
+   ```bash
+   # Check if HF_TOKEN is set
+   if [ -z "$HF_TOKEN" ]; then
+       if ! huggingface-cli whoami &>/dev/null; then
+           echo 'ERROR: Not logged into HuggingFace!'
+           exit 1
+       fi
+   fi
+
+   # Download model
+   huggingface-cli download {hf_repo} --local-dir {path}
+   ```
+
+4. **Modified display_model_spec()** - Shows download status:
+   ```
+   Model: Downloaded ✓
+     Path: ~/models/Llama-3.1-8B-Instruct
+
+   OR
+
+   Model: Not downloaded
+     Will download to: ~/models/Llama-3.1-8B-Instruct
+   ```
+
+### HuggingFace Authentication Options
+
+**Option 1: Environment variable (recommended)**
+```bash
+export HF_TOKEN=hf_...
+python3 tt-jukebox.py --model llama --setup
+```
+
+**Option 2: Command line argument**
+```bash
+python3 tt-jukebox.py --model llama --setup --hf-token hf_...
+```
+
+**Option 3: Use existing huggingface-cli login**
+```bash
+huggingface-cli login
+python3 tt-jukebox.py --model llama --setup
+```
+
+### Workflow
+
+1. Copy script: `tenstorrent.copyJukebox`
+2. List models: `python3 tt-jukebox.py --list`
+3. Find chat models: `python3 tt-jukebox.py chat`
+4. Search Llama: `python3 tt-jukebox.py --model llama`
+5. Generate setup: `python3 tt-jukebox.py --model llama-3.1-8b --setup`
+6. Execute setup: `bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh`
+7. Verify: Check commits match, test imports
+8. Start vLLM: Use spec-based flags (max_model_len, max_num_seqs, block_size)
+9. Test: OpenAI SDK, curl, pv (pipe viewer)
+
+### Key Benefits
+
+- ✅ Eliminates version mismatch errors
+- ✅ Reproducible environments (share setup scripts)
+- ✅ Intelligent matching (task or model name)
+- ✅ Hardware-aware (only compatible models)
+- ✅ Automated setup (bash scripts do everything)
+- ✅ Production-ready configs (tested vLLM flags)
+- ✅ **Automatic model downloads** (NEW - no manual download needed)
+- ✅ **HF authentication support** (NEW - multiple auth methods)
+

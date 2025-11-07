@@ -184,6 +184,7 @@ Matching Configurations
 
 [1] Llama-3.1-8B-Instruct
     ID: id_tt-transformers_Llama-3.1-8B-Instruct_n150
+    HuggingFace: meta-llama/Llama-3.1-8B-Instruct
     Device: N150
     Version: 0.3.0
     tt-metal commit: 9b67e09
@@ -191,7 +192,9 @@ Matching Configurations
     Max context: 65,536 tokens
     Min disk: 36 GB
     Min RAM: 32 GB
-    Status: Setup required
+    Model: Downloaded ✓
+      Path: ~/models/Llama-3.1-8B-Instruct
+    Environment: Setup required
       tt-metal: abc1234 -> 9b67e09
       vLLM: def5678 -> a91b644
 
@@ -247,13 +250,20 @@ Found 6 matches:
 **TT-Jukebox automatically checks your current environment:**
 
 When you select a model, it compares:
+- Model download status (checks ~/models/ and HF cache)
 - Your tt-metal commit vs required commit
 - Your vLLM commit vs required commit
 - Displays exactly what needs to change
 
 **Possible statuses:**
-✅ **Environment matches!** - You can use this model right now
-⚠️ **Setup required** - Commits don't match, setup script will fix it
+
+**Model Download:**
+- ✅ **Model: Downloaded ✓** - Model found in ~/models/ or HF cache
+- ⚠️ **Model: Not downloaded** - Setup script will download it
+
+**Environment:**
+- ✅ **Environment matches!** - You can use this model right now
+- ⚠️ **Setup required** - Commits don't match, setup script will fix it
 
 **Example scenario:**
 
@@ -285,7 +295,20 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
 
 **What the generated script does:**
 
-1. **Check out exact tt-metal commit:**
+1. **Download model from HuggingFace (if not already present):**
+   - Checks if model is already downloaded in `~/models/` or HF cache
+   - If missing, downloads using `huggingface-cli download`
+   - Requires HF_TOKEN or huggingface-cli login for gated models
+   - Example output:
+     ```
+     Checking for model: Llama-3.1-8B-Instruct...
+     Model: Not downloaded
+       Will download to: ~/models/Llama-3.1-8B-Instruct
+     Downloading meta-llama/Llama-3.1-8B-Instruct to ~/models/Llama-3.1-8B-Instruct...
+     ✓ Model downloaded to ~/models/Llama-3.1-8B-Instruct
+     ```
+
+2. **Check out exact tt-metal commit:**
    ```bash
    cd ~/tt-metal
    git fetch origin
@@ -294,20 +317,20 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
    ./build_metal.sh
    ```
 
-2. **Check out exact vLLM commit:**
+3. **Check out exact vLLM commit:**
    ```bash
    cd ~/tt-vllm
    git fetch origin
    git checkout a91b644
    ```
 
-3. **Create/update Python venv:**
+4. **Create/update Python venv:**
    ```bash
    python3 -m venv ~/tt-vllm-venv
    source ~/tt-vllm-venv/bin/activate
    ```
 
-4. **Install dependencies:**
+5. **Install dependencies:**
    ```bash
    pip install --upgrade pip
    export vllm_dir=~/tt-vllm
@@ -317,7 +340,7 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
    pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
    ```
 
-5. **Display environment variables:**
+6. **Display environment variables:**
    ```bash
    echo 'To use this configuration:'
    echo '  export TT_METAL_HOME=~/tt-metal'
@@ -329,6 +352,34 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
 ```
 ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
 ```
+
+**HuggingFace Authentication Options:**
+
+If the model is gated (like Llama models), you need authentication:
+
+**Option 1: Environment variable (recommended)**
+```bash
+export HF_TOKEN=hf_...
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+```
+
+**Option 2: Command line argument**
+```bash
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup --hf-token hf_...
+```
+
+**Option 3: Use existing huggingface-cli login**
+```bash
+huggingface-cli login
+# Enter token when prompted
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+```
+
+**What happens during model download:**
+- TT-Jukebox checks if model already exists in `~/models/` or HF cache
+- If model exists: Shows "✓ Model already exists at {path}"
+- If model missing: Downloads using `huggingface-cli download {hf_repo} --local-dir {path}`
+- If authentication fails: Shows clear error with instructions
 
 ---
 

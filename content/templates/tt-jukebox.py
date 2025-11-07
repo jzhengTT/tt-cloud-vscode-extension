@@ -451,6 +451,7 @@ def display_model_spec(spec: Dict, index: int, env_match: Optional[Dict] = None)
     """Display a single model spec in a readable format."""
     print(f"\n{Colors.BOLD}[{index}] {spec.get('model_name', 'Unknown Model')}{Colors.ENDC}")
     print(f"    ID: {spec.get('model_id', 'N/A')}")
+    print(f"    HuggingFace: {spec.get('hf_model_repo', 'N/A')}")
     print(f"    Device: {spec.get('device_type', 'N/A')}")
     print(f"    Version: {spec.get('version', 'N/A')}")
     print(f"    tt-metal commit: {spec.get('tt_metal_commit', 'N/A')}")
@@ -464,16 +465,26 @@ def display_model_spec(spec: Dict, index: int, env_match: Optional[Dict] = None)
     if 'min_ram_gb' in spec:
         print(f"    Min RAM: {spec['min_ram_gb']} GB")
 
+    # Check model download status
+    model_info = detect_model_download(spec)
+    if model_info:
+        if model_info['exists']:
+            print(f"    {Colors.OKGREEN}Model: Downloaded ✓{Colors.ENDC}")
+            print(f"      Path: {model_info['path']}")
+        else:
+            print(f"    {Colors.WARNING}Model: Not downloaded{Colors.ENDC}")
+            print(f"      Will download to: {model_info['path']}")
+
     # Show environment compatibility
     if env_match:
         if env_match['needs_setup']:
-            print(f"    {Colors.WARNING}Status: Setup required{Colors.ENDC}")
+            print(f"    {Colors.WARNING}Environment: Setup required{Colors.ENDC}")
             if env_match['metal_diff']:
                 print(f"      tt-metal: {env_match['metal_diff']}")
             if env_match['vllm_diff']:
                 print(f"      vLLM: {env_match['vllm_diff']}")
         else:
-            print(f"    {Colors.OKGREEN}Status: Environment matches!{Colors.ENDC}")
+            print(f"    {Colors.OKGREEN}Environment: Matches! ✓{Colors.ENDC}")
 
 
 def display_current_environment(hardware: Optional[str], firmware: Optional[str],
@@ -516,6 +527,67 @@ def display_current_environment(hardware: Optional[str], firmware: Optional[str]
 
 
 # ============================================================================
+# Model Download Detection
+# ============================================================================
+
+def detect_model_download(spec: Dict) -> Optional[Dict[str, str]]:
+    """
+    Check if model is already downloaded from HuggingFace.
+    Returns dict with path info or None if not found.
+    """
+    import os
+
+    # Get HuggingFace model repo from spec
+    hf_repo = spec.get('hf_model_repo', '')
+    model_name = spec.get('model_name', '')
+
+    if not hf_repo:
+        return None
+
+    # Common model download locations
+    possible_paths = [
+        Path.home() / 'models' / model_name,
+        Path.home() / '.cache' / 'huggingface' / 'hub' / f"models--{hf_repo.replace('/', '--')}",
+    ]
+
+    for path in possible_paths:
+        if path.exists():
+            # Check if it looks like a valid model directory
+            # (has config.json or pytorch files)
+            if any((path / f).exists() for f in ['config.json', 'model.safetensors', 'pytorch_model.bin']):
+                return {
+                    'path': str(path),
+                    'exists': True,
+                }
+
+    return {
+        'path': str(Path.home() / 'models' / model_name),
+        'exists': False,
+    }
+
+
+def check_hf_token() -> Optional[str]:
+    """Check if HuggingFace token is available."""
+    import os
+
+    # Check environment variable
+    token = os.environ.get('HF_TOKEN')
+    if token:
+        return token
+
+    # Check huggingface-cli config
+    token_path = Path.home() / '.cache' / 'huggingface' / 'token'
+    if token_path.exists():
+        try:
+            with open(token_path, 'r') as f:
+                return f.read().strip()
+        except:
+            pass
+
+    return None
+
+
+# ============================================================================
 # Setup Functions
 # ============================================================================
 
@@ -535,6 +607,55 @@ def generate_setup_script(spec: Dict, metal_info: Optional[Dict], vllm_info: Opt
         "echo '================================'",
         "",
     ]
+
+    # Model download from HuggingFace
+    model_info = detect_model_download(spec)
+    hf_repo = spec.get('hf_model_repo', '')
+
+    if hf_repo and model_info:
+        model_path = model_info['path']
+        model_exists = model_info['exists']
+
+        if not model_exists:
+            script_lines.extend([
+                "# Download model from HuggingFace",
+                f"echo 'Checking for model: {spec.get('model_name', 'Unknown')}...'",
+                "",
+                "# Check if HF_TOKEN is set",
+                "if [ -z \"$HF_TOKEN\" ]; then",
+                "    echo 'HF_TOKEN not set. Checking huggingface-cli login...'",
+                "    if ! huggingface-cli whoami &>/dev/null; then",
+                "        echo ''",
+                "        echo 'ERROR: Not logged into HuggingFace!'",
+                "        echo ''",
+                "        echo 'Please either:'",
+                "        echo '  1. Set HF_TOKEN environment variable:'",
+                "        echo '     export HF_TOKEN=hf_...'",
+                "        echo ''",
+                "        echo '  2. Or login with huggingface-cli:'",
+                "        echo '     huggingface-cli login'",
+                "        echo ''",
+                "        exit 1",
+                "    fi",
+                "else",
+                "    echo 'Using HF_TOKEN from environment'",
+                "fi",
+                "",
+                f"echo 'Downloading {hf_repo} to {model_path}...'",
+                f"mkdir -p {model_path}",
+                "",
+                "# Use hf download (huggingface-hub CLI)",
+                f"huggingface-cli download {hf_repo} --local-dir {model_path}",
+                "",
+                f"echo '✓ Model downloaded to {model_path}'",
+                "",
+            ])
+        else:
+            script_lines.extend([
+                "# Model already downloaded",
+                f"echo '✓ Model already exists at {model_path}'",
+                "",
+            ])
 
     # tt-metal setup
     metal_commit = spec.get('tt_metal_commit', '')
@@ -713,8 +834,16 @@ Examples:
                        help='Generate and save setup script for selected model')
     parser.add_argument('--force', '-f', action='store_true',
                        help='Skip confirmation prompts')
+    parser.add_argument('--hf-token', '--token',
+                       help='HuggingFace token for model downloads (or set HF_TOKEN env var)')
 
     args = parser.parse_args()
+
+    # Set HF_TOKEN from argument if provided
+    if args.hf_token:
+        import os
+        os.environ['HF_TOKEN'] = args.hf_token
+        print_info('Using HF_TOKEN from command line argument')
 
     # Banner
     print_header("🎵 TT-Jukebox: Model & Environment Manager")
