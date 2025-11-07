@@ -657,15 +657,30 @@ def generate_setup_script(spec: Dict, metal_info: Optional[Dict], vllm_info: Opt
                 "",
             ])
 
-    # tt-metal setup
+    # tt-metal setup - sandboxed installation
     metal_commit = spec.get('tt_metal_commit', '')
-    if metal_commit and metal_info:
+    if metal_commit and vllm_info:
+        # Create sandboxed tt-metal next to vLLM
+        vllm_parent = str(Path(vllm_info['path']).parent)
+        sandbox_metal_path = f"{vllm_parent}/tt-metal-{metal_commit[:7]}"
+
         script_lines.extend([
-            "# Setup tt-metal",
-            f"echo 'Checking out tt-metal commit {metal_commit}...'",
-            f"cd {metal_info['path']}",
-            f"git fetch origin",
-            f"git checkout {metal_commit}",
+            "# Setup sandboxed tt-metal (isolated from main installation)",
+            f"echo 'Setting up tt-metal commit {metal_commit} in sandbox...'",
+            "",
+            f"# Check if sandbox already exists",
+            f"if [ -d {sandbox_metal_path} ]; then",
+            f"    echo '  Sandbox exists at {sandbox_metal_path}'",
+            f"    cd {sandbox_metal_path}",
+            f"    git fetch origin",
+            f"    git checkout {metal_commit}",
+            "else",
+            f"    echo '  Cloning tt-metal to {sandbox_metal_path}...'",
+            f"    git clone https://github.com/tenstorrent/tt-metal.git {sandbox_metal_path}",
+            f"    cd {sandbox_metal_path}",
+            f"    git checkout {metal_commit}",
+            "fi",
+            "",
             "git submodule update --init --recursive",
             "./build_metal.sh",
             "",
@@ -697,20 +712,111 @@ def generate_setup_script(spec: Dict, metal_info: Optional[Dict], vllm_info: Opt
             "",
         ])
 
+    # Get vLLM configuration from spec
+    device_model_spec = spec.get('device_model_spec', {})
+    max_context = device_model_spec.get('max_context', 65536)
+    max_num_seqs = device_model_spec.get('max_num_seqs', 16)
+    block_size = device_model_spec.get('block_size', 64)
+    device_type = spec.get('device_type', 'N150')
+
+    # Determine sandboxed tt-metal path
+    if metal_commit and vllm_info:
+        vllm_parent = str(Path(vllm_info['path']).parent)
+        sandbox_metal_path = f"{vllm_parent}/tt-metal-{metal_commit[:7]}"
+    else:
+        sandbox_metal_path = metal_info['path'] if metal_info else '~/tt-metal'
+
+    # Model path from detection
+    model_info = detect_model_download(spec)
+    model_path = model_info['path'] if model_info else f"~/models/{spec.get('model_name', 'model')}"
+
     # Configuration info
     script_lines.extend([
         "echo ''",
+        "echo '================================'",
         "echo 'Setup complete!'",
+        "echo '================================'",
         "echo ''",
         "echo 'Configuration:'",
-        f"echo '  Device: {spec.get('device_type', 'N/A')}'",
-        f"echo '  Max context: {spec.get('max_context_length', 'N/A')} tokens'",
+        f"echo '  Model: {spec.get('model_name', 'N/A')}'",
+        f"echo '  Device: {device_type}'",
+        f"echo '  Max context: {max_context:,} tokens'",
+        f"echo '  Sandboxed tt-metal: {sandbox_metal_path}'",
         "echo ''",
-        "echo 'To use this configuration:'",
-        f"echo '  export TT_METAL_HOME={metal_info['path'] if metal_info else '~/tt-metal'}'",
-        f"echo '  export MESH_DEVICE={spec.get('device_type', 'N150')}'",
-        "echo '  source ~/tt-vllm-venv/bin/activate'",
+    ])
+
+    # Generate companion start script
+    safe_name = re.sub(r'[^a-zA-Z0-9-]', '_', spec.get('model_name', 'model').lower())
+    start_script_path = f"~/tt-scratchpad/start_{safe_name}.sh"
+
+    script_lines.extend([
+        "# Generate start script with recommended parameters",
+        f"cat > {start_script_path} << 'EOFSTART'",
+        "#!/bin/bash",
+        "# Auto-generated vLLM start script",
+        f"# Model: {spec.get('model_name', 'N/A')}",
+        f"# Device: {device_type}",
         "",
+        "cd ~/tt-vllm",
+        "source ~/tt-vllm-venv/bin/activate",
+        f"export TT_METAL_HOME={sandbox_metal_path}",
+        f"export MESH_DEVICE={device_type}",
+        "export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH",
+        "source ~/tt-vllm/tt_metal/setup-metal.sh",
+        "",
+        "# Recommended parameters (from tested spec)",
+        f"python ~/tt-scratchpad/start-vllm-server.py \\\\",
+        f"    --model {model_path} \\\\",
+        "    --host 0.0.0.0 \\\\",
+        "    --port 8000 \\\\",
+        f"    --max-model-len {max_context} \\\\",
+        f"    --max-num-seqs {max_num_seqs} \\\\",
+        f"    --block-size {block_size}",
+        "EOFSTART",
+        "",
+        f"chmod +x {start_script_path}",
+        "",
+        "# Generate scaled-down alternative script",
+        f"cat > {start_script_path}.scaled_down << 'EOFSCALED'",
+        "#!/bin/bash",
+        "# Auto-generated vLLM start script (SCALED DOWN)",
+        f"# Model: {spec.get('model_name', 'N/A')}",
+        f"# Device: {device_type}",
+        "# Use this if recommended parameters cause OOM",
+        "",
+        "cd ~/tt-vllm",
+        "source ~/tt-vllm-venv/bin/activate",
+        f"export TT_METAL_HOME={sandbox_metal_path}",
+        f"export MESH_DEVICE={device_type}",
+        "export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH",
+        "source ~/tt-vllm/tt_metal/setup-metal.sh",
+        "",
+        "# Reduced parameters (50% context, 50% batch size)",
+        f"python ~/tt-scratchpad/start-vllm-server.py \\\\",
+        f"    --model {model_path} \\\\",
+        "    --host 0.0.0.0 \\\\",
+        "    --port 8000 \\\\",
+        f"    --max-model-len {max_context // 2} \\\\",
+        f"    --max-num-seqs {max_num_seqs // 2} \\\\",
+        f"    --block-size {block_size}",
+        "EOFSCALED",
+        "",
+        f"chmod +x {start_script_path}.scaled_down",
+        "",
+        "echo ''",
+        "echo '================================'",
+        "echo 'Next Steps'",
+        "echo '================================'",
+        "echo ''",
+        "echo '1. Start vLLM server (recommended parameters):'",
+        f"echo '   bash {start_script_path}'",
+        "echo ''",
+        "echo '2. If server fails (OOM), try scaled-down parameters:'",
+        f"echo '   bash {start_script_path}.scaled_down'",
+        "echo ''",
+        "echo '3. Test server once running:'",
+        f"echo '   curl http://localhost:8000/v1/chat/completions -H \"Content-Type: application/json\" -d \\'{{\"model\": \"{spec.get('hf_model_repo', '')}\", \"messages\": [{{\"role\": \"user\", \"content\": \"Hello!\"}}], \"max_tokens\": 128}}\\''",
+        "echo ''",
     ])
 
     return "\n".join(script_lines)
