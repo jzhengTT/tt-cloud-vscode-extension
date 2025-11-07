@@ -1,0 +1,842 @@
+#!/usr/bin/env python3
+"""
+TT-Jukebox: Intelligent Model & Environment Manager for Tenstorrent Hardware
+
+This script:
+1. Detects your hardware (N150, N300, T3K, etc.)
+2. Scans your current tt-metal and tt-vllm installations
+3. Fetches the official model specs from tt-inference-server
+4. Matches your request (task or model) to compatible configurations
+5. Either uses what you have OR sets up the exact environment needed
+
+Usage:
+    python3 tt-jukebox.py chat                    # Find best model for chat
+    python3 tt-jukebox.py --model llama           # Match any Llama variant
+    python3 tt-jukebox.py generate_image          # Find image generation model
+    python3 tt-jukebox.py --model mistral --setup # Setup environment
+    python3 tt-jukebox.py --list                  # List all compatible models
+
+Author: Tenstorrent Developer Extension
+Version: 1.0.0
+"""
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+from urllib.request import urlopen
+
+# Color codes for terminal output
+class Colors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+def print_header(text: str):
+    print(f"\n{Colors.HEADER}{Colors.BOLD}{'='*70}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{text}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{'='*70}{Colors.ENDC}\n")
+
+def print_success(text: str):
+    print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
+
+def print_info(text: str):
+    print(f"{Colors.OKCYAN}ℹ {text}{Colors.ENDC}")
+
+def print_warning(text: str):
+    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
+
+def print_error(text: str):
+    print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
+
+
+# ============================================================================
+# Hardware Detection
+# ============================================================================
+
+def detect_hardware() -> Optional[str]:
+    """
+    Detect Tenstorrent hardware using tt-smi.
+    Returns device type (N150, N300, T3K, etc.) or None if not found.
+    """
+    print_info("Detecting Tenstorrent hardware...")
+
+    try:
+        result = subprocess.run(
+            ['tt-smi', '-s'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        output = result.stdout + result.stderr
+
+        # Try to parse JSON format
+        try:
+            json_match = re.search(r'\{[\s\S]*\}', output)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                if 'device_info' in data and len(data['device_info']) > 0:
+                    device = data['device_info'][0]
+                    if 'board_info' in device and 'board_type' in device['board_info']:
+                        board_type = device['board_info']['board_type'].upper()
+                        # Extract device model (N150, N300, etc.)
+                        match = re.search(r'([NP]\d+)', board_type)
+                        if match:
+                            device_type = match.group(1)
+                            print_success(f"Detected: {device_type}")
+                            return device_type
+        except json.JSONDecodeError:
+            pass
+
+        # Fallback: text parsing
+        for line in output.split('\n'):
+            if 'Board Type:' in line or 'board_type' in line:
+                match = re.search(r'[nNpP](\d+)', line)
+                if match:
+                    device_type = f"N{match.group(1)}"
+                    print_success(f"Detected: {device_type}")
+                    return device_type
+
+        print_warning("Could not determine device type from tt-smi output")
+        return None
+
+    except FileNotFoundError:
+        print_error("tt-smi not found. Is Tenstorrent software installed?")
+        return None
+    except subprocess.TimeoutExpired:
+        print_error("tt-smi timed out")
+        return None
+    except Exception as e:
+        print_error(f"Error running tt-smi: {e}")
+        return None
+
+
+def get_firmware_version() -> Optional[str]:
+    """Get firmware version from tt-smi."""
+    try:
+        result = subprocess.run(
+            ['tt-smi', '-s'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        output = result.stdout + result.stderr
+
+        # Look for firmware version
+        for line in output.split('\n'):
+            if 'fw_bundle_version' in line or 'FW Version:' in line or 'Firmware Version:' in line:
+                match = re.search(r'(\d+\.\d+\.\d+)', line)
+                if match:
+                    return match.group(1)
+
+        return None
+    except:
+        return None
+
+
+# ============================================================================
+# Environment Detection
+# ============================================================================
+
+def detect_tt_metal() -> Optional[Dict[str, str]]:
+    """
+    Detect tt-metal installation and version.
+    Returns dict with path, commit, version, or None if not found.
+    """
+    print_info("Checking tt-metal installation...")
+
+    # Check common locations
+    possible_paths = [
+        Path.home() / 'tt-metal',
+        Path.home() / 'tenstorrent' / 'tt-metal',
+        Path('/opt/tt-metal'),
+    ]
+
+    # Also check TT_METAL_HOME env var
+    if 'TT_METAL_HOME' in os.environ:
+        possible_paths.insert(0, Path(os.environ['TT_METAL_HOME']))
+
+    for path in possible_paths:
+        if path.exists() and (path / '.git').exists():
+            try:
+                # Get git commit
+                result = subprocess.run(
+                    ['git', 'rev-parse', '--short', 'HEAD'],
+                    cwd=path,
+                    capture_output=True,
+                    text=True
+                )
+                commit = result.stdout.strip()
+
+                # Try to get version tag
+                result = subprocess.run(
+                    ['git', 'describe', '--tags', '--always'],
+                    cwd=path,
+                    capture_output=True,
+                    text=True
+                )
+                version = result.stdout.strip()
+
+                # Check if it's on main branch
+                result = subprocess.run(
+                    ['git', 'branch', '--show-current'],
+                    cwd=path,
+                    capture_output=True,
+                    text=True
+                )
+                branch = result.stdout.strip()
+
+                info = {
+                    'path': str(path),
+                    'commit': commit,
+                    'version': version,
+                    'branch': branch
+                }
+
+                print_success(f"Found tt-metal at {path}")
+                print_info(f"  Branch: {branch}, Commit: {commit}, Version: {version}")
+
+                return info
+
+            except Exception as e:
+                print_warning(f"Found tt-metal at {path} but couldn't get git info: {e}")
+                return {'path': str(path), 'commit': None, 'version': None, 'branch': None}
+
+    print_warning("tt-metal not found in standard locations")
+    return None
+
+
+def detect_tt_vllm() -> Optional[Dict[str, str]]:
+    """
+    Detect tt-vllm installation and version.
+    Returns dict with path, commit, branch, or None if not found.
+    """
+    print_info("Checking tt-vllm installation...")
+
+    # Check common locations
+    possible_paths = [
+        Path.home() / 'tt-vllm',
+        Path.home() / 'vllm',
+        Path.home() / 'tenstorrent' / 'vllm',
+    ]
+
+    for path in possible_paths:
+        if path.exists() and (path / '.git').exists():
+            try:
+                # Get git commit
+                result = subprocess.run(
+                    ['git', 'rev-parse', '--short', 'HEAD'],
+                    cwd=path,
+                    capture_output=True,
+                    text=True
+                )
+                commit = result.stdout.strip()
+
+                # Get branch
+                result = subprocess.run(
+                    ['git', 'branch', '--show-current'],
+                    cwd=path,
+                    capture_output=True,
+                    text=True
+                )
+                branch = result.stdout.strip()
+
+                info = {
+                    'path': str(path),
+                    'commit': commit,
+                    'branch': branch
+                }
+
+                print_success(f"Found tt-vllm at {path}")
+                print_info(f"  Branch: {branch}, Commit: {commit}")
+
+                return info
+
+            except Exception as e:
+                print_warning(f"Found tt-vllm at {path} but couldn't get git info: {e}")
+                return {'path': str(path), 'commit': None, 'branch': None}
+
+    print_warning("tt-vllm not found in standard locations")
+    return None
+
+
+def check_python_version() -> Tuple[str, bool]:
+    """Check Python version. Returns (version_string, is_compatible)."""
+    version = sys.version_info
+    version_str = f"{version.major}.{version.minor}.{version.micro}"
+    is_compatible = version.major == 3 and version.minor >= 9
+    return version_str, is_compatible
+
+
+# ============================================================================
+# Model Specs Fetching
+# ============================================================================
+
+def fetch_model_specs() -> Optional[List[Dict]]:
+    """
+    Fetch model specifications from tt-inference-server GitHub.
+    Returns list of model specs or None if fetch fails.
+    """
+    url = "https://raw.githubusercontent.com/tenstorrent/tt-inference-server/main/model_specs_output.json"
+
+    print_info("Fetching model specifications from tt-inference-server...")
+
+    try:
+        with urlopen(url, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+
+        # Handle both dict (current format) and list formats
+        if isinstance(data, dict):
+            # Convert dict to list of specs
+            specs = list(data.values())
+        elif isinstance(data, list):
+            specs = data
+        else:
+            print_error("Unexpected format in model specs")
+            return None
+
+        print_success(f"Fetched {len(specs)} model specifications")
+        return specs
+
+    except Exception as e:
+        print_error(f"Failed to fetch model specs: {e}")
+        print_warning("Will operate with limited information")
+        return None
+
+
+# ============================================================================
+# Model Matching
+# ============================================================================
+
+def filter_by_hardware(specs: List[Dict], hardware: str) -> List[Dict]:
+    """Filter specs to only those compatible with detected hardware."""
+    filtered = []
+
+    for spec in specs:
+        # Check device_type field
+        if 'device_type' in spec:
+            device = spec['device_type'].upper()
+            if hardware.upper() in device or device in hardware.upper():
+                filtered.append(spec)
+
+    return filtered
+
+
+def match_model_name(specs: List[Dict], model_query: str) -> List[Dict]:
+    """
+    Match model specs by name/query.
+    Supports fuzzy matching (e.g., 'llama' matches 'Llama-3.1-8B').
+    """
+    model_query_lower = model_query.lower()
+    matches = []
+
+    for spec in specs:
+        model_name = spec.get('model_name', '').lower()
+        model_id = spec.get('model_id', '').lower()
+
+        # Exact match
+        if model_query_lower == model_name:
+            spec['match_score'] = 100
+            matches.append(spec)
+        # Substring match
+        elif model_query_lower in model_name or model_query_lower in model_id:
+            spec['match_score'] = 80
+            matches.append(spec)
+        # Partial word match (e.g., 'llama' in 'Llama-3.1')
+        elif any(word.startswith(model_query_lower) for word in model_name.split('-')):
+            spec['match_score'] = 60
+            matches.append(spec)
+
+    # Sort by match score (highest first)
+    matches.sort(key=lambda x: x.get('match_score', 0), reverse=True)
+
+    return matches
+
+
+def match_task(specs: List[Dict], task: str) -> List[Dict]:
+    """
+    Match model specs by task type.
+    Tasks: chat, generate_image, generate_video, code_assistant, agent
+    """
+    task_lower = task.lower()
+
+    # Task to model type mapping
+    task_mappings = {
+        'chat': ['llama', 'mistral', 'qwen', 'gemma'],
+        'code': ['llama', 'qwen', 'code'],
+        'code_assistant': ['llama', 'qwen', 'code'],
+        'generate_image': ['stable', 'diffusion', 'sd', 'image'],
+        'generate_video': ['video', 'sora'],
+        'agent': ['qwen', 'llama', 'agent'],
+        'reasoning': ['qwq', 'reason'],
+    }
+
+    # Get relevant keywords for this task
+    keywords = task_mappings.get(task_lower, [task_lower])
+
+    matches = []
+    for spec in specs:
+        model_name = spec.get('model_name', '').lower()
+        model_id = spec.get('model_id', '').lower()
+
+        for keyword in keywords:
+            if keyword in model_name or keyword in model_id:
+                spec['match_score'] = 70
+                matches.append(spec)
+                break
+
+    return matches
+
+
+def check_environment_match(spec: Dict, metal_info: Optional[Dict], vllm_info: Optional[Dict]) -> Dict[str, any]:
+    """
+    Check if current environment matches spec requirements.
+    Returns dict with compatibility info.
+    """
+    match_info = {
+        'metal_compatible': False,
+        'vllm_compatible': False,
+        'metal_diff': None,
+        'vllm_diff': None,
+        'needs_setup': True
+    }
+
+    if not metal_info or not vllm_info:
+        return match_info
+
+    # Check tt-metal commit
+    spec_metal_commit = spec.get('tt_metal_commit', '')
+    current_metal_commit = metal_info.get('commit', '')
+
+    if spec_metal_commit and current_metal_commit:
+        if spec_metal_commit == current_metal_commit:
+            match_info['metal_compatible'] = True
+        else:
+            match_info['metal_diff'] = f"{current_metal_commit} -> {spec_metal_commit}"
+
+    # Check vllm commit
+    spec_vllm_commit = spec.get('vllm_commit', '')
+    current_vllm_commit = vllm_info.get('commit', '')
+
+    if spec_vllm_commit and current_vllm_commit:
+        if spec_vllm_commit == current_vllm_commit:
+            match_info['vllm_compatible'] = True
+        else:
+            match_info['vllm_diff'] = f"{current_vllm_commit} -> {spec_vllm_commit}"
+
+    # If both compatible, no setup needed
+    if match_info['metal_compatible'] and match_info['vllm_compatible']:
+        match_info['needs_setup'] = False
+
+    return match_info
+
+
+# ============================================================================
+# Display Functions
+# ============================================================================
+
+def display_model_spec(spec: Dict, index: int, env_match: Optional[Dict] = None):
+    """Display a single model spec in a readable format."""
+    print(f"\n{Colors.BOLD}[{index}] {spec.get('model_name', 'Unknown Model')}{Colors.ENDC}")
+    print(f"    ID: {spec.get('model_id', 'N/A')}")
+    print(f"    Device: {spec.get('device_type', 'N/A')}")
+    print(f"    Version: {spec.get('version', 'N/A')}")
+    print(f"    tt-metal commit: {spec.get('tt_metal_commit', 'N/A')}")
+    print(f"    vLLM commit: {spec.get('vllm_commit', 'N/A')}")
+
+    # Max context is nested in device_model_spec
+    if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
+        print(f"    Max context: {spec['device_model_spec']['max_context']:,} tokens")
+    if 'min_disk_gb' in spec:
+        print(f"    Min disk: {spec['min_disk_gb']} GB")
+    if 'min_ram_gb' in spec:
+        print(f"    Min RAM: {spec['min_ram_gb']} GB")
+
+    # Show environment compatibility
+    if env_match:
+        if env_match['needs_setup']:
+            print(f"    {Colors.WARNING}Status: Setup required{Colors.ENDC}")
+            if env_match['metal_diff']:
+                print(f"      tt-metal: {env_match['metal_diff']}")
+            if env_match['vllm_diff']:
+                print(f"      vLLM: {env_match['vllm_diff']}")
+        else:
+            print(f"    {Colors.OKGREEN}Status: Environment matches!{Colors.ENDC}")
+
+
+def display_current_environment(hardware: Optional[str], firmware: Optional[str],
+                                metal: Optional[Dict], vllm: Optional[Dict],
+                                python_ver: str, python_ok: bool):
+    """Display current system environment."""
+    print_header("Current Environment")
+
+    # Hardware
+    if hardware:
+        print_success(f"Hardware: {hardware}")
+    else:
+        print_error("Hardware: Not detected")
+
+    # Firmware
+    if firmware:
+        print_info(f"Firmware: {firmware}")
+    else:
+        print_warning("Firmware: Unknown")
+
+    # Python
+    if python_ok:
+        print_success(f"Python: {python_ver}")
+    else:
+        print_error(f"Python: {python_ver} (requires 3.9+)")
+
+    # tt-metal
+    if metal:
+        print_success(f"tt-metal: {metal['path']}")
+        print_info(f"  Branch: {metal['branch']}, Commit: {metal['commit']}")
+    else:
+        print_error("tt-metal: Not found")
+
+    # tt-vllm
+    if vllm:
+        print_success(f"tt-vllm: {vllm['path']}")
+        print_info(f"  Branch: {vllm['branch']}, Commit: {vllm['commit']}")
+    else:
+        print_error("tt-vllm: Not found")
+
+
+# ============================================================================
+# Setup Functions
+# ============================================================================
+
+def generate_setup_script(spec: Dict, metal_info: Optional[Dict], vllm_info: Optional[Dict]) -> str:
+    """Generate a bash setup script for the specified model configuration."""
+
+    script_lines = [
+        "#!/bin/bash",
+        "# Auto-generated setup script by tt-jukebox",
+        f"# Model: {spec.get('model_name', 'Unknown')}",
+        f"# Device: {spec.get('device_type', 'Unknown')}",
+        "",
+        "set -e  # Exit on error",
+        "",
+        "echo '================================'",
+        f"echo 'Setting up: {spec.get('model_name', 'Unknown')}'",
+        "echo '================================'",
+        "",
+    ]
+
+    # tt-metal setup
+    metal_commit = spec.get('tt_metal_commit', '')
+    if metal_commit and metal_info:
+        script_lines.extend([
+            "# Setup tt-metal",
+            f"echo 'Checking out tt-metal commit {metal_commit}...'",
+            f"cd {metal_info['path']}",
+            f"git fetch origin",
+            f"git checkout {metal_commit}",
+            "git submodule update --init --recursive",
+            "./build_metal.sh",
+            "",
+        ])
+
+    # vLLM setup
+    vllm_commit = spec.get('vllm_commit', '')
+    if vllm_commit and vllm_info:
+        script_lines.extend([
+            "# Setup vLLM",
+            f"echo 'Checking out vLLM commit {vllm_commit}...'",
+            f"cd {vllm_info['path']}",
+            "git fetch origin",
+            f"git checkout {vllm_commit}",
+            "",
+            "# Create/update venv",
+            "if [ ! -d ~/tt-vllm-venv ]; then",
+            "    python3 -m venv ~/tt-vllm-venv",
+            "fi",
+            "source ~/tt-vllm-venv/bin/activate",
+            "",
+            "# Install dependencies",
+            "pip install --upgrade pip",
+            f"export vllm_dir={vllm_info['path']}",
+            "source $vllm_dir/tt_metal/setup-metal.sh",
+            "pip install --upgrade ttnn pytest",
+            "pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48",
+            "pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu",
+            "",
+        ])
+
+    # Configuration info
+    script_lines.extend([
+        "echo ''",
+        "echo 'Setup complete!'",
+        "echo ''",
+        "echo 'Configuration:'",
+        f"echo '  Device: {spec.get('device_type', 'N/A')}'",
+        f"echo '  Max context: {spec.get('max_context_length', 'N/A')} tokens'",
+        "echo ''",
+        "echo 'To use this configuration:'",
+        f"echo '  export TT_METAL_HOME={metal_info['path'] if metal_info else '~/tt-metal'}'",
+        f"echo '  export MESH_DEVICE={spec.get('device_type', 'N150')}'",
+        "echo '  source ~/tt-vllm-venv/bin/activate'",
+        "",
+    ])
+
+    return "\n".join(script_lines)
+
+
+def save_setup_script(script_content: str, model_name: str) -> str:
+    """Save setup script to file and make it executable."""
+    # Create setup scripts directory
+    scripts_dir = Path.home() / 'tt-scratchpad' / 'setup-scripts'
+    scripts_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate filename
+    safe_name = re.sub(r'[^a-zA-Z0-9-]', '_', model_name.lower())
+    script_path = scripts_dir / f"setup_{safe_name}.sh"
+
+    # Write script
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+
+    # Make executable
+    os.chmod(script_path, 0o755)
+
+    return str(script_path)
+
+
+# ============================================================================
+# Main Functions
+# ============================================================================
+
+def list_compatible_models(specs: List[Dict], hardware: str):
+    """List all models compatible with the detected hardware."""
+    print_header(f"Models Compatible with {hardware}")
+
+    compatible = filter_by_hardware(specs, hardware)
+
+    if not compatible:
+        print_warning(f"No models found for {hardware} in the specifications database")
+        print_info("This may mean:")
+        print_info("  1. Your hardware is very new and not yet in the database")
+        print_info("  2. Models work but aren't officially cataloged yet")
+        print_info("  3. Try using 'latest main' branches for tt-metal and vLLM")
+        return
+
+    # Group by model family
+    families = {}
+    for spec in compatible:
+        model_name = spec.get('model_name', 'Unknown')
+        family = model_name.split('-')[0] if '-' in model_name else model_name
+        if family not in families:
+            families[family] = []
+        families[family].append(spec)
+
+    for family, models in sorted(families.items()):
+        print(f"\n{Colors.BOLD}{family} Family:{Colors.ENDC}")
+        for spec in models:
+            print(f"  • {spec.get('model_name', 'Unknown')}")
+            # Get max context from nested device_model_spec
+            max_context = 'N/A'
+            if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
+                max_context = spec['device_model_spec']['max_context']
+            print(f"    Context: {max_context} tokens, "
+                  f"Disk: {spec.get('min_disk_gb', 'N/A')} GB")
+
+    print(f"\n{Colors.BOLD}Total: {len(compatible)} compatible models{Colors.ENDC}")
+
+
+def interactive_selection(matches: List[Dict], metal_info: Optional[Dict],
+                         vllm_info: Optional[Dict]) -> Optional[Dict]:
+    """Present matches to user and let them choose."""
+    if not matches:
+        print_warning("No matches found")
+        return None
+
+    print_header("Matching Configurations")
+
+    # Display all matches with environment compatibility
+    for i, spec in enumerate(matches, 1):
+        env_match = check_environment_match(spec, metal_info, vllm_info)
+        display_model_spec(spec, i, env_match)
+
+    # Prompt for selection
+    print(f"\n{Colors.BOLD}Select a configuration (1-{len(matches)}) or 'q' to quit:{Colors.ENDC} ", end='')
+
+    try:
+        choice = input().strip()
+        if choice.lower() == 'q':
+            return None
+
+        index = int(choice) - 1
+        if 0 <= index < len(matches):
+            return matches[index]
+        else:
+            print_error("Invalid selection")
+            return None
+    except (ValueError, KeyboardInterrupt):
+        print_error("\nCancelled")
+        return None
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='TT-Jukebox: Intelligent Model & Environment Manager',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s chat                          Find best model for chat
+  %(prog)s --model llama                 Match any Llama variant
+  %(prog)s generate_image                Find image generation model
+  %(prog)s --model mistral --setup       Setup environment for Mistral
+  %(prog)s --list                        List all compatible models
+        """
+    )
+
+    parser.add_argument('task', nargs='?',
+                       help='Task to perform (chat, code_assistant, generate_image, etc.)')
+    parser.add_argument('--model', '-m',
+                       help='Model name to match (fuzzy matching supported)')
+    parser.add_argument('--list', '-l', action='store_true',
+                       help='List all compatible models for your hardware')
+    parser.add_argument('--setup', '-s', action='store_true',
+                       help='Generate and save setup script for selected model')
+    parser.add_argument('--force', '-f', action='store_true',
+                       help='Skip confirmation prompts')
+
+    args = parser.parse_args()
+
+    # Banner
+    print_header("🎵 TT-Jukebox: Model & Environment Manager")
+
+    # Detect environment
+    hardware = detect_hardware()
+    firmware = get_firmware_version()
+    metal_info = detect_tt_metal()
+    vllm_info = detect_tt_vllm()
+    python_ver, python_ok = check_python_version()
+
+    # Display current environment
+    display_current_environment(hardware, firmware, metal_info, vllm_info,
+                                python_ver, python_ok)
+
+    if not hardware:
+        print_error("\nCannot proceed without hardware detection")
+        print_info("Make sure tt-smi is installed and hardware is connected")
+        return 1
+
+    # Fetch model specs
+    specs = fetch_model_specs()
+    if not specs:
+        print_error("\nCannot proceed without model specifications")
+        return 1
+
+    # Handle --list
+    if args.list:
+        list_compatible_models(specs, hardware)
+        return 0
+
+    # Filter by hardware first
+    compatible_specs = filter_by_hardware(specs, hardware)
+
+    if not compatible_specs:
+        print_warning(f"\nNo models cataloged for {hardware} in the database")
+        print_info("Note: Many models work but aren't in the official table yet")
+        print_info("Try using 'latest main' for tt-metal and 'dev' for vLLM")
+        return 0
+
+    # Match by model or task
+    matches = []
+
+    if args.model:
+        print_info(f"\nSearching for models matching '{args.model}'...")
+        matches = match_model_name(compatible_specs, args.model)
+    elif args.task:
+        print_info(f"\nSearching for models suitable for '{args.task}'...")
+        matches = match_task(compatible_specs, args.task)
+    else:
+        print_error("\nPlease specify either a task or --model")
+        parser.print_help()
+        return 1
+
+    if not matches:
+        print_warning("No matching configurations found")
+        print_info("Try:")
+        print_info("  • Different model name or task")
+        print_info("  • Use --list to see all available models")
+        return 0
+
+    # Interactive selection
+    selected = interactive_selection(matches, metal_info, vllm_info)
+
+    if not selected:
+        return 0
+
+    # Check if setup is needed
+    env_match = check_environment_match(selected, metal_info, vllm_info)
+
+    if not env_match['needs_setup']:
+        print_success("\n✓ Your environment already matches this configuration!")
+        print_info("You can use this model right away")
+        return 0
+
+    # Generate setup script
+    if args.setup or env_match['needs_setup']:
+        print_info("\nGenerating setup script...")
+
+        if not metal_info or not vllm_info:
+            print_error("Cannot generate setup script: tt-metal or tt-vllm not found")
+            print_info("Please install these first:")
+            print_info("  tt-metal: git clone https://github.com/tenstorrent/tt-metal.git ~/tt-metal")
+            print_info("  tt-vllm: git clone --branch dev https://github.com/tenstorrent/vllm.git ~/tt-vllm")
+            return 1
+
+        script_content = generate_setup_script(selected, metal_info, vllm_info)
+        script_path = save_setup_script(script_content, selected.get('model_name', 'model'))
+
+        print_success(f"\n✓ Setup script saved to: {script_path}")
+        print_info("\nTo set up this environment:")
+        print(f"  bash {script_path}")
+        print_info("\nThis will:")
+        print("  • Checkout the correct tt-metal commit")
+        print("  • Rebuild tt-metal")
+        print("  • Checkout the correct vLLM commit")
+        print("  • Create/update Python venv")
+        print("  • Install all dependencies")
+
+        if not args.force:
+            print(f"\n{Colors.BOLD}Run setup now? (y/N):{Colors.ENDC} ", end='')
+            response = input().strip().lower()
+            if response == 'y':
+                print_info("\nExecuting setup script...")
+                result = subprocess.run(['bash', script_path])
+                if result.returncode == 0:
+                    print_success("\n✓ Setup completed successfully!")
+                else:
+                    print_error(f"\n✗ Setup failed with exit code {result.returncode}")
+                    return result.returncode
+
+        return 0
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        print(f"\n{Colors.WARNING}Interrupted by user{Colors.ENDC}")
+        sys.exit(130)
+    except Exception as e:
+        print_error(f"\nUnexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
