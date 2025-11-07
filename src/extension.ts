@@ -1614,12 +1614,13 @@ async function handleChatRequest(
     messages.push({role: 'user', content: request.prompt});
 
     // Call vLLM server
-    const modelConfig = getModelConfig(DEFAULT_MODEL_KEY);
+    // Use the local model path (same as what server was started with)
+    const modelPath = await getModelBasePath();
     const response = await fetch('http://localhost:8000/v1/chat/completions', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        model: modelConfig.huggingfaceId,
+        model: modelPath,
         messages,
         max_tokens: 512,
         stream: true,

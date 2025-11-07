@@ -320,18 +320,28 @@ def fetch_model_specs() -> Optional[List[Dict]]:
 # Model Matching
 # ============================================================================
 
-def filter_by_hardware(specs: List[Dict], hardware: str) -> List[Dict]:
-    """Filter specs to only those compatible with detected hardware."""
-    filtered = []
+def filter_by_hardware(specs: List[Dict], hardware: str, include_experimental: bool = False) -> Tuple[List[Dict], List[Dict]]:
+    """
+    Filter specs by hardware compatibility.
+
+    Returns:
+        (validated_specs, experimental_specs) - Validated models and experimental maybes
+    """
+    validated = []
+    experimental = []
 
     for spec in specs:
         # Check device_type field
         if 'device_type' in spec:
             device = spec['device_type'].upper()
             if hardware.upper() in device or device in hardware.upper():
-                filtered.append(spec)
+                validated.append(spec)
+            elif include_experimental:
+                # Check if model might work on similar hardware
+                # e.g., N150 model might work on N300, smaller models might work on larger chips
+                experimental.append(spec)
 
-    return filtered
+    return validated, experimental
 
 
 def match_model_name(specs: List[Dict], model_query: str) -> List[Dict]:
@@ -444,12 +454,44 @@ def check_environment_match(spec: Dict, metal_info: Optional[Dict], vllm_info: O
 
 
 # ============================================================================
+# Conservative Parameters for Experimental Models
+# ============================================================================
+
+def apply_conservative_params(spec: Dict) -> Dict:
+    """
+    Apply conservative parameters for experimental/unvalidated models.
+    Reduces memory-intensive parameters by 33% to minimize OOM risk.
+    """
+    conservative_spec = spec.copy()
+    device_model_spec = conservative_spec.get('device_model_spec', {}).copy()
+
+    # Reduce context length by 33%
+    if 'max_context' in device_model_spec:
+        original = device_model_spec['max_context']
+        device_model_spec['max_context'] = int(original * 0.67)
+
+    # Reduce batch size by 33%
+    if 'max_num_seqs' in device_model_spec:
+        original = device_model_spec['max_num_seqs']
+        device_model_spec['max_num_seqs'] = max(1, int(original * 0.67))
+
+    conservative_spec['device_model_spec'] = device_model_spec
+    conservative_spec['_is_experimental'] = True  # Mark as experimental
+
+    return conservative_spec
+
+
+# ============================================================================
 # Display Functions
 # ============================================================================
 
-def display_model_spec(spec: Dict, index: int, env_match: Optional[Dict] = None):
+def display_model_spec(spec: Dict, index: int, env_match: Optional[Dict] = None, is_experimental: bool = False):
     """Display a single model spec in a readable format."""
     print(f"\n{Colors.BOLD}[{index}] {spec.get('model_name', 'Unknown Model')}{Colors.ENDC}")
+
+    if is_experimental:
+        print(f"    {Colors.WARNING}⚠ EXPERIMENTAL - Not validated for this hardware{Colors.ENDC}")
+        print(f"    {Colors.WARNING}Using conservative parameters (33% reduction){Colors.ENDC}")
     print(f"    ID: {spec.get('model_id', 'N/A')}")
     print(f"    HuggingFace: {spec.get('hf_model_repo', 'N/A')}")
     print(f"    Device: {spec.get('device_type', 'N/A')}")
@@ -850,13 +892,13 @@ def save_setup_script(script_content: str, model_name: str) -> str:
 # Main Functions
 # ============================================================================
 
-def list_compatible_models(specs: List[Dict], hardware: str):
+def list_compatible_models(specs: List[Dict], hardware: str, show_experimental: bool = False):
     """List all models compatible with the detected hardware."""
     print_header(f"Models Compatible with {hardware}")
 
-    compatible = filter_by_hardware(specs, hardware)
+    validated, experimental = filter_by_hardware(specs, hardware, show_experimental)
 
-    if not compatible:
+    if not validated and not experimental:
         print_warning(f"No models found for {hardware} in the specifications database")
         print_info("This may mean:")
         print_info("  1. Your hardware is very new and not yet in the database")
@@ -864,27 +906,57 @@ def list_compatible_models(specs: List[Dict], hardware: str):
         print_info("  3. Try using 'latest main' branches for tt-metal and vLLM")
         return
 
-    # Group by model family
-    families = {}
-    for spec in compatible:
-        model_name = spec.get('model_name', 'Unknown')
-        family = model_name.split('-')[0] if '-' in model_name else model_name
-        if family not in families:
-            families[family] = []
-        families[family].append(spec)
+    # Display validated models
+    if validated:
+        print(f"\n{Colors.OKGREEN}{Colors.BOLD}✓ VALIDATED MODELS{Colors.ENDC}")
+        families = {}
+        for spec in validated:
+            model_name = spec.get('model_name', 'Unknown')
+            family = model_name.split('-')[0] if '-' in model_name else model_name
+            if family not in families:
+                families[family] = []
+            families[family].append(spec)
 
-    for family, models in sorted(families.items()):
-        print(f"\n{Colors.BOLD}{family} Family:{Colors.ENDC}")
-        for spec in models:
-            print(f"  • {spec.get('model_name', 'Unknown')}")
-            # Get max context from nested device_model_spec
-            max_context = 'N/A'
-            if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
-                max_context = spec['device_model_spec']['max_context']
-            print(f"    Context: {max_context} tokens, "
-                  f"Disk: {spec.get('min_disk_gb', 'N/A')} GB")
+        for family, models in sorted(families.items()):
+            print(f"\n{Colors.BOLD}{family} Family:{Colors.ENDC}")
+            for spec in models:
+                print(f"  • {spec.get('model_name', 'Unknown')}")
+                # Get max context from nested device_model_spec
+                max_context = 'N/A'
+                if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
+                    max_context = spec['device_model_spec']['max_context']
+                print(f"    Context: {max_context} tokens, "
+                      f"Disk: {spec.get('min_disk_gb', 'N/A')} GB")
 
-    print(f"\n{Colors.BOLD}Total: {len(compatible)} compatible models{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}Total validated: {len(validated)} models{Colors.ENDC}")
+
+    # Display experimental models if requested
+    if show_experimental and experimental:
+        print(f"\n{Colors.WARNING}{Colors.BOLD}⚠ EXPERIMENTAL MODELS (not validated){Colors.ENDC}")
+        print(f"{Colors.WARNING}These models may work but will use conservative parameters (33% reduction){Colors.ENDC}")
+
+        families = {}
+        for spec in experimental:
+            model_name = spec.get('model_name', 'Unknown')
+            family = model_name.split('-')[0] if '-' in model_name else model_name
+            if family not in families:
+                families[family] = []
+            families[family].append(spec)
+
+        for family, models in sorted(families.items()):
+            print(f"\n{Colors.BOLD}{family} Family:{Colors.ENDC}")
+            for spec in models:
+                device_type = spec.get('device_type', 'Unknown')
+                print(f"  • {spec.get('model_name', 'Unknown')} (validated for {device_type})")
+                # Get max context from nested device_model_spec
+                max_context = 'N/A'
+                if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
+                    max_context = spec['device_model_spec']['max_context']
+                print(f"    Context: {max_context} tokens, "
+                      f"Disk: {spec.get('min_disk_gb', 'N/A')} GB")
+
+        print(f"\n{Colors.BOLD}Total experimental: {len(experimental)} models{Colors.ENDC}")
+        print(f"{Colors.WARNING}Use --show-experimental with model search to try these{Colors.ENDC}")
 
 
 def interactive_selection(matches: List[Dict], metal_info: Optional[Dict],
@@ -899,7 +971,8 @@ def interactive_selection(matches: List[Dict], metal_info: Optional[Dict],
     # Display all matches with environment compatibility
     for i, spec in enumerate(matches, 1):
         env_match = check_environment_match(spec, metal_info, vllm_info)
-        display_model_spec(spec, i, env_match)
+        is_experimental = spec.get('_is_experimental', False)
+        display_model_spec(spec, i, env_match, is_experimental)
 
     # Prompt for selection
     print(f"\n{Colors.BOLD}Select a configuration (1-{len(matches)}) or 'q' to quit:{Colors.ENDC} ", end='')
@@ -931,6 +1004,8 @@ Examples:
   %(prog)s generate_image                Find image generation model
   %(prog)s --model mistral --setup       Setup environment for Mistral
   %(prog)s --list                        List all compatible models
+  %(prog)s --list --show-experimental    List validated + experimental models
+  %(prog)s chat --show-experimental      Include unvalidated models in search
         """
     )
 
@@ -946,6 +1021,8 @@ Examples:
                        help='Skip confirmation prompts')
     parser.add_argument('--hf-token', '--token',
                        help='HuggingFace token for model downloads (or set HF_TOKEN env var)')
+    parser.add_argument('--show-experimental', '-e', action='store_true',
+                       help='Include experimental/unvalidated models that might work on your hardware')
 
     args = parser.parse_args()
 
@@ -982,27 +1059,35 @@ Examples:
 
     # Handle --list
     if args.list:
-        list_compatible_models(specs, hardware)
+        list_compatible_models(specs, hardware, args.show_experimental)
         return 0
 
     # Filter by hardware first
-    compatible_specs = filter_by_hardware(specs, hardware)
+    validated_specs, experimental_specs = filter_by_hardware(specs, hardware, args.show_experimental)
 
-    if not compatible_specs:
+    if not validated_specs and not experimental_specs:
         print_warning(f"\nNo models cataloged for {hardware} in the database")
         print_info("Note: Many models work but aren't in the official table yet")
         print_info("Try using 'latest main' for tt-metal and 'dev' for vLLM")
         return 0
+
+    # Combine validated and experimental (with conservative params) if requested
+    all_specs = validated_specs[:]
+    if args.show_experimental and experimental_specs:
+        print_info(f"\nIncluding {len(experimental_specs)} experimental models with conservative parameters")
+        # Apply conservative parameters to experimental models
+        for spec in experimental_specs:
+            all_specs.append(apply_conservative_params(spec))
 
     # Match by model or task
     matches = []
 
     if args.model:
         print_info(f"\nSearching for models matching '{args.model}'...")
-        matches = match_model_name(compatible_specs, args.model)
+        matches = match_model_name(all_specs, args.model)
     elif args.task:
         print_info(f"\nSearching for models suitable for '{args.task}'...")
-        matches = match_task(compatible_specs, args.task)
+        matches = match_task(all_specs, args.task)
     else:
         print_error("\nPlease specify either a task or --model")
         parser.print_help()
@@ -1013,6 +1098,8 @@ Examples:
         print_info("Try:")
         print_info("  • Different model name or task")
         print_info("  • Use --list to see all available models")
+        if not args.show_experimental:
+            print_info("  • Add --show-experimental to include unvalidated models")
         return 0
 
     # Interactive selection
