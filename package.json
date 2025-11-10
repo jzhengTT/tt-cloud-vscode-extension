@@ -2,8 +2,16 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.9",
+  "version": "0.0.36",
   "publisher": "tenstorrent",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jzhengTT/tt-cloud-vscode-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jzhengTT/tt-cloud-vscode-extension/issues"
+  },
+  "homepage": "https://github.com/jzhengTT/tt-cloud-vscode-extension#readme",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -12,10 +20,26 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
-    "*"
+    "onStartupFinished",
+    "onWalkthrough:tenstorrent.setup",
+    "onLanguageModelTool:tenstorrent-chat"
   ],
   "contributes": {
+    "chatParticipants": [
+      {
+        "id": "tenstorrent.chat",
+        "name": "tenstorrent",
+        "fullName": "Tenstorrent AI",
+        "description": "AI assistant powered by Tenstorrent hardware",
+        "isSticky": true
+      }
+    ],
     "commands": [
+      {
+        "command": "tenstorrent.showWelcome",
+        "title": "Show Welcome Page",
+        "category": "Tenstorrent"
+      },
       {
         "command": "tenstorrent.openWalkthrough",
         "title": "Open Setup Walkthrough",
@@ -137,6 +161,11 @@
         "category": "Tenstorrent"
       },
       {
+        "command": "tenstorrent.updateTTMetal",
+        "title": "Update and Build TT-Metal",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.cloneVllm",
         "title": "Clone TT vLLM Repository",
         "category": "Tenstorrent"
@@ -164,6 +193,116 @@
       {
         "command": "tenstorrent.testVllmCurl",
         "title": "Test vLLM with curl",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmForChat",
+        "title": "Start vLLM Server for Chat",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.enableChatParticipant",
+        "title": "Enable VSCode Chat",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testChat",
+        "title": "Test Chat Integration",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.resetDevice",
+        "title": "Reset Device",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.clearDeviceState",
+        "title": "Clear Device State",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.showDeviceActions",
+        "title": "Show Device Actions",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.generateRetroImage",
+        "title": "Generate Sample Image with SD 3.5 Large",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startInteractiveImageGen",
+        "title": "Start Interactive SD 3.5 Image Generation",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.verifyCodingModel",
+        "title": "Verify Llama 3.1 8B Model",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createCodingAssistantScript",
+        "title": "Create Coding Assistant Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startCodingAssistant",
+        "title": "Start Coding Assistant",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.copyJukebox",
+        "title": "Copy TT-Jukebox to Scratchpad",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.listJukeboxModels",
+        "title": "List Compatible Models",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.jukeboxFindChat",
+        "title": "Find Chat Models with Jukebox",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.jukeboxSearchLlama",
+        "title": "Search for Llama Models with Jukebox",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.jukeboxSetupLlama",
+        "title": "Generate Setup Script for Llama",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runJukeboxSetup",
+        "title": "Run Jukebox Setup Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.verifyJukeboxEnv",
+        "title": "Verify Jukebox Environment",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startJukeboxVllm",
+        "title": "Start vLLM with Jukebox Config",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testJukeboxOpenai",
+        "title": "Test Jukebox vLLM with OpenAI SDK",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testJukeboxCurl",
+        "title": "Test Jukebox vLLM with curl",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.monitorJukeboxPv",
+        "title": "Monitor Jukebox vLLM with pv",
         "category": "Tenstorrent"
       }
     ],
@@ -238,6 +377,50 @@
             "completionEvents": [
               "onCommand:tenstorrent.startVllmServer"
             ]
+          },
+          {
+            "id": "vscode-chat",
+            "title": "VSCode Chat Integration",
+            "description": "Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent hardware.",
+            "media": {
+              "markdown": "content/lessons/07-vscode-chat.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.testChat"
+            ]
+          },
+          {
+            "id": "image-generation",
+            "title": "Image Generation with SD 3.5 Large",
+            "description": "Generate high-resolution 1024x1024 images using Stable Diffusion 3.5 Large running natively on your Tenstorrent hardware!",
+            "media": {
+              "markdown": "content/lessons/08-image-generation.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.generateRetroImage"
+            ]
+          },
+          {
+            "id": "coding-assistant",
+            "title": "Coding Assistant with Prompt Engineering",
+            "description": "Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn how to shape model behavior through system prompts - a critical real-world skill!",
+            "media": {
+              "markdown": "content/lessons/09-coding-assistant.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.startCodingAssistant"
+            ]
+          },
+          {
+            "id": "jukebox-environment",
+            "title": "Environment Management with TT-Jukebox",
+            "description": "Use TT-Jukebox to intelligently match models to your hardware, generate reproducible setup scripts, and build tested environments with exact commit SHAs. Eliminate version mismatch errors forever!",
+            "media": {
+              "markdown": "content/lessons/10-jukebox-environment.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.copyJukebox"
+            ]
           }
         ]
       }
@@ -246,7 +429,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "tsc -p ./ && npm run copy-content",
-    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/",
+    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/welcome dist/content/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "compile": "tsc -p ./"

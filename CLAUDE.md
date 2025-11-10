@@ -4,7 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a VS Code extension for Tenstorrent hardware setup and development. The extension uses **VSCode's native Walkthroughs API** to provide an interactive, step-by-step onboarding experience that guides users through hardware detection, installation verification, and model downloading.
+This is a VS Code extension for Tenstorrent hardware setup and development. The extension provides:
+
+1. **Interactive Walkthroughs** - Step-by-step guides using VSCode's native Walkthroughs API
+2. **Device Status Monitoring** - Real-time statusbar integration with tt-smi for device monitoring
+3. **VSCode Chat Integration** - @tenstorrent chat participant powered by local vLLM server
+4. **Template Scripts** - Production-ready Python scripts for inference and API servers
 
 ## Build and Development Commands
 
@@ -30,6 +35,27 @@ To manually open the walkthrough:
 1. Open Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
 2. Search for "Welcome: Open Walkthrough"
 3. Select "Get Started with Tenstorrent"
+
+Alternatively, open the welcome page:
+1. Open Command Palette
+2. Run "Tenstorrent: Show Welcome Page"
+3. The welcome page provides an overview and links to all walkthroughs
+
+## Working Directory Structure
+
+The extension creates a dedicated directory for all generated scripts and files:
+
+**Scratchpad Directory:** `~/tt-scratchpad/`
+- All Python scripts created from templates are saved here
+- Examples: `tt-chat-direct.py`, `tt-api-server-direct.py`
+- Keeps user workspace organized and scripts easy to find
+- Directory is automatically created when first script is generated
+
+**Benefits:**
+- ✅ Clear separation between extension-generated code and user projects
+- ✅ All scripts in one predictable location
+- ✅ Easy to customize, backup, or delete generated files
+- ✅ No clutter in home directory root
 
 ## Architecture
 
@@ -102,6 +128,114 @@ This declarative structure defines:
 - No webview/HTML generation (uses native walkthrough UI)
 - No custom UI code (leverages VSCode theming)
 - Commands are simple: create terminal → send command → show feedback
+
+### Device Status Monitoring (Statusbar Integration)
+
+**Overview:**
+The extension includes a non-obtrusive statusbar item that monitors Tenstorrent device status in real-time using tt-smi. This provides quick access to device information and actions without cluttering the UI.
+
+**Statusbar Display States:**
+- `$(check) TT: N150` - Device healthy (green checkmark)
+- `$(warning) TT: N150` - Device has issues (yellow warning)
+- `$(sync~spin) TT: Checking...` - Currently checking status
+- `$(x) TT: No device` - No device detected (red X)
+- `$(question) TT: Unknown` - Status unknown
+
+**Architecture:**
+
+1. **Cached Status Updates:**
+   - Device status is cached to minimize tt-smi calls
+   - Default update interval: 60 seconds (configurable: 30s, 1m, 2m, 5m, 10m)
+   - Updates run in background using `child_process.exec()`
+   - Timeout: 5 seconds to prevent blocking
+   - Can be enabled/disabled by user
+
+2. **Parsing tt-smi Output:**
+   - Extracts device type (N150, N300, T3K, etc.) from "Board Type:" line
+   - Extracts firmware version from "FW Version:" or "Firmware Version:" line
+   - Detects errors by searching for keywords: "error", "failed", "timeout"
+   - Status determination:
+     - `healthy`: Device found, no errors
+     - `warning`: Device found but has issues
+     - `error`: tt-smi failed or errors detected
+     - `unknown`: Initial state or parsing failed
+
+3. **Quick Actions Menu (on click):**
+   Opens QuickPick menu with contextual actions:
+   - **Refresh Status** - Manually trigger tt-smi update (shows time since last check)
+   - **Check Device Status** - Open terminal and run tt-smi for full output
+   - **Firmware Version** - Display firmware version in info message (if available)
+   - **Reset Device** - Run `tt-smi -r` with confirmation
+   - **Clear Device State** - Kill processes, clear /dev/shm, reset device (requires sudo)
+   - **Configure Update Interval** - Change auto-update frequency
+   - **Enable/Disable Auto-Update** - Toggle periodic status checks
+
+4. **Device Management Commands:**
+
+   **tenstorrent.resetDevice:**
+   ```typescript
+   async function resetDevice(): Promise<void> {
+     // Confirms with user before resetting
+     // Runs tt-smi -r in terminal
+     // Refreshes statusbar after 3 seconds
+   }
+   ```
+
+   **tenstorrent.clearDeviceState:**
+   ```typescript
+   async function clearDeviceState(): Promise<void> {
+     // Confirms with user (warns about sudo requirement)
+     // Multi-step cleanup:
+     //   1. Kill tt-metal and vllm processes
+     //   2. Clear /dev/shm/tenstorrent* and /dev/shm/tt_*
+     //   3. Reset device with tt-smi -r
+     // Refreshes statusbar after 5 seconds
+   }
+   ```
+
+**Implementation Details:**
+
+**File:** `src/extension.ts` (lines 41-374)
+
+**Key Functions:**
+- `parseDeviceInfo(output: string)` - Parses tt-smi output into DeviceInfo object
+- `updateDeviceStatus()` - Runs tt-smi async and updates cache
+- `updateStatusBarItem()` - Updates statusbar text/icon based on cached status
+- `showDeviceActionsMenu()` - Displays QuickPick menu with actions
+- `configureUpdateInterval()` - Allows user to set update frequency
+- `toggleAutoUpdate()` - Enable/disable periodic updates
+- `startStatusUpdateTimer()` - Starts setInterval timer for updates
+- `stopStatusUpdateTimer()` - Clears update timer
+- `resetDevice()` - Soft reset via tt-smi -r
+- `clearDeviceState()` - Full cleanup (processes, /dev/shm, reset)
+
+**Persistent State:**
+Stored in VSCode globalState (survives extension restarts):
+- `STATUSBAR_UPDATE_INTERVAL` - Update interval in seconds (default: 60)
+- `STATUSBAR_ENABLED` - Whether auto-update is enabled (default: true)
+
+**Lifecycle:**
+- Initialized in `activate()` - Creates statusbar item, registers commands, starts timer
+- Cleaned up in `deactivate()` - Stops timer, clears references
+
+**Error Handling:**
+- tt-smi not found: Shows "No device" status
+- tt-smi timeout (>5s): Shows "error" status
+- Parse errors: Falls back to "unknown" status
+- All errors are handled gracefully without blocking UI
+
+**Benefits:**
+- ✅ Non-obtrusive - Single statusbar item, doesn't take much space
+- ✅ Efficient - Cached updates, configurable intervals
+- ✅ Contextual - Only shows relevant actions based on device state
+- ✅ Safe - Confirms before destructive operations
+- ✅ Informative - Shows device type, firmware, last check time
+
+**Use Cases:**
+1. **Quick health check** - Glance at statusbar to see if device is healthy
+2. **Firmware debugging** - View firmware version without running tt-smi
+3. **Recovery from errors** - Reset device or clear state when initialization fails
+4. **Development workflow** - Monitor device during development without manual checks
 
 ### VSCode Walkthroughs API Features Used
 
@@ -376,13 +510,126 @@ New commands follow this pattern:
 
 Each lesson builds on the previous, maintaining the Generator API understanding while adding capabilities.
 
-### Remaining Implementation
+### Model Format Requirements (IMPORTANT)
 
-See `NEXT_STEPS.md` for complete implementation details. Key tasks:
-1. Add new command functions to `src/extension.ts`
-2. Register commands in `activate()` function
-3. Update `package.json` with new commands and Lesson 6 walkthrough step
-4. Test all lessons in Extension Development Host
+**Two model formats needed:**
+- **Meta native format** (in `original/` subdirectory): Used by pytest demos (Lesson 3)
+  - Files: `params.json`, `consolidated.00.pth`, `tokenizer.model`
+  - Environment variable: `LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original`
+- **HuggingFace format** (in root directory): Used by Direct API and vLLM (Lessons 4-7)
+  - Files: `config.json`, `model.safetensors`, etc.
+  - Environment variable: `HF_MODEL=~/models/Llama-3.1-8B-Instruct`
+
+**Current implementation:**
+- Lesson 3 download command downloads BOTH formats (no `--include` filter)
+- This ensures all subsequent lessons work correctly
+- Total download size: ~16GB (both formats included)
+
+**Model paths by lesson:**
+- **Lesson 3** (pytest demos): `LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original`
+- **Lessons 4-5** (Direct API): `HF_MODEL=~/models/Llama-3.1-8B-Instruct`
+- **Lessons 6-7** (vLLM): `HF_MODEL=~/models/Llama-3.1-8B-Instruct`
+
+### Lessons 6-7: vLLM and VSCode Chat (Implemented)
+
+**Status:** Fully implemented and working
+
+**Key features:**
+1. **Lesson 6:** vLLM production server
+   - Dedicated venv at `~/tt-vllm-venv` to avoid dependency conflicts
+   - Requires dependencies: `fairscale`, `termcolor`, `loguru`, `blobfile`, `fire`, and `llama-models==0.0.48`
+     - These are optional dependencies of `llama-models` that must be installed separately
+     - `fairscale`: Required for model parallelism in llama3 reference implementation
+     - `termcolor`: Required for colored terminal output in llama3/generation.py
+     - `loguru`: Required by Tenstorrent's tt-metal vision demo code
+     - `blobfile`, `fire`: Additional llama3 requirements
+   - Uses HuggingFace model format
+   - OpenAI-compatible API
+
+2. **Lesson 7:** VSCode Chat integration
+   - Chat participant: `@tenstorrent`
+   - Connects to local vLLM server on port 8000
+   - Streaming responses via Server-Sent Events
+   - Full chat history context support
+
+**Implementation files:**
+- `content/lessons/06-vllm-production.md` (621 lines)
+- `content/lessons/07-vscode-chat.md` (586 lines)
+- Added chat participant and commands to `src/extension.ts`
+- Updated `package.json` with chat participant definition
+
+### Lesson 8: Image Generation with Stable Diffusion 3.5 Large (Implemented)
+
+**Status:** Fully implemented with NATIVE TT HARDWARE ACCELERATION
+
+**Key features:**
+- ✅ **Native TT Acceleration** - Runs on tt-metal using TT-NN operators (NOT CPU!)
+- ✅ **Stable Diffusion 3.5 Large** - State-of-the-art MMDiT architecture
+- ✅ **High Resolution** - Generates 1024x1024 images (vs 512x512)
+- ✅ **Fast** - ~12-15 seconds per image on N150 with hardware acceleration
+- ✅ **Interactive Mode** - Built-in prompt input for multiple generations
+
+**Architecture:**
+- **3 Text Encoders:** CLIP-L, CLIP-G, T5-XXL for rich text understanding
+- **MMDiT Transformer:** 38 blocks running on TT hardware
+- **28 Inference Steps:** Optimized for quality/speed
+- **VAE Decoder:** Converts latents to 1024x1024 pixels
+
+**Implementation:**
+
+1. **Model:** Stable Diffusion 3.5 Large (~10 GB)
+   - Location: `models/experimental/stable_diffusion_35_large/`
+   - From: `stabilityai/stable-diffusion-3.5-large`
+   - Native TT-NN implementation in tt-metal
+
+2. **Hardware Support:**
+   - ✅ N150 (1x1 mesh) - Single chip
+   - ✅ N300 (1x2 mesh) - Dual chip
+   - ✅ T3K (1x8 mesh) - 8-chip system
+   - ✅ TG (8x4 mesh) - Galaxy 32-chip
+
+3. **Performance on N150:**
+   - First run: Downloads model (~10 GB), loads (2-5 min)
+   - Generation: ~12-15 seconds per 1024x1024 image
+   - **Native hardware acceleration** - runs on TT cores!
+
+4. **Commands:**
+   ```bash
+   # Set environment
+   export MESH_DEVICE=N150
+
+   # Generate with default prompt (sample)
+   pytest models/experimental/stable_diffusion_35_large/demo.py
+
+   # Interactive mode (custom prompts)
+   export NO_PROMPT=0
+   pytest models/experimental/stable_diffusion_35_large/demo.py
+   ```
+
+**Implementation files:**
+- `content/lessons/08-image-generation.md` - Updated for SD 3.5 Large
+- `src/commands/terminalCommands.ts` - 2 commands (generate, interactive)
+- `src/extension.ts` - 2 command handlers
+- `package.json` - Updated walkthrough step and commands
+- Welcome page updated
+
+**Extension Commands:**
+- `tenstorrent.generateRetroImage` - Generate sample 1024x1024 image with default prompt
+- `tenstorrent.startInteractiveImageGen` - Start interactive mode for custom prompts
+
+**Key Advantages over SD 1.4:**
+- ✅ **Native TT acceleration** (not CPU fallback)
+- ✅ **4x higher resolution** (1024x1024 vs 512x512)
+- ✅ **Better quality** - MMDiT architecture
+- ✅ **Built into tt-metal** - No external dependencies
+- ✅ **Production ready** - Optimized parallelization
+
+The lesson teaches:
+- How MMDiT transformers work
+- Using experimental models in tt-metal
+- Mesh device configuration for N150
+- Native hardware-accelerated image generation
+- Interactive prompt-based workflows
 
 ### Key Learnings
 
@@ -391,6 +638,162 @@ See `NEXT_STEPS.md` for complete implementation details. Key tasks:
 - Opening files in editor is crucial for learning
 - Performance matters - 2-5 min per query is unacceptable for iteration
 - Need clear progression: learn → prototype → production
+
+## N150 Hardware Golden Path (Lesson 6-7)
+
+**Status:** Configured for N150 single-chip cloud deployment
+
+**Hardware Target:**
+- N150 (Wormhole) single chip
+- Cloud environment
+- tt-metal: **latest main branch** (must be rebuilt after updates)
+- vLLM branch: **dev (HEAD)**
+
+**⚠️ Version Strategy Change:**
+- Initially tried pinning to tt-metal v0.62.0-rc9 (August 2025)
+- Found that vLLM dev requires latest tt-metal APIs
+- **Solution:** Use latest on both repos (simpler, better tested)
+- **Critical:** Must rebuild tt-metal after git pull with `./build_metal.sh`
+
+**Model Configuration:**
+- Model: Llama-3.1-8B-Instruct
+- Size: 8B parameters (perfect for N150)
+- Tensor Parallelism: Not needed (single chip)
+- Context Length: 64K tokens (N150 limit)
+
+**Required Environment Variables:**
+```bash
+export TT_METAL_HOME=~/tt-metal                # Point to tt-metal (required by setup-metal.sh)
+export MESH_DEVICE=N150                        # Target N150 hardware
+export HF_MODEL=~/models/Llama-3.1-8B-Instruct # Model path
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH   # Critical: Find TTLlamaForCausalLM
+```
+
+**Required vLLM Flags:**
+```bash
+--max-model-len 65536                # 64K context limit for N150
+```
+
+**Why TT_METAL_HOME + PYTHONPATH matter:**
+- `TT_METAL_HOME`: setup-metal.sh uses this to set PYTHON_ENV_DIR correctly
+- `PYTHONPATH`: vLLM needs to import `TTLlamaForCausalLM` from tt-metal
+- Without these, you get: "Cannot find model module 'TTLlamaForCausalLM'"
+- The tt-metal directory contains the model implementation in `models/tt_transformers/tt/generator_vllm.py`
+
+**Why This Configuration:**
+1. Llama-3.1-8B officially supported on N150 (per vLLM tt_metal/README.md)
+2. Single chip = simpler deployment (no multi-chip tensor parallelism)
+3. Already downloaded in Lesson 3 (no additional downloads)
+4. Compatible with tt-metal v0.62.0 family
+5. Best balance of model capability vs hardware constraints
+
+**Alternative Models (NOT recommended for N150):**
+- Qwen 2.5 7B: Requires N300 (2 chips, TP=2)
+- Llama 3.3 70B: Requires QuietBox (8 chips, TP=8)
+- Larger models exceed N150 memory capacity
+
+**Commands Updated:**
+- `tenstorrent.runVllmOffline`: Includes MESH_DEVICE=N150 and --max_model_len 65536 (underscores)
+- `tenstorrent.startVllmServer`: Includes MESH_DEVICE=N150 and --max-model-len 65536 (hyphens)
+- `tenstorrent.startVllmForChat`: Includes MESH_DEVICE=N150 and --max-model-len 65536 (hyphens)
+- `tenstorrent.installVllm`: Includes all discovered dependencies
+
+**Note:** offline_inference_tt.py uses underscores `--max_model_len`, API server uses hyphens `--max-model-len`
+
+**Complete Dependency List (discovered through testing):**
+```bash
+pip install --upgrade ttnn pytest  # Critical: must upgrade ttnn for v0.62.0-rc9
+pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
+```
+
+**Documentation Updated:**
+- Lesson 6: Added "Hardware Configuration: N150 Golden Path" section
+- Lesson 6: Updated all vLLM commands with N150 configuration
+- Lesson 6: Added ttnn, pytest, and pytz to dependency list
+- All commands now explicitly set MESH_DEVICE=N150 and context limit
+- Troubleshooting section updated with ttnn upgrade instructions
+
+### ✅ WORKING: N150 vLLM Golden Path (2025-11-05)
+
+**Status:** Successfully tested and working on N150 hardware in cloud environment.
+
+**Complete Working Command:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
+```
+
+**Key Success Factors:**
+1. ✅ Custom starter script with `if __name__ == '__main__':` guard (prevents multiprocessing errors)
+2. ✅ Local model path (avoids HuggingFace gated repo authentication)
+3. ✅ TT model registration via `register_tt_models()`
+4. ✅ N150-specific configuration (64K context, appropriate batch size)
+5. ✅ All environment variables set correctly (TT_METAL_HOME, MESH_DEVICE, PYTHONPATH)
+
+**Version:** Extension v0.0.20 includes all fixes and tested configuration.
+
+### CRITICAL: vLLM TT Model Registration (2025-11-05)
+
+**Problem Discovered:**
+When users ran `python -m vllm.entrypoints.openai.api_server` directly, they got:
+```
+ValidationError: Cannot find model module. 'TTLlamaForCausalLM' is not a registered model
+WARNING: TTLlamaForCausalLM has no vLLM implementation, falling back to Transformers
+```
+
+**Root Cause:**
+vLLM doesn't automatically know about TT-specific model implementations (TTLlamaForCausalLM, etc.) in the tt-metal repository. These models must be explicitly registered using vLLM's `ModelRegistry.register_model()` API before starting the server.
+
+**Solution:**
+Use `examples/server_example_tt.py` instead of calling the API server directly. This script:
+
+1. Calls `register_tt_models()` which registers all TT models:
+   ```python
+   ModelRegistry.register_model("TTLlamaForCausalLM",
+       "models.tt_transformers.tt.generator_vllm:LlamaForCausalLM")
+   ```
+
+2. Then starts the API server with the correct parameters
+
+**Updated Command (Step 4 in Lesson 6):**
+```bash
+python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-num-seqs 16 \
+    --block-size 64
+```
+
+**Why a custom starter script?**
+The example scripts validate model names against a hardcoded list and try to download from HuggingFace. Our custom script (`start-vllm-server.py`):
+1. Registers TT models with vLLM (required)
+2. Accepts local model paths without validation
+3. Passes all args directly to the API server
+
+The extension automatically creates this script in `~/tt-scratchpad/` from a template.
+
+**Key Insight:**
+The example scripts (`offline_inference_tt.py`, `server_example_tt.py`) all include `register_tt_models()` at the top. This is not optional - without it, vLLM cannot find the TT model implementations even with correct PYTHONPATH and TT_METAL_HOME settings.
+
+**Environment variables still required:**
+- `TT_METAL_HOME=~/tt-metal` - Required by setup-metal.sh
+- `PYTHONPATH=$TT_METAL_HOME` - Allows Python to import from tt-metal
+- `MESH_DEVICE=N150` - Hardware target
+- Must source `~/tt-vllm/tt_metal/setup-metal.sh`
+
+**Model path:** Use the local path `~/models/Llama-3.1-8B-Instruct` (not HF model name). The model has HuggingFace format files in the root directory.
 
 ## File Structure
 
@@ -402,12 +805,20 @@ tt-vscode-ext-clean/
 │   │   ├── 02-verify-installation.md
 │   │   ├── 03-download-model.md
 │   │   ├── 04-interactive-chat.md
-│   │   └── 05-api-server.md
-│   └── templates/         # Python script templates deployed with extension
-│       ├── tt-chat.py     # Interactive REPL wrapper
-│       └── tt-api-server.py  # Flask HTTP API wrapper
+│   │   ├── 05-api-server.md
+│   │   ├── 06-vllm-production.md
+│   │   └── 07-vscode-chat.md
+│   ├── templates/         # Python script templates deployed with extension
+│   │   ├── tt-chat.py              # Interactive REPL wrapper
+│   │   ├── tt-api-server.py        # Flask HTTP API wrapper
+│   │   ├── tt-chat-direct.py       # Direct Generator API chat
+│   │   └── tt-api-server-direct.py # Direct Generator API server
+│   └── welcome/           # Welcome page content
+│       └── welcome.html   # Welcome page HTML with walkthrough links
 ├── src/
-│   ├── extension.ts       # Main extension code (command handlers only)
+│   ├── extension.ts       # Main extension code (command handlers + webview)
+│   ├── commands/
+│   │   └── terminalCommands.ts  # Terminal command definitions
 │   └── types/
 │       └── lesson.ts      # Legacy type definitions (not currently used)
 ├── vendor/
@@ -415,6 +826,13 @@ tt-vscode-ext-clean/
 ├── package.json           # Extension manifest with walkthrough definitions
 ├── tsconfig.json          # TypeScript configuration
 └── CLAUDE.md             # This file
+```
+
+**Generated Files (User System):**
+```
+~/tt-scratchpad/           # Extension-generated scripts (auto-created)
+├── tt-chat-direct.py      # Direct API chat script
+└── tt-api-server-direct.py # Direct API server script
 ```
 
 ## Migration Notes
@@ -428,3 +846,419 @@ This extension was refactored from a custom webview-based approach to use VSCode
 - **Better UX** (native VS Code theming and integration)
 
 The old approach required custom state management, HTML generation, and webview message passing. The new approach is declarative and leverages VSCode's built-in capabilities.
+
+## Lesson 9: Coding Assistant with Prompt Engineering (2025-11-06)
+
+**Final Implementation:** Uses Llama 3.1 8B with coding-focused system prompt
+
+### Evolution of Lesson 9
+
+**Iteration 1: Qwen 2.5 Coder 7B (Abandoned)**
+- Attempted to use Qwen 2.5 Coder 7B for N150
+- **Blocker:** Qwen requires N300 minimum (TP=2, dual-chip)
+- No Qwen model supports N150 single-chip
+
+**Iteration 2: Llama 3.2 6B AlgoCode (Abandoned)**
+- Attempted community fine-tune "prithivMLmods/Llama-3.2-6B-AlgoCode"
+- **Blocker 1:** Model only has HuggingFace format (no Meta `original/` checkpoint)
+- **Blocker 2:** Weight dimensions not tile-aligned for tt-metal (32x32 requirement)
+- Error: `Physical shard shape (10036, 352) must be tile {32, 32} sized!`
+- **Root cause:** Direct API requires Meta checkpoint format with tt-metal-compatible weights
+
+**Iteration 3: Llama 3.1 8B + Prompt Engineering (FINAL)**
+- ✅ Uses proven tt-metal compatible model (already downloaded in Lesson 3)
+- ✅ No compatibility issues - Meta format with proper tile alignment
+- ✅ Teaches prompt engineering - critical real-world skill
+- ✅ 80%+ of specialized model quality through system prompts
+- ✅ Transferable knowledge to all LLMs
+
+### Key Technical Insights
+
+**Why Specialized Models Failed:**
+1. **Model format mismatch:** Community HuggingFace models lack Meta checkpoint format
+2. **Tile alignment:** tt-metal requires weights divisible by 32x32 tiles
+3. **Hardware constraints:** Some models require multi-chip (TP > 1)
+4. **Direct API requirements:** Needs specifically adapted model architectures
+
+**Why Prompt Engineering Succeeds:**
+- Works with any compatible model
+- No weight conversion needed
+- No additional downloads
+- Industry-standard technique
+- Easy to customize and iterate
+
+### Implementation Details
+
+**Files Changed:**
+1. `content/lessons/09-algocode-assistant.md` - Complete rewrite with prompt engineering focus
+   - Added "Future Model Options" preamble explaining blockers
+   - Emphasis on prompt engineering as real-world technique
+   - Examples of system prompt architecture
+   - Comparison tables: prompt engineering vs model specialization
+   - Advanced techniques: few-shot, chain-of-thought, constrained generation
+   - Customization ideas for different domains
+
+2. `content/templates/tt-coding-assistant.py` - New template (replaces tt-algocode-chat.py)
+   - Uses Llama 3.1 8B with LLAMA_DIR (Meta format)
+   - Coding-focused system prompt embedded
+   - Temperature 0.7 for balanced determinism
+   - Educational comments explaining prompt engineering
+
+3. `src/extension.ts` - Updated command handlers
+   - Removed AlgoCode model from MODEL_REGISTRY
+   - `createAlgoCodeChatScript` now creates tt-coding-assistant.py
+   - `startAlgoCodeChat` uses Llama 3.1 8B original path
+   - Updated user-facing messages
+
+4. `src/commands/terminalCommands.ts` - Updated command templates
+   - DOWNLOAD_ALGOCODE now verifies Llama 3.1 8B (not downloads AlgoCode)
+   - START_ALGOCODE_CHAT uses correct model path
+   - Updated descriptions
+
+5. `package.json` - Updated walkthrough metadata
+   - Title: "Coding Assistant with Prompt Engineering"
+   - Description emphasizes prompt engineering skill
+   - Command titles updated
+
+**System Prompt Example:**
+```python
+SYSTEM_PROMPT = """You are an expert coding assistant specializing in:
+- Algorithm design and analysis
+- Data structures (trees, graphs, heaps, hash tables)
+- Code debugging and optimization
+...
+
+When answering:
+- Provide clear, concise explanations
+- Include code examples when relevant
+- Explain your reasoning
+- Consider edge cases
+..."""
+```
+
+### User Experience
+
+**What Users Learn:**
+1. Prompt engineering fundamentals
+2. System prompt architecture
+3. Shaping model behavior through instructions
+4. Few-shot learning, chain-of-thought, constrained generation
+5. Domain-specific customization
+
+**Practical Applications:**
+- Interactive code review
+- Algorithm learning
+- Debugging assistance
+- Code translation between languages
+- Test generation
+- Documentation generation
+
+**Extensibility:**
+- Customize system prompt for different domains (web dev, systems programming)
+- Add context management for multi-turn conversations
+- Integrate code execution
+- Add file I/O for codebase analysis
+- Build IDE integrations
+
+### Future Path Forward
+
+**When Model Support Expands:**
+The lesson includes a forward-looking "Future Model Options" section listing:
+- Llama 3.2 6B AlgoCode - Needs weight conversion for tile alignment
+- Qwen 2.5 Coder 7B - Needs N300 or single-chip optimization
+- CodeLlama - Needs architecture compatibility work
+- StarCoder2 - Needs custom tt-metal implementation
+
+**Migration Path:**
+Once models become compatible, users can swap them in using the same Direct API pattern they learned. The prompt engineering skills remain valuable across all models.
+
+### Key Takeaway
+
+**Prompt engineering is not a workaround - it's a feature.**
+
+Real production systems rely heavily on prompt engineering because:
+- It works across all models
+- Easy to iterate and customize
+- No model training required
+- Immediate results
+- Often delivers 80%+ of specialized model quality
+
+This lesson teaches a critical skill that applies to GPT, Claude, Gemini, and all future LLMs.
+
+## Lesson 10: Environment Management with TT-Jukebox
+
+### The Version Mismatch Problem
+
+Each model in production has been tested with SPECIFIC commits of tt-metal and vLLM. Using the wrong versions leads to compilation failures, runtime errors, and crashes.
+
+### TT-Jukebox Solution
+
+TT-Jukebox is an intelligent environment manager that:
+1. Detects your hardware automatically (tt-smi)
+2. Fetches official model specifications from GitHub
+3. Matches your task/model to compatible configurations
+4. **Checks if models are downloaded** (NEW in v0.0.32)
+5. Generates setup scripts with EXACT commit SHAs
+6. **Downloads models from HuggingFace if missing** (NEW in v0.0.32)
+7. Builds reproducible environments
+
+### Model Download Detection (v0.0.32)
+
+**Added Functions:**
+
+1. **detect_model_download()** - Checks if model exists:
+   - Location 1: `~/models/{model_name}/`
+   - Location 2: `~/.cache/huggingface/hub/models--{repo}/`
+   - Validates by checking for: `config.json`, `model.safetensors`, `pytorch_model.bin`
+
+2. **check_hf_token()** - Finds HuggingFace authentication:
+   - Checks `HF_TOKEN` environment variable
+   - Checks `~/.cache/huggingface/token` file
+   - Returns token or None
+
+3. **Modified generate_setup_script()** - Includes model download:
+   ```bash
+   # Check if HF_TOKEN is set
+   if [ -z "$HF_TOKEN" ]; then
+       if ! huggingface-cli whoami &>/dev/null; then
+           echo 'ERROR: Not logged into HuggingFace!'
+           exit 1
+       fi
+   fi
+
+   # Download model
+   huggingface-cli download {hf_repo} --local-dir {path}
+   ```
+
+4. **Modified display_model_spec()** - Shows download status:
+   ```
+   Model: Downloaded ✓
+     Path: ~/models/Llama-3.1-8B-Instruct
+
+   OR
+
+   Model: Not downloaded
+     Will download to: ~/models/Llama-3.1-8B-Instruct
+   ```
+
+### HuggingFace Authentication Options
+
+**Option 1: Environment variable (recommended)**
+```bash
+export HF_TOKEN=hf_...
+python3 tt-jukebox.py --model llama --setup
+```
+
+**Option 2: Command line argument**
+```bash
+python3 tt-jukebox.py --model llama --setup --hf-token hf_...
+```
+
+**Option 3: Use existing huggingface-cli login**
+```bash
+huggingface-cli login
+python3 tt-jukebox.py --model llama --setup
+```
+
+### Workflow
+
+1. Copy script: `tenstorrent.copyJukebox`
+2. List models: `python3 tt-jukebox.py --list`
+3. Find chat models: `python3 tt-jukebox.py chat`
+4. Search Llama: `python3 tt-jukebox.py --model llama`
+5. Generate setup: `python3 tt-jukebox.py --model llama-3.1-8b --setup`
+6. Execute setup: `bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh`
+7. Verify: Check commits match, test imports
+8. Start vLLM: Use spec-based flags (max_model_len, max_num_seqs, block_size)
+9. Test: OpenAI SDK, curl, pv (pipe viewer)
+
+### Key Benefits
+
+- ✅ Eliminates version mismatch errors
+- ✅ Reproducible environments (share setup scripts)
+- ✅ Intelligent matching (task or model name)
+- ✅ Hardware-aware (only compatible models)
+- ✅ Automated setup (bash scripts do everything)
+- ✅ Production-ready configs (tested vLLM flags)
+- ✅ **Automatic model downloads** (NEW - no manual download needed)
+- ✅ **HF authentication support** (NEW - multiple auth methods)
+- ✅ **Intelligent experimental matching** (NEW v0.0.35 - try unvalidated models safely)
+
+### Experimental Model Matching (v0.0.35)
+
+**Problem:** Official model specs only include validated configurations. Users with newer hardware (like Blackhole P100) or wanting to try unvalidated models had limited options.
+
+**Solution:** Intelligent partial compatibility detection using `--show-experimental` flag.
+
+**How it works:**
+
+The `filter_by_hardware()` function now analyzes multiple factors to determine compatibility:
+
+1. **Exact Device Match** → Validated List (regardless of status)
+   - P100 models on P100 hardware
+   - Shows status badge: [EXPERIMENTAL], [FUNCTIONAL], or [COMPLETE]
+
+2. **Same Architecture Family** → Experimental List
+   - Architecture families:
+     - Wormhole: N150, N300, T3K, N150X4
+     - Blackhole: P100, P150, P150X4, P150X8
+   - Example: N150 model might work on N300 (both wormhole_b0)
+   - Example: P150 model might work on P100 (both blackhole)
+
+3. **Smaller Model on Larger Device** → Experimental List
+   - Parameter count ≤ 8B
+   - User device "larger" than spec device (crude heuristic by device numbers)
+   - Example: N150 (8B model) might work on T3K
+
+4. **Official Experimental Status** → Experimental List
+   - Models marked `status: "EXPERIMENTAL"` in JSON
+   - But device doesn't match exactly
+
+**Display Features:**
+
+- Compatibility reason shown for each experimental model
+- Status badges in both validated and experimental lists
+- Conservative parameters automatically applied (33% reduction)
+- Clear warnings about unvalidated status
+
+**Usage Examples:**
+
+```bash
+# List validated models only (default)
+python3 tt-jukebox.py --list
+
+# List validated + experimental models
+python3 tt-jukebox.py --list --show-experimental
+
+# Search for Llama models, include experimental
+python3 tt-jukebox.py --model llama --show-experimental
+
+# Find chat models on P100 Blackhole
+python3 tt-jukebox.py chat --show-experimental
+```
+
+**Output Example (P100 hardware):**
+
+```
+✓ VALIDATED MODELS
+
+Llama Family:
+  • Llama-3.1-8B-Instruct [EXPERIMENTAL]
+    Context: 65536 tokens, Disk: 20 GB
+
+⚠ EXPERIMENTAL MODELS (not validated)
+
+Llama Family:
+  • Llama-3.1-70B (validated for P150)
+    Reason: same architecture (blackhole)
+    Context: 131072 tokens, Disk: 140 GB
+```
+
+**Implementation Details:**
+
+File: `content/templates/tt-jukebox.py`
+
+- `filter_by_hardware()` (lines 323-401) - Enhanced compatibility logic
+- `display_model_spec()` (lines 545-599) - Shows compatibility reasons
+- `apply_conservative_params()` (lines 460-481) - 33% parameter reduction
+- `list_compatible_models()` (lines 953-1036) - Separate validated/experimental display
+
+**Architecture Detection:**
+
+Reads from model specs JSON:
+- `device_type`: N150, N300, P100, etc.
+- `env_vars.ARCH_NAME`: wormhole_b0, blackhole
+- `status`: COMPLETE, FUNCTIONAL, EXPERIMENTAL
+- `param_count`: Model size in billions
+
+**Conservative Parameters:**
+
+Experimental models automatically get reduced parameters to minimize OOM:
+- `max_context`: 67% of original (e.g., 65536 → 43,008)
+- `max_num_seqs`: 67% of original (e.g., 16 → 10)
+- Applied in `apply_conservative_params()`
+- Marked with `_is_experimental: true` flag
+
+**Benefits for Blackhole P100:**
+
+- Official P100 models show in validated list (with EXPERIMENTAL badge)
+- Other Blackhole models (P150, P150X4) show as experimental
+- Conservative params reduce risk of OOM on unvalidated configs
+- Clear compatibility reasons help users make informed decisions
+
+### Model Specs Caching (v0.0.35)
+
+**Problem:** Fetching model specs from GitHub on every run is slow and wasteful.
+
+**Solution:** Cache model specs locally for 1 hour.
+
+**Implementation:**
+
+Cache location: `~/tt-scratchpad/cache/`
+- `model_specs.json` - Cached specifications
+- `model_specs_timestamp.txt` - Unix timestamp of cache creation
+
+**Behavior:**
+
+1. **First run:** Fetches from GitHub, saves to cache
+   ```
+   ℹ Fetching model specifications from tt-inference-server...
+   ✓ Fetched 247 model specifications
+   ℹ Cached to ~/tt-scratchpad/cache/model_specs.json
+   ```
+
+2. **Subsequent runs (< 1 hour):** Uses cache
+   ```
+   ℹ Using cached model specifications (15 minutes old)
+   ✓ Loaded 247 model specifications from cache
+   ```
+
+3. **After 1 hour:** Automatically refreshes from GitHub
+
+4. **Manual refresh:** Use `--refresh-cache` flag
+   ```bash
+   python3 tt-jukebox.py --list --refresh-cache
+   ```
+
+**Benefits:**
+
+- ✅ Faster startup (no network delay)
+- ✅ Works offline (if cache exists)
+- ✅ Reduces GitHub API load
+- ✅ Still stays current (1 hour TTL)
+
+**Code:**
+
+File: `content/templates/tt-jukebox.py`
+- `fetch_model_specs(force_refresh=False)` (lines 287-375)
+- Creates `~/tt-scratchpad/cache/` directory automatically
+- Checks timestamp, falls back to fetch if stale
+- Saves both JSON and timestamp on successful fetch
+
+### Bug Fixes (v0.0.35)
+
+**Fixed: NoneType comparison error in experimental filtering**
+
+**Problem:** Some model specs have `param_count: null` in JSON, causing `'<=' not supported between instances of 'NoneType' and 'int'` error when using `--show-experimental`.
+
+**Fix:** Added None check before comparison:
+```python
+param_count = spec.get('param_count')
+if param_count is None:
+    param_count = 999  # Unknown size, assume large
+```
+
+**Task Aliases Added:**
+- `video` → maps to `generate_video` (searches for video models)
+- `image` → maps to `generate_image` (searches for image models)
+
+**Usage:**
+```bash
+# Now works without error
+python3 tt-jukebox.py video --show-experimental
+
+# Shorter aliases
+python3 tt-jukebox.py video
+python3 tt-jukebox.py image
+```
+

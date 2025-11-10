@@ -11,17 +11,123 @@ You'll need a **Hugging Face access token** to download models. If you don't hav
 3. Navigate to Settings → Access Tokens
 4. Create a new token with read permissions
 
+---
+
+## Starting Fresh?
+
+If you're jumping directly to this lesson, let's check your setup:
+
+### Quick Prerequisite Checks
+
+```bash
+# Hardware detected?
+tt-smi -s
+
+# Python installed?
+python3 --version  # Need 3.10+
+
+# huggingface-cli installed?
+which huggingface-cli || pip install huggingface-hub[cli]
+```
+
+**All checks passed?** Continue below to download the model.
+
+**If hardware check failed:**
+- See [Lesson 1: Hardware Detection](#) to set up tt-smi
+
+---
+
+### Already Authenticated?
+
+Check if you're already logged in to Hugging Face:
+
+```bash
+huggingface-cli whoami
+```
+
+**If this shows your username:** You're already authenticated! Skip to [Step 3: Download the Model](#step-3-download-the-model).
+
+**If it shows an error:** Continue with Step 1 below to authenticate.
+
+---
+
+### Model Already Downloaded?
+
+Check if the model already exists:
+
+```bash
+ls ~/models/Llama-3.1-8B-Instruct/config.json
+```
+
+**If the file exists:** Model is already downloaded! You can skip to the next lesson or verify the download below.
+
+**Verify download contents:**
+```bash
+# Check HuggingFace format (for Lessons 6-7)
+ls ~/models/Llama-3.1-8B-Instruct/config.json
+ls ~/models/Llama-3.1-8B-Instruct/model*.safetensors
+
+# Check Meta format (for Lessons 4-5, 9)
+ls ~/models/Llama-3.1-8B-Instruct/original/consolidated.00.pth
+ls ~/models/Llama-3.1-8B-Instruct/original/params.json
+```
+
+**All files present?** You're good to go! Continue to Lesson 4.
+
+**Missing files?** Redownload using Step 3 below.
+
+---
+
+## Understanding Model Formats
+
+This model comes in **two formats** for different tools:
+
+**1. Meta Format (in `original/` subdirectory):**
+- Files: `consolidated.00.pth`, `params.json`, `tokenizer.model`
+- Used by: Direct API (Lessons 4-5), Coding Assistant (Lesson 9)
+- Path: `~/models/Llama-3.1-8B-Instruct/original/`
+
+**2. HuggingFace Format (in root directory):**
+- Files: `config.json`, `model.safetensors`, `tokenizer.json`
+- Used by: vLLM (Lessons 6-7), Jukebox (Lesson 10)
+- Path: `~/models/Llama-3.1-8B-Instruct/`
+
+**Why download both?** It ensures all lessons work without additional downloads later.
+
+---
+
 ## Step 1: Set Your Token
 
-First, you'll need to set your Hugging Face token as an environment variable. This command will be executed with your token:
+**First, check if your token is already set:**
+
+```bash
+echo $HF_TOKEN
+```
+
+**If you see your token:** It's already set! Skip to [Step 2: Authenticate](#step-2-authenticate).
+
+**If it's empty:** Set your token using one of these methods:
+
+### Method 1: Via Extension (Recommended)
+
+When you click the button below, you'll be prompted to enter your token securely:
+
+[🔑 Enter Your Hugging Face Token](command:tenstorrent.setHuggingFaceToken)
+
+### Method 2: Manually in Terminal
 
 ```bash
 export HF_TOKEN="your-token-here"
 ```
 
-When you click the button below, you'll be prompted to enter your token securely:
+**Note:** This only lasts for your current terminal session. For permanent setup, add it to `~/.bashrc` or `~/.zshrc`:
 
-[🔑 Enter Your Hugging Face Token](command:tenstorrent.setHuggingFaceToken)
+```bash
+echo 'export HF_TOKEN="your-token-here"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+---
 
 ## Step 2: Authenticate
 
@@ -38,8 +144,8 @@ huggingface-cli login --token "$HF_TOKEN"
 Download the Llama-3.1-8B-Instruct model to `~/models/Llama-3.1-8B-Instruct`:
 
 ```bash
-mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
-  --include "original/*" --local-dir ~/models/Llama-3.1-8B-Instruct
+mkdir -p ~/models && hf download meta-llama/Llama-3.1-8B-Instruct \
+  --local-dir ~/models/Llama-3.1-8B-Instruct
 ```
 
 [⬇️ Download Llama 3.1-8B Model](command:tenstorrent.downloadModel)
@@ -47,11 +153,16 @@ mkdir -p ~/models && huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
 ## What Gets Downloaded
 
 The model includes:
-- Model weights and configuration
-- Tokenizer files
-- Original model files from Meta
+- **HuggingFace format files** - `config.json`, `model.safetensors`, etc. (for vLLM)
+- **Meta original format files** - `params.json`, `consolidated.00.pth`, `tokenizer.model` (in `original/` subdirectory, for Direct API)
+- **Tokenizer files** - Compatible with both formats
+- **Full model weights** - ~16GB total
 
-**Note:** This download is approximately 16GB and may take several minutes depending on your internet connection.
+**Note:** This downloads the complete model with all formats. The download is approximately 16GB and may take several minutes depending on your internet connection.
+
+**Why both formats?**
+- Direct API (Lessons 4-5) uses Meta's native format in `original/` subdirectory
+- vLLM (Lessons 6-7) uses HuggingFace format in the root directory
 
 ## Step 4: Get TT-Metal Repository
 

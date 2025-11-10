@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';">
+    <title>Welcome to Tenstorrent</title>
+    <style>
+        /* Tenstorrent Brand Colors */
+        :root {
+            --tt-orange: #FF6B35;
+            --tt-dark-bg: #1a1a1a;
+            --tt-darker-bg: #0d0d0d;
+            --tt-light-orange: #FF8C5A;
+            --tt-accent: #FFB088;
+        }
+
+        body {
+            font-family: var(--vscode-font-family);
+            color: #ffffff;
+            background-color: var(--tt-darker-bg);
+            padding: 20px;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #ffffff;
+            border-bottom: 2px solid var(--tt-orange);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #ffffff;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            margin: 10px 0;
+            color: #ffffff;
+        }
+
+        a {
+            color: var(--tt-orange);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: var(--tt-light-orange);
+            text-decoration: underline;
+        }
+
+        ul li {
+            color: #ffffff;
+        }
+
+        strong {
+            color: #ffffff;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 107, 53, 0.05) 100%);
+            border-left: 4px solid var(--tt-orange);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .walkthrough-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .walkthrough-item {
+            background-color: var(--tt-dark-bg);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 6px;
+            padding: 16px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .walkthrough-item:hover {
+            background-color: rgba(255, 107, 53, 0.1);
+            border-color: var(--tt-orange);
+            transform: translateX(4px);
+        }
+
+        .walkthrough-item h3 {
+            margin: 0 0 8px 0;
+            color: var(--tt-orange);
+            font-size: 16px;
+        }
+
+        .walkthrough-item p {
+            margin: 0;
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        .walkthrough-badge {
+            display: inline-block;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .quick-link {
+            background-color: var(--tt-dark-bg);
+            color: var(--tt-orange);
+            padding: 12px 16px;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid rgba(255, 107, 53, 0.4);
+            transition: all 0.2s;
+        }
+
+        .quick-link:hover {
+            background-color: var(--tt-orange);
+            color: var(--tt-darker-bg);
+            border-color: var(--tt-orange);
+            transform: scale(1.05);
+        }
+
+        .directory-info {
+            background-color: var(--tt-dark-bg);
+            border-radius: 4px;
+            padding: 12px;
+            font-family: var(--vscode-editor-font-family);
+            font-size: 13px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        .directory-info code {
+            color: var(--tt-orange);
+        }
+
+        .section {
+            margin: 30px 0;
+        }
+
+        .icon {
+            margin-right: 8px;
+        }
+
+        .ascii-logo {
+            margin: 20px 0;
+        }
+
+        .ascii-logo pre {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 1.1;
+            color: var(--tt-orange);
+            background-color: var(--tt-dark-bg);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0;
+            border: 2px solid var(--tt-orange);
+        }
+    </style>
+</head>
+<body>
+    <div class="ascii-logo"><pre>
+████████╗███████╗███╗   ██╗███████╗████████╗ ██████╗ ██████╗ ██████╗ ███████╗███╗   ██╗████████╗
+╚══██╔══╝██╔════╝████╗  ██║██╔════╝╚══██╔══╝██╔═══██╗██╔══██╗██╔══██╗██╔════╝████╗  ██║╚══██╔══╝
+   ██║   █████╗  ██╔██╗ ██║███████╗   ██║   ██║   ██║██████╔╝██████╔╝█████╗  ██╔██╗ ██║   ██║
+   ██║   ██╔══╝  ██║╚██╗██║╚════██║   ██║   ██║   ██║██╔══██╗██╔══██╗██╔══╝  ██║╚██╗██║   ██║
+   ██║   ███████╗██║ ╚████║███████║   ██║   ╚██████╔╝██║  ██║██║  ██║███████╗██║ ╚████║   ██║
+   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝
+
+        ╔═══╗ ╔═══╗ ╔═══╗     ╔═══╗ ╔═══╗ ╔═══╗     DEVELOPMENT ENVIRONMENT
+        ║ █ ║ ║ █ ║ ║ █ ║     ║ █ ║ ║ █ ║ ║ █ ║
+        ╚═══╝ ╚═══╝ ╚═══╝     ╚═══╝ ╚═══╝ ╚═══╝
+</pre></div>
+
+    <h1>🚀 Welcome to Tenstorrent</h1>
+
+    <div class="hero">
+        <p><strong>Get started with AI inference on Tenstorrent hardware.</strong></p>
+        <p>This extension provides interactive walkthroughs to help you set up your development environment,
+        run inference on Tenstorrent devices, and build custom AI applications.</p>
+    </div>
+
+    <div class="section">
+        <h2>📚 Learning Path</h2>
+        <p>Follow these walkthroughs in order to go from hardware setup to production deployment:</p>
+
+        <ul class="walkthrough-list">
+            <li class="walkthrough-item" onclick="openWalkthrough('hardware-detection')">
+                <h3><span class="icon">🔌</span>1. Hardware Detection</h3>
+                <p>Scan for connected Tenstorrent devices and verify they're properly recognized by the system.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('verify-installation')">
+                <h3><span class="icon">✅</span>2. Verify tt-metal Installation</h3>
+                <p>Test your tt-metal installation by running a sample operation on your Tenstorrent device.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('download-model')">
+                <h3><span class="icon">📥</span>3. Download Model and Run Inference</h3>
+                <p>Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('interactive-chat')">
+                <h3><span class="icon">💬</span>4. Interactive Chat with Direct API</h3>
+                <p>Build a custom chat application using tt-metal's Generator API directly.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('api-server')">
+                <h3><span class="icon">🌐</span>5. HTTP API Server with Direct API</h3>
+                <p>Create a production-ready Flask API with the model loaded in memory.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('vllm-production')">
+                <h3><span class="icon">🏭</span>6. Production Inference with vLLM</h3>
+                <p>Deploy with vLLM - OpenAI-compatible APIs, continuous batching, and enterprise features.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('vscode-chat')">
+                <h3><span class="icon">🤖</span>7. VSCode Chat Integration</h3>
+                <p>Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent hardware.</p>
+            </li>
+
+            <li class="walkthrough-item" onclick="openWalkthrough('image-generation')">
+                <h3><span class="icon">🎨</span>8. Image Generation with SD 3.5 Large</h3>
+                <p>Generate high-resolution 1024x1024 images on your Tenstorrent hardware using Stable Diffusion 3.5 Large - native TT acceleration!</p>
+            </li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>🛠️ Working Directory</h2>
+        <p>This extension creates scripts and files in a dedicated workspace directory:</p>
+        <div class="directory-info">
+            <code>~/tt-scratchpad/</code>
+        </div>
+        <p>All generated Python scripts, configuration files, and test code will be saved here.
+        This keeps your workspace organized and makes it easy to find and customize the code.</p>
+    </div>
+
+    <div class="section">
+        <h2>⚡ Quick Actions</h2>
+        <div class="quick-links">
+            <div class="quick-link" onclick="executeCommand('tenstorrent.openWalkthrough')">
+                📖 Open Main Walkthrough
+            </div>
+            <div class="quick-link" onclick="executeCommand('tenstorrent.runHardwareDetection')">
+                🔍 Detect Hardware
+            </div>
+            <div class="quick-link" onclick="executeCommand('tenstorrent.resetProgress')">
+                🔄 Reset Progress
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📖 Resources</h2>
+        <ul>
+            <li><strong>Documentation:</strong> <a href="https://docs.tenstorrent.com">docs.tenstorrent.com</a></li>
+            <li><strong>GitHub:</strong> <a href="https://github.com/tenstorrent">github.com/tenstorrent</a></li>
+            <li><strong>Support:</strong> Join our community forums and Discord</li>
+        </ul>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        function openWalkthrough(stepId) {
+            vscode.postMessage({
+                command: 'openWalkthrough',
+                stepId: stepId
+            });
+        }
+
+        function executeCommand(commandId) {
+            vscode.postMessage({
+                command: 'executeCommand',
+                commandId: commandId
+            });
+        }
+    </script>
+</body>
+</html>

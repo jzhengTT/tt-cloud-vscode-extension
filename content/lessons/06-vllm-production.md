@@ -1,5 +1,7 @@
 # Production Inference with vLLM
 
+**⚠️ Note:** vLLM requires the HuggingFace model format. If you downloaded the model in Lesson 3 before this update, you may need to re-download to get both Meta and HuggingFace formats. The latest Lesson 3 downloads the complete model with all formats.
+
 Take your AI deployment to the next level with vLLM - a production-grade inference engine that provides OpenAI-compatible APIs, continuous batching, and enterprise features for Tenstorrent hardware.
 
 ## What is vLLM?
@@ -62,10 +64,232 @@ Take your AI deployment to the next level with vLLM - a production-grade inferen
 
 ## Prerequisites
 
-- tt-metal installed and working
+- tt-metal installed and working (latest main branch - see Step 0 below if you need to update)
 - Model downloaded (Llama-3.1-8B-Instruct)
 - Python 3.10+ recommended
 - ~20GB disk space for vLLM installation
+
+## Starting Fresh?
+
+If you're jumping directly to this lesson, verify your setup first:
+
+**Quick prerequisite checks:**
+```bash
+# Hardware detected?
+tt-smi
+
+# tt-metal working?
+python3 -c "import ttnn; print('✓ tt-metal ready')"
+
+# Model downloaded?
+ls ~/models/Llama-3.1-8B-Instruct/config.json
+
+# Python version?
+python3 --version  # Need 3.10+
+```
+
+**If any checks fail:**
+- **No hardware?** → See [Lesson 1: Hardware Detection](#)
+- **No tt-metal?** → See [Lesson 2: Verify Installation](#)
+- **No model?** → See [Lesson 3: Download Model](#) or download now:
+  ```bash
+  huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
+    --local-dir ~/models/Llama-3.1-8B-Instruct
+  ```
+
+---
+
+## Hardware Configuration
+
+vLLM supports multiple Tenstorrent hardware types. **Choose your hardware below:**
+
+### Wormhole N150 (Single Chip)
+
+**Best for:** Development, prototyping, single-user deployments
+
+**Model:** Llama-3.1-8B-Instruct
+- Context limit: 64K tokens
+- No tensor parallelism needed
+- Simple configuration
+
+**Environment:**
+```bash
+export MESH_DEVICE=N150
+export TT_METAL_HOME=~/tt-metal
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+```
+
+**vLLM Flags (use in Step 4):**
+```bash
+--max-model-len 65536    # 64K limit for N150
+--max-num-seqs 16        # Concurrent sequences
+--block-size 64          # KV cache block size
+```
+
+---
+
+### Wormhole N300 (Dual Chip)
+
+**Best for:** Higher throughput, longer context
+
+**Models:** Llama-3.1-8B-Instruct OR Qwen-2.5-7B-Coder
+- Context limit: 128K tokens
+- Tensor parallelism: TP=2 (uses both chips)
+- Better batching performance
+
+**Environment:**
+```bash
+export MESH_DEVICE=N300
+export TT_METAL_HOME=~/tt-metal
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+```
+
+**vLLM Flags (use in Step 4):**
+```bash
+--max-model-len 131072   # 128K context for N300
+--max-num-seqs 32        # More concurrent sequences
+--block-size 64
+--tensor-parallel-size 2 # Use both chips
+```
+
+---
+
+### Wormhole T3K (8 Chips)
+
+**Best for:** Large models (70B), multi-user production
+
+**Model:** Llama-3.1-70B-Instruct
+- Context limit: 128K tokens
+- Tensor parallelism: TP=8 (uses all 8 chips)
+- Production-scale serving
+
+**Environment:**
+```bash
+export MESH_DEVICE=T3K
+export TT_METAL_HOME=~/tt-metal
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+```
+
+**vLLM Flags (use in Step 4):**
+```bash
+--model ~/models/Llama-3.1-70B-Instruct  # Note: 70B model!
+--max-model-len 131072
+--max-num-seqs 64
+--block-size 64
+--tensor-parallel-size 8
+```
+
+---
+
+### Blackhole P100 (Single Chip)
+
+**Best for:** Newer hardware, similar to N150
+
+**Model:** Llama-3.1-8B-Instruct
+- Context limit: 64K tokens
+- Similar configuration to N150
+- May have experimental optimizations
+
+**Environment:**
+```bash
+export MESH_DEVICE=P100
+export TT_METAL_HOME=~/tt-metal
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+```
+
+**vLLM Flags (use in Step 4):**
+```bash
+--max-model-len 65536
+--max-num-seqs 16
+--block-size 64
+```
+
+**Note:** P100 support may be experimental. See "Alternative: Use Jukebox" below for validated configurations.
+
+---
+
+### Don't Know Your Hardware?
+
+Run this command to identify your hardware:
+```bash
+tt-smi -s
+```
+
+**Example output (JSON format):**
+```json
+{
+  "board_info": {
+    "board_type": "n150",
+    "coords": "0,0"
+  }
+}
+```
+
+**Look for the `board_type` field:**
+- `"n150"` → Use **Wormhole N150** configuration above
+- `"n300"` → Use **Wormhole N300** configuration above
+- `"t3k"` → Use **Wormhole T3K** configuration above
+- `"p100"` → Use **Blackhole P100** configuration above
+- `"p150"` → Use Lesson 10 (Jukebox) for validated config
+
+**Quick extract:**
+```bash
+tt-smi -s | grep -o '"board_type": "[^"]*"'
+# Output: "board_type": "n150"
+```
+
+**Still unsure?** Start with the N150 configuration - it works on most hardware, just with potentially suboptimal settings.
+
+## Step 0: Update and Build TT-Metal (If Needed)
+
+**⚠️ Important:** vLLM dev branch requires the latest tt-metal. If you get an `InputRegistry` error or "sfpi not found" error, update and rebuild tt-metal:
+
+```bash
+cd ~/tt-metal && \
+  git checkout main && \
+  git pull origin main && \
+  git submodule update --init --recursive && \
+  ./build_metal.sh
+```
+
+[🔧 Update and Build TT-Metal](command:tenstorrent.updateTTMetal)
+
+**What this does:**
+- Updates tt-metal to latest main branch
+- Updates all submodules (including SFPI libraries)
+- Rebuilds tt-metal with latest changes
+- Takes ~5-10 minutes depending on hardware
+
+**When to do this:**
+- First time setting up vLLM
+- After updating tt-metal with `git pull`
+- If you see "sfpi not found" errors
+- If you see "InputRegistry" or other API compatibility errors
+
+**Why rebuild?** tt-metal includes compiled components (like SFPI) that must be built after code updates. The `build_metal.sh` script handles all necessary compilation steps.
+
+---
+
+## Verify vLLM Components
+
+Before proceeding, let's check what you already have installed:
+
+```bash
+# Check if vLLM is cloned
+[ -d ~/tt-vllm ] && echo "✓ vLLM repo found" || echo "✗ vLLM repo missing"
+
+# Check if venv exists
+[ -d ~/tt-vllm-venv ] && echo "✓ vLLM venv found" || echo "✗ vLLM venv missing"
+
+# Check if server script exists
+[ -f ~/tt-scratchpad/start-vllm-server.py ] && echo "✓ Server script found" || echo "✗ Server script missing"
+```
+
+**All checks passed?** You can skip to [Step 4: Start the Server](#step-4-start-the-openai-compatible-server).
+
+**Some checks failed?** Continue with the steps below - they'll create missing components.
+
+---
 
 ## Step 1: Clone TT vLLM Fork
 
@@ -84,41 +308,69 @@ cd ~ && \
 - Creates `~/tt-vllm` directory
 - Takes ~1-2 minutes depending on connection
 
-## Step 2: Setup vLLM Environment
+## Step 2: Set Up vLLM Environment
 
-Setup the environment and install vLLM:
+Create a dedicated virtual environment and install vLLM with all required dependencies.
+
+**This command will:**
+- Create a Python virtual environment (~30 seconds)
+- Install vLLM and dependencies (~5-10 minutes)
+- Configure Tenstorrent hardware support
 
 ```bash
 cd ~/tt-vllm && \
+  python3 -m venv ~/tt-vllm-venv && \
+  source ~/tt-vllm-venv/bin/activate && \
+  pip install --upgrade pip && \
   export vllm_dir=$(pwd) && \
   source $vllm_dir/tt_metal/setup-metal.sh && \
-  pip3 install --upgrade pip && \
+  pip install --upgrade ttnn pytest && \
+  pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48 && \
   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
 [⚙️ Install vLLM](command:tenstorrent.installVllm)
 
-**What this does:**
-- Sets up environment variables
-- Sources tt-metal setup script
-- Installs vLLM and dependencies
-- Takes ~5-10 minutes
+**What happens:**
+- Creates `~/tt-vllm-venv` (isolated from your other Python packages)
+- Upgrades pip
+- Sources tt-metal setup for Tenstorrent support
+- Installs ttnn and pytest (required for Tenstorrent hardware)
+- Installs dependencies: fairscale, termcolor, loguru, blobfile, fire, pytz
+- Installs llama-models==0.0.48 (Tenstorrent's Llama implementation)
+- Installs vLLM in editable mode (you can modify it if needed)
 
-**Note:** This installs vLLM in editable mode (`-e`), so you can modify it if needed.
+**Why a separate venv?** Prevents dependency conflicts with other Python environments. Each stays clean and isolated.
 
-## Step 3: Run Offline Inference
+**Time estimate:** ~5-10 minutes total
+
+## Step 3: Run Offline Inference (Optional - Skip for N150)
 
 Test vLLM with a simple offline inference example:
 
 ```bash
 cd ~/tt-vllm && \
-  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  source $PYTHON_ENV_DIR/bin/activate && \
   python examples/offline_inference_tt.py
 ```
 
 [🧪 Run Offline Inference](command:tenstorrent.runVllmOffline)
+
+**⚠️ N150 Note:** The offline inference script may show warnings about context length (128K default). This is expected - the script is primarily for testing larger hardware. **You can skip this step and go straight to Step 4 (API server)** where you can properly configure the 64K limit.
+
+**Important:** `TT_METAL_HOME` and `PYTHONPATH` are required so vLLM can find the TTLlamaForCausalLM model implementation.
+
+**What you might see:**
+```
+WARNING: The model has a long context length (131072). This may cause OOM...
+```
+
+This warning is safe to ignore - it's just telling you the model *supports* 128K, but we'll configure 64K in the API server.
 
 **What you'll see:**
 
@@ -142,20 +394,74 @@ Generated text: ' Paris. It is known for the Eiffel Tower...'
 
 ## Step 4: Start the OpenAI-Compatible Server
 
-Now start vLLM as an HTTP server with OpenAI-compatible endpoints:
+Now start vLLM as an HTTP server with OpenAI-compatible endpoints.
+
+**⚠️ Important:** Use the configuration for your hardware from the [Hardware Configuration](#hardware-configuration) section above.
+
+### Example: Wormhole N150
 
 ```bash
 cd ~/tt-vllm && \
-  export HF_MODEL="meta-llama/Llama-3.1-8B-Instruct" && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  source $PYTHON_ENV_DIR/bin/activate && \
-  python -m vllm.entrypoints.openai.api_server \
-    --model $HF_MODEL \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
-    --port 8000
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
 ```
 
-[🚀 Start vLLM Server](command:tenstorrent.startVllmServer)
+[🚀 Start vLLM Server (N150)](command:tenstorrent.startVllmServer)
+
+### Example: Wormhole N300
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N300 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 32 \
+    --block-size 64 \
+    --tensor-parallel-size 2
+```
+
+**For other hardware types (T3K, P100):** See the [Hardware Configuration](#hardware-configuration) section for your specific flags.
+
+---
+
+### Why a Custom Starter Script?
+
+vLLM needs to register TT-specific models before starting the server. Our custom script (`~/tt-scratchpad/start-vllm-server.py`) calls `register_tt_models()` which tells vLLM how to find TTLlamaForCausalLM and other TT model implementations in the tt-metal repository.
+
+**The extension creates this script automatically** when you click the button above. If you need to create it manually, see the template in `content/templates/start-vllm-server.py`.
+
+---
+
+### Understanding the Configuration
+
+**Environment variables (all hardware types need these):**
+- `TT_METAL_HOME=~/tt-metal` - Points to tt-metal installation (required by setup-metal.sh)
+- `MESH_DEVICE=<your-hardware>` - Targets your specific hardware (N150, N300, T3K, P100)
+- `PYTHONPATH=$TT_METAL_HOME` - Required so Python can import TT model classes from tt-metal
+
+**vLLM flags (vary by hardware):**
+- `--model` - Local model path (downloaded in Lesson 3)
+- `--max-model-len` - Context limit (64K for single-chip, 128K for multi-chip)
+- `--max-num-seqs` - Maximum concurrent sequences (higher on multi-chip)
+- `--block-size` - KV cache block size (typically 64)
+- `--tensor-parallel-size` - Number of chips to use (only for multi-chip)
 
 **What you'll see:**
 
@@ -504,20 +810,83 @@ Each approach serves a purpose - choose based on your needs.
 
 ## Troubleshooting
 
-**vLLM server won't start:**
+Don't worry if you hit issues - they're usually straightforward to fix. Here are common solutions:
+
+### Server Won't Start
+
+**Check your environment:**
 ```bash
-# Check environment
+# Activate venv
+source ~/tt-vllm-venv/bin/activate
+
+# Source tt-metal setup
 source ~/tt-vllm/tt_metal/setup-metal.sh
-source $PYTHON_ENV_DIR/bin/activate
 
 # Verify model path
-echo $HF_MODEL
+ls ~/models/Llama-3.1-8B-Instruct/config.json
 ```
 
-**Import errors:**
+**Import errors (e.g., "No module named 'llama_models'", "No module named 'fairscale'", "No module named 'pytz'", etc.):**
 ```bash
-# Reinstall vLLM
+# Install all required dependencies in the venv
+source ~/tt-vllm-venv/bin/activate
+pip install --upgrade ttnn pytest
+pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
+```
+
+**AttributeError: 'InputRegistry' object has no attribute 'register_input_processor':**
+**Error: sfpi not found at /home/user/tt-metal/runtime/sfpi:**
+These errors indicate tt-metal needs to be updated and rebuilt. Solution:
+```bash
+# Update and rebuild tt-metal (Step 0)
+cd ~/tt-metal
+git checkout main
+git pull origin main
+git submodule update --init --recursive
+./build_metal.sh
+
+# Then upgrade ttnn in vLLM venv
+source ~/tt-vllm-venv/bin/activate
+pip install --upgrade ttnn
+```
+
+**Why rebuild?** tt-metal includes compiled components (SFPI libraries, kernels) that must be built after code updates. The vLLM dev branch expects the latest tt-metal APIs.
+
+**ValidationError: Cannot find model module 'TTLlamaForCausalLM':**
+This error means vLLM cannot find the TT model implementation. Solution:
+```bash
+# Use the example script which registers TT models (see Step 4)
+python examples/server_example_tt.py --model ~/models/Llama-3.1-8B-Instruct
+```
+
+**Why this happens:** vLLM needs to explicitly register TT models using `ModelRegistry.register_model()`. The example scripts (`server_example_tt.py`, `offline_inference_tt.py`) call `register_tt_models()` which performs this registration. Do NOT call `python -m vllm.entrypoints.openai.api_server` directly - it will not have TT models registered.
+
+**If you encounter other import errors (e.g., "No module named 'xyz'"):**
+```bash
+# Install the missing package
+source ~/tt-vllm-venv/bin/activate
+pip install <missing-package-name>
+```
+
+**Other import errors:**
+```bash
+# Reinstall vLLM in the venv
+source ~/tt-vllm-venv/bin/activate
 cd ~/tt-vllm
+pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+**Virtual environment issues:**
+```bash
+# Recreate the venv if it's corrupted
+rm -rf ~/tt-vllm-venv
+cd ~/tt-vllm
+python3 -m venv ~/tt-vllm-venv
+source ~/tt-vllm-venv/bin/activate
+pip install --upgrade pip
+export vllm_dir=$(pwd)
+source $vllm_dir/tt_metal/setup-metal.sh
+pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 
@@ -530,6 +899,50 @@ pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 - Reduce `--max-num-seqs`
 - Reduce `--max-model-len`
 - Close other programs
+
+---
+
+## Alternative: Use TT-Jukebox (Recommended!)
+
+**Struggling with version mismatches or hardware compatibility?**
+
+TT-Jukebox (Lesson 10) automates everything in this lesson:
+- ✅ Detects your hardware automatically
+- ✅ Finds compatible models for your device
+- ✅ Sets correct tt-metal and vLLM commits
+- ✅ Generates setup scripts with exact versions
+- ✅ Provides tested vLLM flags
+- ✅ Downloads models automatically
+
+**Quick start with Jukebox:**
+```bash
+# Copy Jukebox script
+mkdir -p ~/tt-scratchpad
+# (Extension provides this in templates/)
+
+# Find chat models for your hardware
+python3 ~/tt-scratchpad/tt-jukebox.py chat
+
+# Select a model → generates setup script → run it → done!
+```
+
+**Why use Jukebox?**
+- Eliminates version mismatch errors
+- Uses official Tenstorrent-tested configurations
+- Reproducible environments (share scripts with team)
+- Supports experimental models and hardware
+- Updates automatically from official specs
+
+**When to use Jukebox:**
+- First time setting up vLLM
+- After updating tt-metal or vLLM
+- Switching between different models
+- Working on a team (share setup scripts)
+- Trying experimental hardware (P100, P150)
+
+See [Lesson 10: TT-Jukebox](#) for the complete guide.
+
+---
 
 ## What You Learned
 
