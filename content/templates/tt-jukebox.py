@@ -284,13 +284,62 @@ def check_python_version() -> Tuple[str, bool]:
 # Model Specs Fetching
 # ============================================================================
 
-def fetch_model_specs() -> Optional[List[Dict]]:
+def fetch_model_specs(force_refresh: bool = False) -> Optional[List[Dict]]:
     """
     Fetch model specifications from tt-inference-server GitHub.
+    Uses cached version if less than 1 hour old (unless force_refresh=True).
     Returns list of model specs or None if fetch fails.
     """
-    url = "https://raw.githubusercontent.com/tenstorrent/tt-inference-server/main/model_specs_output.json"
+    import time
 
+    # Cache location
+    cache_dir = Path.home() / 'tt-scratchpad' / 'cache'
+    cache_file = cache_dir / 'model_specs.json'
+    cache_timestamp_file = cache_dir / 'model_specs_timestamp.txt'
+
+    # Create cache directory if needed
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check if cache exists and is fresh (< 1 hour old)
+    cache_valid = False
+    if not force_refresh and cache_file.exists() and cache_timestamp_file.exists():
+        try:
+            with open(cache_timestamp_file, 'r') as f:
+                cached_time = float(f.read().strip())
+
+            age_seconds = time.time() - cached_time
+            age_minutes = age_seconds / 60
+
+            if age_seconds < 3600:  # 1 hour = 3600 seconds
+                cache_valid = True
+                print_info(f"Using cached model specifications ({age_minutes:.0f} minutes old)")
+        except:
+            cache_valid = False
+
+    # Use cache if valid
+    if cache_valid:
+        try:
+            with open(cache_file, 'r') as f:
+                data = json.load(f)
+
+            # Handle both dict (current format) and list formats
+            if isinstance(data, dict):
+                specs = list(data.values())
+            elif isinstance(data, list):
+                specs = data
+            else:
+                print_error("Unexpected format in cached specs")
+                cache_valid = False
+
+            if cache_valid:
+                print_success(f"Loaded {len(specs)} model specifications from cache")
+                return specs
+        except Exception as e:
+            print_warning(f"Failed to read cache: {e}")
+            cache_valid = False
+
+    # Fetch from GitHub
+    url = "https://raw.githubusercontent.com/tenstorrent/tt-inference-server/main/model_specs_output.json"
     print_info("Fetching model specifications from tt-inference-server...")
 
     try:
@@ -299,7 +348,6 @@ def fetch_model_specs() -> Optional[List[Dict]]:
 
         # Handle both dict (current format) and list formats
         if isinstance(data, dict):
-            # Convert dict to list of specs
             specs = list(data.values())
         elif isinstance(data, list):
             specs = data
@@ -308,6 +356,17 @@ def fetch_model_specs() -> Optional[List[Dict]]:
             return None
 
         print_success(f"Fetched {len(specs)} model specifications")
+
+        # Save to cache
+        try:
+            with open(cache_file, 'w') as f:
+                json.dump(data, f)
+            with open(cache_timestamp_file, 'w') as f:
+                f.write(str(time.time()))
+            print_info(f"Cached to {cache_file}")
+        except Exception as e:
+            print_warning(f"Failed to cache specs: {e}")
+
         return specs
 
     except Exception as e:
@@ -351,7 +410,9 @@ def filter_by_hardware(specs: List[Dict], hardware: str, include_experimental: b
         device_type = spec['device_type'].upper()
         status = spec.get('status', 'UNKNOWN').upper()
         spec_arch = spec.get('env_vars', {}).get('ARCH_NAME', '')
-        param_count = spec.get('param_count', 999)  # Billion parameters
+        param_count = spec.get('param_count')  # Billion parameters
+        if param_count is None:
+            param_count = 999  # Unknown size, assume large
 
         # Exact device match
         if hardware_upper in device_type or device_type in hardware_upper:
@@ -439,7 +500,9 @@ def match_task(specs: List[Dict], task: str) -> List[Dict]:
         'code': ['llama', 'qwen', 'code'],
         'code_assistant': ['llama', 'qwen', 'code'],
         'generate_image': ['stable', 'diffusion', 'sd', 'image'],
+        'image': ['stable', 'diffusion', 'sd', 'image'],  # Alias
         'generate_video': ['video', 'sora'],
+        'video': ['video', 'sora'],  # Alias
         'agent': ['qwen', 'llama', 'agent'],
         'reasoning': ['qwq', 'reason'],
     }
@@ -1080,17 +1143,18 @@ def main():
         epilog="""
 Examples:
   %(prog)s chat                          Find best model for chat
+  %(prog)s video                         Find video generation models
   %(prog)s --model llama                 Match any Llama variant
-  %(prog)s generate_image                Find image generation model
   %(prog)s --model mistral --setup       Setup environment for Mistral
   %(prog)s --list                        List all compatible models
   %(prog)s --list --show-experimental    List validated + experimental models
   %(prog)s chat --show-experimental      Include unvalidated models in search
+  %(prog)s --list --refresh-cache        Refresh cached model specs from GitHub
         """
     )
 
     parser.add_argument('task', nargs='?',
-                       help='Task to perform (chat, code_assistant, generate_image, etc.)')
+                       help='Task to perform (chat, code, image, video, agent, reasoning, etc.)')
     parser.add_argument('--model', '-m',
                        help='Model name to match (fuzzy matching supported)')
     parser.add_argument('--list', '-l', action='store_true',
@@ -1103,6 +1167,8 @@ Examples:
                        help='HuggingFace token for model downloads (or set HF_TOKEN env var)')
     parser.add_argument('--show-experimental', '-e', action='store_true',
                        help='Include experimental/unvalidated models that might work on your hardware')
+    parser.add_argument('--refresh-cache', action='store_true',
+                       help='Force refresh of cached model specifications (bypasses 1-hour cache)')
 
     args = parser.parse_args()
 
@@ -1131,8 +1197,10 @@ Examples:
         print_info("Make sure tt-smi is installed and hardware is connected")
         return 1
 
-    # Fetch model specs
-    specs = fetch_model_specs()
+    # Fetch model specs (with optional cache refresh)
+    if args.refresh_cache:
+        print_info("Forcing cache refresh...")
+    specs = fetch_model_specs(force_refresh=args.refresh_cache)
     if not specs:
         print_error("\nCannot proceed without model specifications")
         return 1

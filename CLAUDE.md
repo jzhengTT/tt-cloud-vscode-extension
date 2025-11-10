@@ -1186,3 +1186,79 @@ Experimental models automatically get reduced parameters to minimize OOM:
 - Conservative params reduce risk of OOM on unvalidated configs
 - Clear compatibility reasons help users make informed decisions
 
+### Model Specs Caching (v0.0.35)
+
+**Problem:** Fetching model specs from GitHub on every run is slow and wasteful.
+
+**Solution:** Cache model specs locally for 1 hour.
+
+**Implementation:**
+
+Cache location: `~/tt-scratchpad/cache/`
+- `model_specs.json` - Cached specifications
+- `model_specs_timestamp.txt` - Unix timestamp of cache creation
+
+**Behavior:**
+
+1. **First run:** Fetches from GitHub, saves to cache
+   ```
+   ℹ Fetching model specifications from tt-inference-server...
+   ✓ Fetched 247 model specifications
+   ℹ Cached to ~/tt-scratchpad/cache/model_specs.json
+   ```
+
+2. **Subsequent runs (< 1 hour):** Uses cache
+   ```
+   ℹ Using cached model specifications (15 minutes old)
+   ✓ Loaded 247 model specifications from cache
+   ```
+
+3. **After 1 hour:** Automatically refreshes from GitHub
+
+4. **Manual refresh:** Use `--refresh-cache` flag
+   ```bash
+   python3 tt-jukebox.py --list --refresh-cache
+   ```
+
+**Benefits:**
+
+- ✅ Faster startup (no network delay)
+- ✅ Works offline (if cache exists)
+- ✅ Reduces GitHub API load
+- ✅ Still stays current (1 hour TTL)
+
+**Code:**
+
+File: `content/templates/tt-jukebox.py`
+- `fetch_model_specs(force_refresh=False)` (lines 287-375)
+- Creates `~/tt-scratchpad/cache/` directory automatically
+- Checks timestamp, falls back to fetch if stale
+- Saves both JSON and timestamp on successful fetch
+
+### Bug Fixes (v0.0.35)
+
+**Fixed: NoneType comparison error in experimental filtering**
+
+**Problem:** Some model specs have `param_count: null` in JSON, causing `'<=' not supported between instances of 'NoneType' and 'int'` error when using `--show-experimental`.
+
+**Fix:** Added None check before comparison:
+```python
+param_count = spec.get('param_count')
+if param_count is None:
+    param_count = 999  # Unknown size, assume large
+```
+
+**Task Aliases Added:**
+- `video` → maps to `generate_video` (searches for video models)
+- `image` → maps to `generate_image` (searches for image models)
+
+**Usage:**
+```bash
+# Now works without error
+python3 tt-jukebox.py video --show-experimental
+
+# Shorter aliases
+python3 tt-jukebox.py video
+python3 tt-jukebox.py image
+```
+
