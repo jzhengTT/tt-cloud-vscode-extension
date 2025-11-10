@@ -39,15 +39,64 @@ The key advantage: **model stays loaded in memory between HTTP requests** for fa
 - Per-request latency: 1-3 seconds (model already loaded!)
 - Scales efficiently for multiple concurrent requests
 
+---
+
+## Starting Fresh?
+
+This lesson builds on Lesson 4. If you're jumping here directly, verify your setup:
+
+### Quick Prerequisite Checks
+
+```bash
+# Hardware detected?
+tt-smi -s
+
+# tt-metal working?
+python3 -c "import ttnn; print('✓ tt-metal ready')"
+
+# Model downloaded (Meta format)?
+ls ~/models/Llama-3.1-8B-Instruct/original/consolidated.00.pth
+
+# Dependencies installed?
+python3 -c "import pi; print('✓ pi installed')"
+python3 -c "import flask; print('✓ flask installed')"
+```
+
+**All checks passed?** Continue to Step 1 below.
+
+**If any checks fail:**
+
+**No hardware or tt-metal?**
+- See [Lesson 1: Hardware Detection](#) and [Lesson 2: Verify Installation](#)
+
+**No model?**
+- See [Lesson 3: Download Model](#)
+- Quick download:
+  ```bash
+  huggingface-cli login
+  hf download meta-llama/Llama-3.1-8B-Instruct \
+    --local-dir ~/models/Llama-3.1-8B-Instruct
+  ```
+
+**No dependencies?**
+- Install Direct API dependencies:
+  ```bash
+  pip install pi flask
+  pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
+  ```
+
+---
+
 ## Prerequisites
 
 Same as Lesson 4:
-- tt-metal installed
-- Model downloaded (Llama-3.1-8B-Instruct)
-- `HF_MODEL` environment variable set
-- Flask installed
+- tt-metal installed and working
+- Model downloaded (Llama-3.1-8B-Instruct) in **Meta format** (`original/` subdirectory)
+- Dependencies: `pi`, `llama-models`, and `flask` packages
 
-## Step 1: Install Flask
+---
+
+## Step 1: Install Flask (If Not Already Done)
 
 Flask is a lightweight Python web framework:
 

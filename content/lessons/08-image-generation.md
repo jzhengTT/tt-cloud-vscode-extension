@@ -57,12 +57,41 @@ Stable Diffusion 3.5 uses a Multimodal Diffusion Transformer (MMDiT):
      └────────────────┘
 ```
 
+---
+
+## Hardware Compatibility
+
+Stable Diffusion 3.5 Large runs on Tenstorrent hardware with native TT-NN acceleration (not CPU fallback!):
+
+| Hardware | Status | Performance | Notes |
+|----------|--------|-------------|-------|
+| **N150** (Wormhole) | ✅ Supported | ~12-15 sec/image | Optimized single-chip config |
+| **N300** (Wormhole) | ✅ Supported | ~8-10 sec/image | Faster with 2 chips |
+| **P100** (Blackhole) | ⚠️ Experimental | ~12-15 sec/image | Similar to N150, newer arch |
+| **T3K** (Wormhole) | ✅ Supported | ~5-8 sec/image | Production scale (8 chips) |
+
+**All hardware benefits from native TT-NN acceleration!** The model runs directly on Tensix cores using hardware-specific operators.
+
+### Check Your Hardware
+
+```bash
+tt-smi -s | grep -o '"board_type": "[^"]*"'
+```
+
+**Output:** `"board_type": "n150"` (or n300, t3k, p100)
+
+**Note:** If you have P100 (Blackhole), performance should be similar to N150. Report any issues to help validate the configuration!
+
+---
+
 ## Prerequisites
 
 - tt-metal installed and working (completed Lesson 2)
 - Hugging Face account with access to SD 3.5 Large
-- N150 hardware
+- Tenstorrent hardware (see compatibility table above)
 - ~10-15 GB disk space for model weights
+
+---
 
 ## Model: Stable Diffusion 3.5 Large
 

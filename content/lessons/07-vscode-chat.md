@@ -21,44 +21,202 @@ A VSCode chat participant that:
 - **Lesson 6:** Deployed with vLLM (production-ready)
 - **Lesson 7:** Integrated into VSCode Chat ← **You are here**
 
-## Prerequisites
+---
 
-- ✅ Llama-3.1-8B-Instruct downloaded (from Lesson 3)
-- ✅ vLLM installed (from Lesson 6)
-- ✅ tt-metal setup complete
+## Starting Fresh?
 
-## Step 1: Start vLLM Server
+This lesson requires a running vLLM server. Let's check your setup:
 
-First, start the vLLM server in the background (if not already running).
+### Step 1: Check Hardware
 
-This command will execute:
+```bash
+tt-smi -s
+```
+
+**Example output (JSON format):**
+```json
+{
+  "board_info": {
+    "board_type": "n150",
+    "coords": "0,0"
+  }
+}
+```
+
+**Note your hardware type** (look for `board_type` field):
+- `"n150"`, `"n300"`, `"t3k"` → Wormhole family
+- `"p100"`, `"p150"` → Blackhole family
+
+**Quick extract:**
+```bash
+tt-smi -s | grep -o '"board_type": "[^"]*"'
+```
+
+### Step 2: Verify vLLM Installation
+
+```bash
+# vLLM repo exists?
+[ -d ~/tt-vllm ] && echo "✓ vLLM installed" || echo "✗ Need to install vLLM"
+
+# vLLM venv exists?
+[ -d ~/tt-vllm-venv ] && echo "✓ vLLM venv found" || echo "✗ Need to create venv"
+```
+
+**All checks passed?** Skip to [Quick Start: Launch vLLM Server](#quick-start-launch-vllm-server) below.
+
+**vLLM not installed?** You have two options:
+
+#### Option 1: Full vLLM Tutorial (Recommended for Learning)
+
+Complete [Lesson 6: Production Inference with vLLM](#) - includes:
+- Full explanation of vLLM
+- Hardware-specific configurations
+- Testing and troubleshooting
+
+Takes ~30-45 minutes but teaches you everything about vLLM.
+
+#### Option 2: Quick Install (Faster)
+
+If you just want to get the chat working:
+
+```bash
+# Clone vLLM
+cd ~ && \
+  git clone --branch dev https://github.com/tenstorrent/vllm.git tt-vllm && \
+  cd tt-vllm
+
+# Create venv and install
+python3 -m venv ~/tt-vllm-venv && \
+  source ~/tt-vllm-venv/bin/activate && \
+  pip install --upgrade pip && \
+  export vllm_dir=$(pwd) && \
+  source $vllm_dir/tt_metal/setup-metal.sh && \
+  pip install --upgrade ttnn pytest && \
+  pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48 && \
+  pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+This takes ~10-15 minutes.
+
+### Step 3: Verify Model Downloaded
+
+```bash
+# Check for model
+ls ~/models/Llama-3.1-8B-Instruct/config.json
+```
+
+**Model missing?** Download it:
+```bash
+huggingface-cli login  # If not already logged in
+hf download meta-llama/Llama-3.1-8B-Instruct \
+  --local-dir ~/models/Llama-3.1-8B-Instruct
+```
+
+### Step 4: Check if Server is Already Running
+
+```bash
+curl http://localhost:8000/health 2>/dev/null && \
+  echo "✓ Server is running!" || \
+  echo "✗ Server not running - start it below"
+```
+
+**Server is running?** Skip to [Step 2: Enable VSCode Chat](#step-2-enable-vscode-chat).
+
+**Server not running?** Continue to the quick start below.
+
+---
+
+## Quick Start: Launch vLLM Server
+
+Choose the command for your hardware:
+
+### Wormhole N150 or Blackhole P100
 
 ```bash
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
-  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python -m vllm.entrypoints.openai.api_server \
-    --model $HF_MODEL \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
-    --port 8000
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
 ```
 
-[🚀 Start vLLM Server](command:tenstorrent.startVllmForChat)
+**For P100:** Change `MESH_DEVICE=N150` to `MESH_DEVICE=P100`
 
-**What this does:**
-- Activates the dedicated vLLM virtual environment
-- Uses local model from `~/models/Llama-3.1-8B-Instruct` (downloaded in Lesson 3)
-- Starts vLLM server on port 8000 with HuggingFace format
-- Loads Llama-3.1-8B into memory (takes 2-5 min first time)
-- Keeps running in background terminal
-- Ready to handle chat requests at 1-3 sec/query
+### Wormhole N300
 
-**Note:** The server will keep running in the "TT vLLM Server" terminal. Watch for "Application startup complete" message.
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N300 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 32 \
+    --block-size 64 \
+    --tensor-parallel-size 2
+```
+
+### Wormhole T3K
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=T3K && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-70B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 64 \
+    --block-size 64 \
+    --tensor-parallel-size 8
+```
+
+**Wait for:** "Application startup complete" message in the terminal.
+
+**Then continue** to enable the chat participant below.
+
+---
+
+## Prerequisites
+
+- ✅ Llama-3.1-8B-Instruct downloaded (from Lesson 3 or quick install above)
+- ✅ vLLM installed (from Lesson 6 or quick install above)
+- ✅ vLLM server running (from quick start above)
+
+## Step 1: Verify Server is Running
+
+Before enabling the chat, let's make sure the server is accessible:
+
+```bash
+curl http://localhost:8000/health
+```
+
+**Expected response:** `{"status":"ok"}` or similar
+
+**No response?** The server isn't running. Go back to [Quick Start: Launch vLLM Server](#quick-start-launch-vllm-server).
+
+**Got a response?** Continue to Step 2!
 
 ## Step 2: Enable VSCode Chat
 
-Once the server is ready, enable the `@tenstorrent` chat participant:
+Once the server is ready (check with Step 1 above), enable the `@tenstorrent` chat participant:
 
 [💬 Enable @tenstorrent Chat](command:tenstorrent.enableChatParticipant)
 

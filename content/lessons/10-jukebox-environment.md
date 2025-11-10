@@ -617,71 +617,339 @@ curl -N http://localhost:8000/v1/chat/completions \
 
 ---
 
-## Real-World Workflow Example
+## Hardware-Specific Workflows
 
-**Scenario:** You want to run Mistral-7B for a chatbot project.
+Different hardware types have different capabilities and requirements. Here are complete workflows for common scenarios:
 
-**Step-by-step:**
+### Workflow 1: N150 Single-Chip Development
 
-1. **Find compatible config:**
-   ```bash
-   python3 tt-jukebox.py --model mistral
-   ```
-   → Shows Mistral-7B-Instruct-v0.3 on N150
+**Scenario:** You have an N150 in the cloud, want to run Llama 3.1 8B for chat.
 
-2. **Check environment:**
-   → TT-Jukebox says: "Setup required"
-   → tt-metal needs: `13f44c5`
-   → vLLM needs: `c123abc`
+**Why this works:**
+- N150 = single chip, perfect for 8B models
+- 64K context limit
+- Simple configuration (no tensor parallelism)
 
-3. **Generate setup:**
-   ```bash
-   python3 tt-jukebox.py --model mistral --setup
-   ```
-   → Script saved to `~/tt-scratchpad/setup-scripts/setup_mistral_7b.sh`
+**Complete workflow:**
 
-4. **Execute setup:**
-   ```bash
-   bash ~/tt-scratchpad/setup-scripts/setup_mistral_7b.sh
-   ```
-   → Wait 10-15 minutes (grab coffee ☕)
+```bash
+# 1. Identify your hardware
+tt-smi -s
+# Example output:
+# {
+#   "board_info": {
+#     "board_type": "n150",
+#     "coords": "0,0"
+#   }
+# }
+# Look for: "board_type": "n150"
 
-5. **Download model:**
-   ```bash
-   hf download mistralai/Mistral-7B-Instruct-v0.3 \
-       --local-dir ~/models/Mistral-7B-Instruct-v0.3
-   ```
+# 2. Find chat models for N150
+python3 ~/tt-scratchpad/tt-jukebox.py chat
 
-6. **Start vLLM:**
-   ```bash
-   cd ~/tt-vllm
-   source ~/tt-vllm-venv/bin/activate
-   export TT_METAL_HOME=~/tt-metal
-   export MESH_DEVICE=N150
-   export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
-   source ~/tt-vllm/tt_metal/setup-metal.sh
+# 3. Select Llama-3.1-8B-Instruct from the list
+# Jukebox shows:
+#   - Model: Llama-3.1-8B-Instruct
+#   - Device: N150
+#   - Context: 65,536 tokens
+#   - Status: Validated configuration
 
-   python ~/tt-scratchpad/start-vllm-server.py \
-       --model ~/models/Mistral-7B-Instruct-v0.3 \
-       --port 8000 \
-       --max-model-len 32768 \
-       --max-num-seqs 16
-   ```
+# 4. Generate and review setup script
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+# Script saved to: ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
 
-7. **Test:**
-   ```bash
-   curl http://localhost:8000/v1/chat/completions \
-       -H "Content-Type: application/json" \
-       -d '{
-         "model": "mistralai/Mistral-7B-Instruct-v0.3",
-         "messages": [{"role": "user", "content": "Hello!"}]
-       }'
-   ```
+# 5. Execute setup (10-15 minutes)
+bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
 
-8. **Deploy chatbot:**
-   → Now you have a reproducible, tested environment
-   → Share `setup_mistral_7b.sh` with team
-   → Everyone gets identical versions
+# 6. Activate environment
+cd ~/tt-vllm
+source ~/tt-vllm-venv/bin/activate
+export TT_METAL_HOME=~/tt-metal
+export MESH_DEVICE=N150
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+source ~/tt-vllm/tt_metal/setup-metal.sh
+
+# 7. Start vLLM with validated flags
+python ~/tt-scratchpad/start-vllm-server.py \
+  --model ~/models/Llama-3.1-8B-Instruct \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --max-model-len 65536 \
+  --max-num-seqs 16 \
+  --block-size 64
+
+# 8. Test
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Hello!"}]}'
+```
+
+**Result:** Validated N150 configuration in ~15 minutes.
+
+---
+
+### Workflow 2: N300 Dual-Chip Code Assistance
+
+**Scenario:** You have N300, want Qwen 2.5 Coder for programming tasks.
+
+**Why this works:**
+- N300 = dual chip, enables tensor parallelism
+- 128K context limit
+- Qwen 2.5 Coder requires TP=2 (uses both chips)
+
+**Complete workflow:**
+
+```bash
+# 1. Identify hardware
+tt-smi -s
+# Example output: {"board_info": {"board_type": "n300", "coords": "0,0"}}
+# Look for: "board_type": "n300"
+
+# 2. Find code models for N300
+python3 ~/tt-scratchpad/tt-jukebox.py code_assistant
+
+# 3. Select Qwen-2.5-7B-Coder
+# Jukebox shows:
+#   - Model: Qwen-2.5-7B-Coder
+#   - Device: N300
+#   - Context: 32,768 tokens
+#   - Tensor Parallelism: TP=2
+
+# 4. Generate setup with TP=2 configuration
+python3 ~/tt-scratchpad/tt-jukebox.py --model qwen-2.5-7b --setup
+
+# 5. Execute setup
+bash ~/tt-scratchpad/setup-scripts/setup_qwen_2_5_7b_coder.sh
+
+# 6. Activate environment
+cd ~/tt-vllm
+source ~/tt-vllm-venv/bin/activate
+export TT_METAL_HOME=~/tt-metal
+export MESH_DEVICE=N300
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+source ~/tt-vllm/tt_metal/setup-metal.sh
+
+# 7. Start vLLM with tensor parallelism
+python ~/tt-scratchpad/start-vllm-server.py \
+  --model ~/models/Qwen-2.5-7B-Coder \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --max-model-len 32768 \
+  --max-num-seqs 32 \
+  --block-size 64 \
+  --tensor-parallel-size 2
+
+# 8. Test coding assistance
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "Qwen-2.5-7B-Coder", "messages": [{"role": "user", "content": "Write a Python function to reverse a linked list"}]}'
+```
+
+**Result:** Code assistant optimized for N300's dual chips.
+
+---
+
+### Workflow 3: P100 Blackhole Experimental
+
+**Scenario:** You have new P100 hardware, want to try latest models.
+
+**Why this might work:**
+- P100 = Blackhole architecture (newer)
+- Similar to N150 (single chip)
+- Some models validated, others experimental
+
+**Complete workflow:**
+
+```bash
+# 1. Identify hardware
+tt-smi -s
+# Example output: {"board_info": {"board_type": "p100", "coords": "0,0"}}
+# Look for: "board_type": "p100"
+
+# 2. List all P100 models (including experimental)
+python3 ~/tt-scratchpad/tt-jukebox.py --list --show-experimental
+
+# Jukebox shows:
+# ✓ VALIDATED MODELS
+#   - Llama-3.1-8B-Instruct [COMPLETE]
+#
+# ⚠ EXPERIMENTAL MODELS (not validated)
+#   - Qwen-2.5-7B-Coder (validated for N300)
+#     Reason: same architecture family (blackhole/wormhole)
+
+# 3. Option A: Use validated model (safe)
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+
+# 3. Option B: Try experimental model (adventurous)
+python3 ~/tt-scratchpad/tt-jukebox.py --model qwen-2.5-7b --setup --show-experimental
+# Jukebox automatically applies conservative parameters:
+#   - Reduces max-context by 33% for safety
+#   - Warns about unvalidated status
+
+# 4. Execute setup
+bash ~/tt-scratchpad/setup-scripts/setup_<model>.sh
+
+# 5. Activate environment
+cd ~/tt-vllm
+source ~/tt-vllm-venv/bin/activate
+export TT_METAL_HOME=~/tt-metal
+export MESH_DEVICE=P100
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+source ~/tt-vllm/tt_metal/setup-metal.sh
+
+# 6. Start vLLM (flags from Jukebox)
+python ~/tt-scratchpad/start-vllm-server.py \
+  --model ~/models/<model-name> \
+  --host 0.0.0.0 \
+  --port 8000 \
+  <jukebox-generated-flags>
+
+# 7. Test carefully
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "<model-name>", "messages": [{"role": "user", "content": "Test query"}]}'
+
+# 8. Report results!
+# If it works, share findings with community
+# If it fails, try validated model instead
+```
+
+**Experimental models = adventure!** Report what works to help the community.
+
+---
+
+### Workflow 4: T3K Production Deployment
+
+**Scenario:** You have T3K (8 chips), need Llama 3.1 70B for production serving.
+
+**Why this works:**
+- T3K = 8 chips, designed for large models
+- 128K context limit
+- Llama 3.1 70B requires TP=8 (uses all chips)
+- Production-grade performance
+
+**Complete workflow:**
+
+```bash
+# 1. Identify hardware
+tt-smi -s
+# Example output: {"board_info": {"board_type": "t3k", "coords": "0,0"}}
+# Look for: "board_type": "t3k"
+
+# 2. Find large models for T3K
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-70b
+
+# Jukebox shows:
+#   - Model: Llama-3.1-70B-Instruct
+#   - Device: T3K
+#   - Context: 131,072 tokens (128K)
+#   - Tensor Parallelism: TP=8
+
+# 3. Generate setup (includes TP=8 config)
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-70b --setup
+
+# 4. Execute setup (may take longer - large model)
+bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_70b_instruct.sh
+# Downloads ~140GB model
+
+# 5. Activate environment
+cd ~/tt-vllm
+source ~/tt-vllm-venv/bin/activate
+export TT_METAL_HOME=~/tt-metal
+export MESH_DEVICE=T3K
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+source ~/tt-vllm/tt_metal/setup-metal.sh
+
+# 6. Start vLLM with production settings
+python ~/tt-scratchpad/start-vllm-server.py \
+  --model ~/models/Llama-3.1-70B-Instruct \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --max-model-len 131072 \
+  --max-num-seqs 64 \
+  --block-size 64 \
+  --tensor-parallel-size 8
+
+# 7. Test production workload
+# Use load testing tool like Apache Bench or hey
+hey -n 100 -c 10 -m POST \
+  -H "Content-Type: application/json" \
+  -d '{"model": "meta-llama/Llama-3.1-70B-Instruct", "messages": [{"role": "user", "content": "Explain quantum computing"}]}' \
+  http://localhost:8000/v1/chat/completions
+
+# 8. Monitor performance
+curl http://localhost:8000/metrics  # Prometheus metrics
+```
+
+**Result:** Production-grade 70B serving with validated T3K config.
+
+---
+
+### Workflow 5: Switching Between Models
+
+**Scenario:** You need to switch from Llama to Mistral for A/B testing.
+
+**Why Jukebox helps:**
+- Different models often need different commits
+- Manual switching = error-prone
+- Jukebox generates exact setup for each
+
+**Complete workflow:**
+
+```bash
+# Current: Running Llama 3.1 8B
+# Goal: Switch to Mistral 7B for comparison
+
+# 1. Generate Mistral setup
+python3 ~/tt-scratchpad/tt-jukebox.py --model mistral --setup
+
+# Jukebox shows:
+#   Current tt-metal: abc1234 (Llama config)
+#   Required tt-metal: def5678 (Mistral config)
+#   Will checkout and rebuild
+
+# 2. Stop current vLLM server
+# (Ctrl+C in server terminal)
+
+# 3. Execute Mistral setup
+bash ~/tt-scratchpad/setup-scripts/setup_mistral_7b_instruct.sh
+
+# 4. Start Mistral
+cd ~/tt-vllm
+source ~/tt-vllm-venv/bin/activate
+export TT_METAL_HOME=~/tt-metal
+export MESH_DEVICE=N150
+export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+source ~/tt-vllm/tt_metal/setup-metal.sh
+
+python ~/tt-scratchpad/start-vllm-server.py \
+  --model ~/models/Mistral-7B-Instruct-v0.3 \
+  --port 8000 \
+  --max-model-len 32768 \
+  --max-num-seqs 16
+
+# 5. Run A/B comparison
+# Same prompts, different models, compare results
+
+# 6. Switch back to Llama
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
+# (restart server with Llama)
+```
+
+**Result:** Safe model switching with environment isolation.
+
+---
+
+## Workflow Quick Reference
+
+| Scenario | Hardware | Model | Key Flags |
+|----------|----------|-------|-----------|
+| **Development** | N150, P100 | Llama 3.1 8B | `--max-model-len 65536` |
+| **Code Assistance** | N300 | Qwen 2.5 7B | `--tensor-parallel-size 2` |
+| **Experimental** | P100, P150 | Various | `--show-experimental` |
+| **Production** | T3K | Llama 3.1 70B | `--tensor-parallel-size 8` |
+| **Model Switching** | Any | Multiple | Generate setup per model |
 
 ---
 

@@ -48,14 +48,92 @@ while True:
 
 **Key insight:** The model stays in memory between queries!
 
+---
+
+## Starting Fresh?
+
+If you're jumping directly to this lesson, verify your setup:
+
+### Quick Prerequisite Checks
+
+```bash
+# Hardware detected?
+tt-smi -s
+
+# tt-metal installed?
+python3 -c "import ttnn; print('✓ tt-metal ready')"
+
+# Model downloaded (Meta format)?
+ls ~/models/Llama-3.1-8B-Instruct/original/consolidated.00.pth
+```
+
+**All checks passed?** Continue to Step 1 below.
+
+**If any checks fail:**
+
+**No hardware?**
+- See [Lesson 1: Hardware Detection](#)
+
+**No tt-metal?**
+- See [Lesson 2: Verify Installation](#)
+- Or install: [tt-metal installation guide](https://github.com/tenstorrent/tt-metal/blob/main/INSTALLING.md)
+
+**No model?**
+- See [Lesson 3: Download Model](#)
+- Or quick download:
+  ```bash
+  huggingface-cli login
+  hf download meta-llama/Llama-3.1-8B-Instruct \
+    --local-dir ~/models/Llama-3.1-8B-Instruct
+  ```
+
+### Dependencies Required
+
+This lesson uses the Generator API which needs:
+
+```bash
+pip install pi  # Required for Generator API
+pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
+```
+
+**Already installed?** Check with:
+```bash
+python3 -c "import pi; print('✓ pi installed')"
+```
+
+**Not installed?** Run the commands above or use the button in Step 1.
+
+---
+
 ## Prerequisites
 
 This lesson requires the same setup as Lesson 3. Make sure you have:
 - tt-metal installed and working
-- Model downloaded (Llama-3.1-8B-Instruct)
-- `HF_MODEL` environment variable set
+- Model downloaded (Llama-3.1-8B-Instruct) in **Meta format** (`original/` subdirectory)
+- `LLAMA_DIR` environment variable pointing to `original/` subdirectory
+- Dependencies: `pi` and `llama-models` packages
 
-## Step 1: Create the Direct API Chat Script
+---
+
+## Step 1: Install Dependencies (If Not Already Done)
+
+The Direct API needs specific Python packages:
+
+```bash
+pip install pi && pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
+```
+
+[🔧 Install Direct API Dependencies](command:tenstorrent.installInferenceDeps)
+
+**What this installs:**
+- `pi` - Required by Generator API for inference
+- `llama-models` - Tenstorrent's fork with tt-metal support
+
+**Already installed?** The command will skip packages that are already present.
+
+---
+
+## Step 2: Create the Direct API Chat Script
 
 This command creates `~/tt-scratchpad/tt-chat-direct.py` - a standalone chat client using the Generator API:
 
@@ -77,7 +155,9 @@ mkdir -p ~/tt-scratchpad && cp template ~/tt-scratchpad/tt-chat-direct.py && chm
 - `chat_loop()` - Interactive REPL for chatting
 - Full control over sampling, temperature, max tokens
 
-## Step 2: Start Interactive Chat
+---
+
+## Step 3: Start Interactive Chat
 
 Now launch the chat session:
 
