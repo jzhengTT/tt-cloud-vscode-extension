@@ -1082,4 +1082,107 @@ python3 tt-jukebox.py --model llama --setup
 - ✅ Production-ready configs (tested vLLM flags)
 - ✅ **Automatic model downloads** (NEW - no manual download needed)
 - ✅ **HF authentication support** (NEW - multiple auth methods)
+- ✅ **Intelligent experimental matching** (NEW v0.0.35 - try unvalidated models safely)
+
+### Experimental Model Matching (v0.0.35)
+
+**Problem:** Official model specs only include validated configurations. Users with newer hardware (like Blackhole P100) or wanting to try unvalidated models had limited options.
+
+**Solution:** Intelligent partial compatibility detection using `--show-experimental` flag.
+
+**How it works:**
+
+The `filter_by_hardware()` function now analyzes multiple factors to determine compatibility:
+
+1. **Exact Device Match** → Validated List (regardless of status)
+   - P100 models on P100 hardware
+   - Shows status badge: [EXPERIMENTAL], [FUNCTIONAL], or [COMPLETE]
+
+2. **Same Architecture Family** → Experimental List
+   - Architecture families:
+     - Wormhole: N150, N300, T3K, N150X4
+     - Blackhole: P100, P150, P150X4, P150X8
+   - Example: N150 model might work on N300 (both wormhole_b0)
+   - Example: P150 model might work on P100 (both blackhole)
+
+3. **Smaller Model on Larger Device** → Experimental List
+   - Parameter count ≤ 8B
+   - User device "larger" than spec device (crude heuristic by device numbers)
+   - Example: N150 (8B model) might work on T3K
+
+4. **Official Experimental Status** → Experimental List
+   - Models marked `status: "EXPERIMENTAL"` in JSON
+   - But device doesn't match exactly
+
+**Display Features:**
+
+- Compatibility reason shown for each experimental model
+- Status badges in both validated and experimental lists
+- Conservative parameters automatically applied (33% reduction)
+- Clear warnings about unvalidated status
+
+**Usage Examples:**
+
+```bash
+# List validated models only (default)
+python3 tt-jukebox.py --list
+
+# List validated + experimental models
+python3 tt-jukebox.py --list --show-experimental
+
+# Search for Llama models, include experimental
+python3 tt-jukebox.py --model llama --show-experimental
+
+# Find chat models on P100 Blackhole
+python3 tt-jukebox.py chat --show-experimental
+```
+
+**Output Example (P100 hardware):**
+
+```
+✓ VALIDATED MODELS
+
+Llama Family:
+  • Llama-3.1-8B-Instruct [EXPERIMENTAL]
+    Context: 65536 tokens, Disk: 20 GB
+
+⚠ EXPERIMENTAL MODELS (not validated)
+
+Llama Family:
+  • Llama-3.1-70B (validated for P150)
+    Reason: same architecture (blackhole)
+    Context: 131072 tokens, Disk: 140 GB
+```
+
+**Implementation Details:**
+
+File: `content/templates/tt-jukebox.py`
+
+- `filter_by_hardware()` (lines 323-401) - Enhanced compatibility logic
+- `display_model_spec()` (lines 545-599) - Shows compatibility reasons
+- `apply_conservative_params()` (lines 460-481) - 33% parameter reduction
+- `list_compatible_models()` (lines 953-1036) - Separate validated/experimental display
+
+**Architecture Detection:**
+
+Reads from model specs JSON:
+- `device_type`: N150, N300, P100, etc.
+- `env_vars.ARCH_NAME`: wormhole_b0, blackhole
+- `status`: COMPLETE, FUNCTIONAL, EXPERIMENTAL
+- `param_count`: Model size in billions
+
+**Conservative Parameters:**
+
+Experimental models automatically get reduced parameters to minimize OOM:
+- `max_context`: 67% of original (e.g., 65536 → 43,008)
+- `max_num_seqs`: 67% of original (e.g., 16 → 10)
+- Applied in `apply_conservative_params()`
+- Marked with `_is_experimental: true` flag
+
+**Benefits for Blackhole P100:**
+
+- Official P100 models show in validated list (with EXPERIMENTAL badge)
+- Other Blackhole models (P150, P150X4) show as experimental
+- Conservative params reduce risk of OOM on unvalidated configs
+- Clear compatibility reasons help users make informed decisions
 

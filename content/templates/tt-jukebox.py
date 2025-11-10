@@ -329,16 +329,67 @@ def filter_by_hardware(specs: List[Dict], hardware: str, include_experimental: b
     """
     validated = []
     experimental = []
+    hardware_upper = hardware.upper()
+
+    # Architecture mappings
+    arch_families = {
+        'wormhole_b0': ['N150', 'N300', 'T3K', 'N150X4'],
+        'blackhole': ['P100', 'P150', 'P150X4', 'P150X8'],
+    }
+
+    # Find user's architecture family
+    user_arch_family = None
+    for arch, devices in arch_families.items():
+        if any(d in hardware_upper for d in devices):
+            user_arch_family = arch
+            break
 
     for spec in specs:
-        # Check device_type field
-        if 'device_type' in spec:
-            device = spec['device_type'].upper()
-            if hardware.upper() in device or device in hardware.upper():
-                validated.append(spec)
-            elif include_experimental:
-                # Check if model might work on similar hardware
-                # e.g., N150 model might work on N300, smaller models might work on larger chips
+        if 'device_type' not in spec:
+            continue
+
+        device_type = spec['device_type'].upper()
+        status = spec.get('status', 'UNKNOWN').upper()
+        spec_arch = spec.get('env_vars', {}).get('ARCH_NAME', '')
+        param_count = spec.get('param_count', 999)  # Billion parameters
+
+        # Exact device match
+        if hardware_upper in device_type or device_type in hardware_upper:
+            # Exact device match goes to validated list regardless of status
+            # (status badge will show EXPERIMENTAL warning if needed)
+            validated.append(spec)
+
+        elif include_experimental:
+            # Check for partial compatibility
+            is_compatible = False
+            compatibility_reason = []
+
+            # Same architecture family (e.g., all Wormhole devices)
+            if spec_arch and user_arch_family and spec_arch == user_arch_family:
+                is_compatible = True
+                compatibility_reason.append(f"same architecture ({spec_arch})")
+
+            # Smaller model on potentially larger device
+            # (crude heuristic: if your device is "larger" in name/number)
+            device_numbers = {
+                'N150': 150, 'N300': 300, 'T3K': 3000, 'N150X4': 600,
+                'P100': 100, 'P150': 150, 'P150X4': 600, 'P150X8': 1200
+            }
+            user_size = device_numbers.get(hardware_upper, 0)
+            spec_size = device_numbers.get(device_type, 0)
+
+            if user_size > spec_size and param_count <= 8:
+                is_compatible = True
+                compatibility_reason.append(f"smaller model on larger device")
+
+            # Status is EXPERIMENTAL (official experimental support)
+            if status == 'EXPERIMENTAL':
+                is_compatible = True
+                compatibility_reason.append("officially marked experimental")
+
+            if is_compatible:
+                # Annotate spec with compatibility reason
+                spec['_compatibility_reason'] = ', '.join(compatibility_reason)
                 experimental.append(spec)
 
     return validated, experimental
@@ -491,7 +542,16 @@ def display_model_spec(spec: Dict, index: int, env_match: Optional[Dict] = None,
 
     if is_experimental:
         print(f"    {Colors.WARNING}⚠ EXPERIMENTAL - Not validated for this hardware{Colors.ENDC}")
+        compatibility_reason = spec.get('_compatibility_reason', 'might be compatible')
+        print(f"    {Colors.WARNING}Reason: {compatibility_reason}{Colors.ENDC}")
         print(f"    {Colors.WARNING}Using conservative parameters (33% reduction){Colors.ENDC}")
+
+    status = spec.get('status', 'UNKNOWN').upper()
+    if status == 'EXPERIMENTAL':
+        print(f"    {Colors.WARNING}Status: EXPERIMENTAL{Colors.ENDC}")
+    elif status in ['COMPLETE', 'FUNCTIONAL']:
+        print(f"    {Colors.OKGREEN}Status: {status}{Colors.ENDC}")
+
     print(f"    ID: {spec.get('model_id', 'N/A')}")
     print(f"    HuggingFace: {spec.get('hf_model_repo', 'N/A')}")
     print(f"    Device: {spec.get('device_type', 'N/A')}")
@@ -920,7 +980,16 @@ def list_compatible_models(specs: List[Dict], hardware: str, show_experimental: 
         for family, models in sorted(families.items()):
             print(f"\n{Colors.BOLD}{family} Family:{Colors.ENDC}")
             for spec in models:
-                print(f"  • {spec.get('model_name', 'Unknown')}")
+                status = spec.get('status', 'UNKNOWN').upper()
+                status_badge = ''
+                if status == 'EXPERIMENTAL':
+                    status_badge = f' [{Colors.WARNING}EXPERIMENTAL{Colors.ENDC}]'
+                elif status == 'FUNCTIONAL':
+                    status_badge = f' [{Colors.OKCYAN}FUNCTIONAL{Colors.ENDC}]'
+                elif status == 'COMPLETE':
+                    status_badge = f' [{Colors.OKGREEN}COMPLETE{Colors.ENDC}]'
+
+                print(f"  • {spec.get('model_name', 'Unknown')}{status_badge}")
                 # Get max context from nested device_model_spec
                 max_context = 'N/A'
                 if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
@@ -947,7 +1016,18 @@ def list_compatible_models(specs: List[Dict], hardware: str, show_experimental: 
             print(f"\n{Colors.BOLD}{family} Family:{Colors.ENDC}")
             for spec in models:
                 device_type = spec.get('device_type', 'Unknown')
-                print(f"  • {spec.get('model_name', 'Unknown')} (validated for {device_type})")
+                status = spec.get('status', 'UNKNOWN').upper()
+                compatibility = spec.get('_compatibility_reason', '')
+
+                status_badge = ''
+                if status == 'EXPERIMENTAL':
+                    status_badge = f' [{Colors.WARNING}EXPERIMENTAL{Colors.ENDC}]'
+
+                print(f"  • {spec.get('model_name', 'Unknown')} (validated for {device_type}){status_badge}")
+
+                if compatibility:
+                    print(f"    {Colors.WARNING}Reason: {compatibility}{Colors.ENDC}")
+
                 # Get max context from nested device_model_spec
                 max_context = 'N/A'
                 if 'device_model_spec' in spec and 'max_context' in spec['device_model_spec']:
