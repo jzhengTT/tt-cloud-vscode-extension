@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.36",
+  "version": "0.0.37",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -304,6 +304,16 @@
         "command": "tenstorrent.monitorJukeboxPv",
         "title": "Monitor Jukebox vLLM with pv",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.browseOpenBounties",
+        "title": "Browse Open Bounties on GitHub",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.copyBountyChecklist",
+        "title": "Copy Bounty Workflow Checklist",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -420,6 +430,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.copyJukebox"
+            ]
+          },
+          {
+            "id": "bounty-program",
+            "title": "Bounty Program: Model Bring-Up",
+            "description": "Learn how to contribute to the Tenstorrent Bounty Program by bringing up new models. Master TT-Metal while becoming part of the open-source ecosystem. Uses the successful Phi-3 contribution as a case study.",
+            "media": {
+              "markdown": "content/lessons/11-bounty-program-model-bringup.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.browseOpenBounties"
             ]
           }
         ]

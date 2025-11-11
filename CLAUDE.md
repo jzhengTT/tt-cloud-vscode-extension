@@ -27,6 +27,21 @@ npm run watch
 npm run package
 ```
 
+## Version Management
+
+**IMPORTANT:** Always increment the version number in `package.json` with every package of changes.
+
+- Use semantic versioning: `MAJOR.MINOR.PATCH`
+- For new features/lessons: increment MINOR (e.g., `0.0.36` → `0.0.37`)
+- For bug fixes: increment PATCH (e.g., `0.0.36` → `0.0.37`)
+- For breaking changes: increment MAJOR (when ready for 1.0.0)
+
+Example workflow:
+1. Make changes (add lesson, fix bug, etc.)
+2. Update version in `package.json`
+3. Build and test
+4. Commit with version number in message
+
 ## Running and Testing
 
 Press `F5` in VS Code to launch the Extension Development Host with the extension loaded. The walkthrough will appear in the "Get Started" section of VS Code.

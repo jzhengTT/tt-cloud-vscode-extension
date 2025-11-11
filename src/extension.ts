@@ -2064,6 +2064,156 @@ function monitorJukeboxPv(): void {
 }
 
 // ============================================================================
+// Bounty Program Commands
+// ============================================================================
+
+/**
+ * Command: tenstorrent.browseOpenBounties
+ * Opens GitHub issues page filtered for bounty label
+ */
+function browseOpenBounties(): void {
+  const bountyUrl = 'https://github.com/tenstorrent/tt-metal/labels/bounty';
+  vscode.env.openExternal(vscode.Uri.parse(bountyUrl));
+
+  vscode.window.showInformationMessage(
+    '🎯 Opening GitHub bounties page in your browser...'
+  );
+}
+
+/**
+ * Command: tenstorrent.copyBountyChecklist
+ * Creates a bounty workflow checklist file in ~/tt-scratchpad/
+ */
+async function copyBountyChecklist(): Promise<void> {
+  const scratchpadDir = `${process.env.HOME}/tt-scratchpad`;
+  const checklistPath = `${scratchpadDir}/bounty-checklist.md`;
+
+  const checklistContent = `# Bounty Program Workflow Checklist
+
+## Phase 1: Setup & Preparation
+- [ ] Find and claim a bounty on GitHub
+- [ ] Clone tt-metal repository
+- [ ] Build TT-Metal with ./build_metal.sh
+- [ ] Set environment variables (TT_METAL_HOME, PYTHONPATH)
+- [ ] Install Python dependencies
+- [ ] Verify hardware with tt-smi
+- [ ] Run a reference demo (e.g., Llama 3.1 8B)
+
+## Phase 2: Baseline Validation
+- [ ] Run reference model on CPU/GPU
+- [ ] Validate model outputs
+- [ ] Save reference logits for comparison
+- [ ] Analyze model architecture (config.json)
+- [ ] Check architecture compatibility with tt_transformers
+- [ ] Verify model fits on target hardware
+- [ ] Identify special features (RoPE, attention mechanisms)
+
+## Phase 3: Component-Wise Bring-Up
+- [ ] Identify similar models in tt_transformers
+- [ ] Create unit test for RMSNorm/LayerNorm
+- [ ] Create unit test for RotaryEmbedding (RoPE)
+- [ ] Create unit test for Attention module
+- [ ] Create unit test for MLP (feed-forward)
+- [ ] Create unit test for full decoder layer
+- [ ] Implement model-specific modifications (minimal!)
+- [ ] Verify PCC (Pearson Correlation) >0.99 for each module
+
+## Phase 4: Full Model Integration
+- [ ] Implement decode stage (batch=32, single token)
+- [ ] Test decode end-to-end
+- [ ] Implement prefill stage (batch=1, long context)
+- [ ] Test prefill end-to-end
+- [ ] Run full generation (prefill + decode)
+- [ ] Validate token accuracy vs reference
+- [ ] Run teacher forcing test (top-1 >80%, top-5 >95%)
+- [ ] Check generated text is coherent
+
+## Phase 5: Performance Optimization
+- [ ] Measure baseline performance (TTFT, throughput, latency)
+- [ ] Calculate percentage of theoretical max
+- [ ] Try different precision configs (bfp4, bfp8, bf16)
+- [ ] Create custom decoder config if needed
+- [ ] Apply Metal Trace for command buffer optimization
+- [ ] Enable async mode if beneficial
+- [ ] Profile with Tracy profiler
+- [ ] Identify and fix bottlenecks
+- [ ] Document final performance metrics
+
+## Phase 6: Testing & CI Integration
+- [ ] Create accuracy test (test_accuracy.py)
+- [ ] Create performance test (test_perf.py)
+- [ ] Create demo test (simple_text_demo.py)
+- [ ] Generate reference outputs for CI
+- [ ] Add model to CI test dispatch
+- [ ] Run all tests locally
+- [ ] Verify all tests pass
+
+## Phase 7: Documentation & Submission
+- [ ] Write or update README with setup instructions
+- [ ] Document performance metrics (table format)
+- [ ] Document accuracy results (top-1, top-5)
+- [ ] Create pull request(s) following MODEL_ADD.md
+- [ ] Write clear PR description with summary
+- [ ] Link to bounty issue in PR
+- [ ] Run CI pipelines (Pipeline Select)
+- [ ] Respond to reviewer feedback promptly
+- [ ] Make requested changes
+- [ ] Get PR approved and merged
+- [ ] Contribution complete! ✅
+
+---
+
+## Performance Tiers (Remember!)
+- **Easy**: ≥25% of theoretical max throughput
+- **Medium**: ≥50% of theoretical max throughput
+- **Hard**: ≥70% of theoretical max throughput
+
+## Accuracy Requirements
+- **Top-1**: ≥80% token accuracy
+- **Top-5**: ≥95% token accuracy
+
+## Pro Tips
+- ✅ Start with easy/warmup bounties to learn workflow
+- ✅ Communicate progress in issue thread every few days
+- ✅ Reuse existing tt_transformers code (reviewers love this!)
+- ✅ Test incrementally - don't wait until the end
+- ✅ Profile early to identify bottlenecks
+- ✅ Break large PRs into smaller ones (easier to review)
+- ❌ Don't copy-paste entire codebases
+- ❌ Don't skip baseline validation
+- ❌ Don't optimize before correctness
+- ❌ Don't ignore CI failures
+
+## Resources
+- Model Bring-Up Guide: https://github.com/tenstorrent/tt-metal/blob/main/models/docs/model_bring_up.md
+- TT-NN Docs: https://docs.tenstorrent.com/tt-metal/latest/ttnn/
+- Bounty Terms: https://docs.tenstorrent.com/bounty_terms.html
+- Discord: https://discord.gg/tenstorrent
+
+---
+
+Good luck with your contribution! 🚀
+`;
+
+  // Ensure scratchpad directory exists
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(scratchpadDir));
+
+  // Write checklist file
+  await vscode.workspace.fs.writeFile(
+    vscode.Uri.file(checklistPath),
+    Buffer.from(checklistContent)
+  );
+
+  // Open the file in editor
+  const doc = await vscode.workspace.openTextDocument(checklistPath);
+  await vscode.window.showTextDocument(doc);
+
+  vscode.window.showInformationMessage(
+    '✅ Bounty workflow checklist created! Check off items as you progress.'
+  );
+}
+
+// ============================================================================
 // Device Management Commands
 // ============================================================================
 
@@ -2333,6 +2483,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testJukeboxOpenai', testJukeboxOpenai),
     vscode.commands.registerCommand('tenstorrent.testJukeboxCurl', testJukeboxCurl),
     vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
+
+    // Bounty Program
+    vscode.commands.registerCommand('tenstorrent.browseOpenBounties', browseOpenBounties),
+    vscode.commands.registerCommand('tenstorrent.copyBountyChecklist', copyBountyChecklist),
 
     // Device Management
     vscode.commands.registerCommand('tenstorrent.resetDevice', resetDevice),
