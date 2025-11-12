@@ -327,6 +327,44 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     template: 'curl -N http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d \'{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Write a story about AI"}], "max_tokens": 512, "stream": true}\' | pv -l -i 0.1',
     description: 'Monitors streaming API response with pv (pipe viewer)',
   },
+
+  // Image Classification with TT-Forge (Lesson 11)
+  INSTALL_FORGE: {
+    id: 'install-forge',
+    name: 'Install TT-Forge',
+    template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && pip install tt_forge_fe==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install tt_tvm==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install pillow torch torchvision requests tabulate',
+    description: 'Creates venv and installs TT-Forge-FE, TT-TVM, and dependencies',
+  },
+
+  TEST_FORGE_INSTALL: {
+    id: 'test-forge-install',
+    name: 'Test Forge Installation',
+    template: 'source ~/tt-forge-venv/bin/activate && python3 -c "import forge; print(f\'✓ TT-Forge {forge.__version__} loaded successfully!\')" && tt-smi',
+    description: 'Verifies forge module loads and TT device is detected',
+  },
+
+  CREATE_FORGE_CLASSIFIER: {
+    id: 'create-forge-classifier',
+    name: 'Create Image Classifier Script',
+    template: 'mkdir -p ~/tt-scratchpad && cp \"{{templatePath}}\" ~/tt-scratchpad/tt-forge-classifier.py && chmod +x ~/tt-scratchpad/tt-forge-classifier.py',
+    description: 'Copies tt-forge-classifier.py template to ~/tt-scratchpad',
+    variables: ['templatePath'],
+  },
+
+  RUN_FORGE_CLASSIFIER: {
+    id: 'run-forge-classifier',
+    name: 'Run Image Classifier',
+    template: 'cd ~/tt-scratchpad && source ~/tt-forge-venv/bin/activate && python tt-forge-classifier.py',
+    description: 'Runs MobileNetV2 image classification with TT-Forge on sample image',
+  },
+
+  RUN_FORGE_CUSTOM_IMAGE: {
+    id: 'run-forge-custom-image',
+    name: 'Classify Custom Image',
+    template: 'cd ~/tt-scratchpad && source ~/tt-forge-venv/bin/activate && python tt-forge-classifier.py --image {{imagePath}}',
+    description: 'Classifies a user-provided image with TT-Forge compiled model',
+    variables: ['imagePath'],
+  },
 };
 
 /**

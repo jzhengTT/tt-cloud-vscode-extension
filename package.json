@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.43",
+  "version": "0.0.44",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -306,6 +306,26 @@
         "category": "Tenstorrent"
       },
       {
+        "command": "tenstorrent.installForge",
+        "title": "Install TT-Forge",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testForgeInstall",
+        "title": "Test TT-Forge Installation",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createForgeClassifier",
+        "title": "Create Forge Image Classifier Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runForgeClassifier",
+        "title": "Run Forge Image Classifier",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.browseOpenBounties",
         "title": "Browse Open Bounties on GitHub",
         "category": "Tenstorrent"
@@ -450,6 +470,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.copyJukebox"
+            ]
+          },
+          {
+            "id": "forge-image-classification",
+            "title": "Image Classification with TT-Forge",
+            "description": "Explore TT-Forge - Tenstorrent's MLIR-based compiler that brings PyTorch models to TT hardware! Start with validated models like MobileNetV2 for image classification. Learn forge.compile(), experiment with supported architectures, and understand the path to high-level model deployment.",
+            "media": {
+              "markdown": "content/lessons/11-forge-image-classification.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.runForgeClassifier"
             ]
           },
           {

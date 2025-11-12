@@ -520,6 +520,8 @@ const terminals = {
   apiServer: undefined as vscode.Terminal | undefined,
   vllmServer: undefined as vscode.Terminal | undefined,
   imageGeneration: undefined as vscode.Terminal | undefined,
+  forgeInstall: undefined as vscode.Terminal | undefined,
+  forgeClassifier: undefined as vscode.Terminal | undefined,
 };
 
 /**
@@ -2064,6 +2066,99 @@ function monitorJukeboxPv(): void {
 }
 
 // ============================================================================
+// TT-Forge Commands (Lesson 11)
+// ============================================================================
+
+/**
+ * Command: tenstorrent.installForge
+ * Installs TT-Forge-FE and dependencies in dedicated venv
+ */
+function installForge(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Install', 'forgeInstall');
+  const command = TERMINAL_COMMANDS.INSTALL_FORGE.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📦 Installing TT-Forge. This may take several minutes. Watch terminal for progress.'
+  );
+}
+
+/**
+ * Command: tenstorrent.testForgeInstall
+ * Tests forge installation and device detection
+ */
+function testForgeInstall(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Test', 'forgeInstall');
+  const command = TERMINAL_COMMANDS.TEST_FORGE_INSTALL.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔍 Testing forge installation. Check terminal for version and device status.'
+  );
+}
+
+/**
+ * Command: tenstorrent.createForgeClassifier
+ * Copies tt-forge-classifier.py template to ~/tt-scratchpad and opens it
+ */
+async function createForgeClassifier(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-forge-classifier.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-forge-classifier.py');
+
+  try {
+    fs.copyFileSync(templatePath, destPath);
+    fs.chmodSync(destPath, 0o755);
+
+    // Open in editor
+    const doc = await vscode.workspace.openTextDocument(destPath);
+    await vscode.window.showTextDocument(doc);
+
+    vscode.window.showInformationMessage(
+      '✅ Created tt-forge-classifier.py. Review the MobileNetV2 implementation!'
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create classifier script: ${error}`);
+  }
+}
+
+/**
+ * Command: tenstorrent.runForgeClassifier
+ * Runs MobileNetV2 image classification on sample image
+ */
+function runForgeClassifier(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Classifier', 'forgeClassifier');
+  const command = TERMINAL_COMMANDS.RUN_FORGE_CLASSIFIER.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🎨 Running image classifier. First compilation takes 2-5 min, then inference is fast!'
+  );
+}
+
+// ============================================================================
 // Bounty Program Commands
 // ============================================================================
 
@@ -2855,7 +2950,13 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testJukeboxCurl', testJukeboxCurl),
     vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
 
-    // Lesson 11 - Exploring TT-Metalium
+    // Lesson 11 - Image Classification with TT-Forge
+    vscode.commands.registerCommand('tenstorrent.installForge', installForge),
+    vscode.commands.registerCommand('tenstorrent.testForgeInstall', testForgeInstall),
+    vscode.commands.registerCommand('tenstorrent.createForgeClassifier', createForgeClassifier),
+    vscode.commands.registerCommand('tenstorrent.runForgeClassifier', runForgeClassifier),
+
+    // Lesson 12 - Exploring TT-Metalium
     vscode.commands.registerCommand('tenstorrent.launchTtnnTutorials', launchTtnnTutorials),
     vscode.commands.registerCommand('tenstorrent.browseModelZoo', browseModelZoo),
     vscode.commands.registerCommand('tenstorrent.exploreProgrammingExamples', exploreProgrammingExamples),

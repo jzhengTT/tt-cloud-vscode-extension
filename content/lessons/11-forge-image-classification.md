@@ -1,0 +1,632 @@
+# Lesson 11: Image Classification with TT-Forge
+
+## Welcome to the High-Level Compiler! 🎨
+
+You've been working with **TT-Metal** (low-level kernels) and **vLLM** (production LLM serving). Now meet **TT-Forge**: Tenstorrent's **MLIR-based compiler** that aims to make PyTorch models runnable on TT hardware with less manual kernel programming.
+
+**The Goal:**
+```python
+import torch
+import forge
+
+# PyTorch model (if supported by current operators)
+model = torchvision.models.mobilenet_v2(pretrained=True)
+
+# Compile for TT hardware
+compiled_model = forge.compile(model, sample_inputs=[input_tensor])
+
+# Run on TT accelerators
+output = compiled_model(input_tensor)
+```
+
+**Reality check:** TT-Forge is under active development. Not all PyTorch operators are supported yet, and compilation can fail for complex or uncommon architectures. This lesson focuses on **validated models** that are known to work.
+
+---
+
+## What is TT-Forge?
+
+**TT-Forge** is the **abstraction layer** between AI frameworks (PyTorch, JAX, ONNX) and TT hardware:
+
+```
+┌─────────────────────────────────────────┐
+│   PyTorch / JAX / ONNX / TensorFlow     │  ← Your models
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│            TT-FORGE COMPILER            │  ← Optimization & lowering
+│  (MLIR-based graph optimization)        │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│              TT-METAL                   │  ← Kernel execution
+│        (What you learned so far)        │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│         N150 / N300 / T3K / TG          │  ← Hardware
+└─────────────────────────────────────────┘
+```
+
+**Key Benefits:**
+- ✅ **Higher-level API:** Less manual kernel programming than TT-Metal
+- ✅ **Multi-framework support:** PyTorch, JAX, ONNX, TensorFlow (with varying levels of maturity)
+- ✅ **Automatic optimization:** Layout transforms, fusion, operator lowering where supported
+- ✅ **Active development:** Daily nightly builds with expanding operator coverage
+
+**Three Frontends:**
+1. **TT-XLA**: PyTorch + JAX (multi-chip support) - most mature for production
+2. **TT-Forge-FE**: ONNX, TensorFlow (single-chip) - **we'll use this for learning**
+3. **TT-Torch**: PyTorch 2.X (deprecated, use TT-XLA instead)
+
+**Current Status:** TT-Forge is evolving rapidly. The 169 models in tt-forge-models represent validated examples, but many other models may require operator additions or workarounds. Check release notes and issues for current compatibility.
+
+---
+
+## Why Start with Image Classification?
+
+**Visual feedback and validated models!** You'll:
+1. ✅ Run MobileNetV2 - a validated model with known working status
+2. ✅ See classification results on real images
+3. ✅ Understand the workflow for supported models
+4. ✅ Learn which model patterns work reliably
+
+**What works reliably (validated in tt-forge-models):**
+- MobileNetV1/V2/V3 (computer vision)
+- ResNet variants (classification)
+- Some BERT models (NLP)
+- Select models from the 169 validated examples
+
+**What might not work:**
+- Very new architectures (e.g., recent transformers)
+- Models with unsupported operators
+- Custom layers or non-standard operations
+- Models not in the validated set
+
+**Strategy:** Start with validated examples, then experiment cautiously with other models.
+
+---
+
+## Step 1: Install TT-Forge (No Docker!)
+
+We'll use **wheel-based installation** (works on instances without Docker).
+
+**Create dedicated virtual environment:**
+
+```bash
+python3 -m venv ~/tt-forge-venv
+source ~/tt-forge-venv/bin/activate
+```
+
+**Install TT-Forge-FE and TT-TVM:**
+
+```bash
+pip install tt_forge_fe==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+pip install tt_tvm==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+```
+
+**Install additional dependencies:**
+
+```bash
+pip install pillow torch torchvision requests tabulate
+```
+
+**Why these versions?**
+- Nightly builds updated daily (using Nov 11, 2025 release)
+- Check https://github.com/tenstorrent/tt-forge-fe/releases for latest
+- Separate venv avoids conflicts with tt-metal or vLLM dependencies
+
+**Note:** Installation may take several minutes due to dependencies.
+
+[🚀 Install TT-Forge](command:tenstorrent.installForge)
+
+---
+
+## Step 2: Test Installation
+
+**Quick sanity check:**
+
+Verify `forge` module loads:
+
+```bash
+source ~/tt-forge-venv/bin/activate
+python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully!')"
+```
+
+Expected output:
+```
+✓ TT-Forge 0.6.0.dev20251111 loaded successfully!
+```
+
+**Device detection:**
+
+```bash
+tt-smi
+```
+
+Should show your N150/N300 device is detected.
+
+[🔍 Test Forge Installation](command:tenstorrent.testForgeInstall)
+
+---
+
+## Step 3: Your First Forge Model - MobileNetV2
+
+We'll create a simple image classifier using **MobileNetV2** - one of the validated models in the tt-forge ecosystem.
+
+**Why MobileNetV2?**
+- ✅ **Validated:** Confirmed working in tt-forge-models repository
+- ✅ **Lightweight:** 3.5M parameters (efficient for hardware)
+- ✅ **Standard architecture:** CNN without exotic operators
+- ✅ **Fast compilation:** Simpler graph than larger models
+- 1000 ImageNet classes (animals, objects, food, vehicles)
+
+**The classifier will:**
+1. Load pre-trained MobileNetV2 from torchvision
+2. Compile it for TT hardware with `forge.compile()`
+3. Classify any image you provide
+4. Show top-5 predictions with confidence scores
+
+[📝 Create Image Classifier Script](command:tenstorrent.createForgeClassifier)
+
+This creates `~/tt-scratchpad/tt-forge-classifier.py` with the complete implementation.
+
+---
+
+## Understanding the Code
+
+Let's examine the key parts of `tt-forge-classifier.py`:
+
+**1. Model Loading (Standard PyTorch):**
+
+```python
+import torchvision.models as models
+
+# Load pre-trained MobileNetV2 from torchvision
+model = models.mobilenet_v2(pretrained=True)
+model.eval()  # Set to inference mode
+```
+
+Nothing TT-specific yet! This is standard PyTorch.
+
+**2. Compilation for TT Hardware:**
+
+```python
+import forge
+
+# Create sample input for shape inference
+sample_input = torch.randn(1, 3, 224, 224)  # Batch, Channels, Height, Width
+
+# Attempt compilation for TT hardware
+compiled_model = forge.compile(model, sample_inputs=[sample_input])
+```
+
+**What happens during `forge.compile()`?**
+- Graph capture: Traces PyTorch operations
+- Operator validation: Checks if all ops are supported
+- Optimization: Applies fusion, layout transforms where possible
+- Lowering: Converts to TTNN operations (TT-Metal layer)
+- Device mapping: Allocates tensors, schedules execution
+- JIT compilation: Generates device kernels
+
+**Compilation can fail if:**
+- Unsupported operators are encountered
+- Dynamic shapes or control flow patterns
+- Memory constraints exceeded
+- Operator combinations not yet validated
+
+**3. Image Preprocessing:**
+
+```python
+from torchvision import transforms
+from PIL import Image
+
+# Standard ImageNet preprocessing
+preprocess = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                        std=[0.229, 0.224, 0.225]),
+])
+
+img = Image.open(image_path).convert('RGB')
+input_tensor = preprocess(img).unsqueeze(0)  # Add batch dimension
+```
+
+**4. Inference on TT Hardware:**
+
+```python
+# Run inference on TT accelerator
+output = compiled_model(input_tensor)
+
+# Get predictions
+probabilities = torch.nn.functional.softmax(output[0], dim=0)
+top5_prob, top5_idx = torch.topk(probabilities, 5)
+
+for i in range(5):
+    class_name = imagenet_classes[top5_idx[i]]
+    confidence = top5_prob[i].item() * 100
+    print(f"{i+1}. {class_name}: {confidence:.2f}%")
+```
+
+---
+
+## Step 4: Run Image Classification
+
+**Test with sample image (cat):**
+
+The script downloads a sample cat image and classifies it:
+
+```bash
+cd ~/tt-scratchpad
+source ~/tt-forge-venv/bin/activate
+python tt-forge-classifier.py
+```
+
+**Expected output:**
+
+```
+Loading MobileNetV2 model...
+✓ Model loaded
+
+Compiling model for TT hardware...
+[Forge compiler output...]
+✓ Model compiled successfully!
+
+Processing image: sample-cat.jpg
+Running inference on TT hardware...
+
+Top 5 Predictions:
+1. Tabby cat: 92.34%
+2. Egyptian cat: 4.21%
+3. Tiger cat: 2.15%
+4. Lynx: 0.89%
+5. Persian cat: 0.31%
+
+✓ Classification complete!
+```
+
+**First compilation takes time (2-5 minutes):**
+- Model graph analysis
+- Operator lowering
+- Kernel generation
+- Device memory allocation
+
+**Subsequent runs may be faster if caching works:**
+- Compiled artifacts may be cached
+- Re-runs primarily inference execution time
+
+**Note:** Performance characteristics are still being optimized. Expect variability across releases.
+
+[🎨 Run Image Classifier](command:tenstorrent.runForgeClassifier)
+
+---
+
+## Step 5: Classify Your Own Images
+
+**Try your own photos!**
+
+```bash
+cd ~/tt-scratchpad
+source ~/tt-forge-venv/bin/activate
+
+# Classify your dog
+python tt-forge-classifier.py --image ~/Pictures/dog.jpg
+
+# Classify food
+python tt-forge-classifier.py --image ~/Pictures/pizza.jpg
+
+# Classify objects
+python tt-forge-classifier.py --image ~/Pictures/coffee-mug.jpg
+```
+
+**ImageNet classes include:**
+- 🐾 Animals: 398 classes (dogs, cats, birds, marine life)
+- 🍕 Food: 89 classes (fruits, vegetables, meals)
+- 🚗 Vehicles: 47 classes (cars, bikes, aircraft)
+- 🏠 Objects: 466 classes (furniture, tools, electronics)
+
+Full list: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
+
+---
+
+## Step 6: Try Other Validated Models (Carefully)
+
+**Important:** Not all models will work out-of-the-box. Start with validated examples from tt-forge-models.
+
+**Models likely to work (validated in repository):**
+
+**ResNet variants:**
+```python
+model = models.resnet50(pretrained=True)
+```
+
+**Other MobileNet versions:**
+```python
+model = models.mobilenet_v3_small(pretrained=True)
+```
+
+**Experimenting with other models:**
+
+If you want to try a different model:
+
+1. **Check tt-forge-models first:** https://github.com/tenstorrent/tt-forge-models
+2. **Look for similar architectures:** If ResNet50 works, ResNet34 likely will too
+3. **Start simple:** Smaller models compile faster and hit fewer edge cases
+4. **Expect failures:** Compilation errors are normal; file issues on GitHub
+5. **Read release notes:** Recent additions may expand operator support
+
+**Example - trying ResNet (validated):**
+
+```python
+# Edit tt-forge-classifier.py
+# model = models.mobilenet_v2(pretrained=True)  # Comment out
+model = models.resnet50(pretrained=True)  # Validated model
+
+# Re-run compilation
+python tt-forge-classifier.py
+```
+
+**If compilation fails:**
+- Check error message for unsupported operators
+- Search GitHub issues for similar problems
+- Consider filing a bug report with model details
+- Fall back to validated models
+
+---
+
+## What You Just Accomplished 🎉
+
+**You learned:**
+- ✅ TT-Forge provides higher-level API than TT-Metal
+- ✅ `forge.compile()` attempts automatic optimization for TT hardware
+- ✅ **Validated models** like MobileNetV2 work reliably
+- ✅ Image classification workflow on TT accelerators
+- ✅ How to experiment with similar architectures
+
+**Performance insights:**
+- First compilation: 2-5 minutes (one-time cost)
+- Inference time varies by model and optimization maturity
+- Performance improving with each nightly release
+- Check benchmarks in tt-forge-models for validated metrics
+
+**Realistic expectations:**
+- Not all PyTorch models will compile (yet)
+- Start with validated examples
+- Operator coverage expanding with each release
+- Community contributions help accelerate support
+
+---
+
+## What's in tt-forge-models? (169 Validated Models)
+
+The `tt-forge-models` repository contains **tested and validated** implementations. These are your safest starting points:
+
+**Computer Vision (Validated):**
+- YOLOv3/v5 variants (object detection)
+- ResNet family (classification)
+- MobileNetV1/V2/V3 (efficient CNNs)
+- Some segmentation models
+
+**Language Models (Validated):**
+- BERT variants (NLP)
+- Some GPT-2 configurations
+- Select smaller LLMs
+
+**Other Validated Models:**
+- Check the repository for current list: https://github.com/tenstorrent/tt-forge-models
+- Each model includes loader and example usage
+- Models tested on specific hardware configurations
+
+**Standard interface pattern:**
+```python
+from tt_forge_models.mobilenet_v2.pytorch import ModelLoader
+
+model = ModelLoader.load_model()
+inputs = ModelLoader.load_inputs()
+# Then compile with forge.compile()
+```
+
+**Repository:** https://github.com/tenstorrent/tt-forge-models
+
+---
+
+## Next Steps: Expand Carefully 🚀
+
+**1. Explore Validated Models**
+
+Browse tt-forge-models and try examples that interest you:
+- Object detection (YOLOv5 if validated for your hardware)
+- Different ResNet sizes
+- Other MobileNet variants
+
+**2. Object Detection (If Supported)**
+
+If YOLOv5 is validated for your device:
+
+```python
+from tt_forge_models.yolov5.pytorch import ModelLoader
+model = ModelLoader.load_model()
+compiled_model = forge.compile(model, sample_inputs=[...])
+detections = compiled_model(image_tensor)
+```
+
+**Use cases:** Security, inventory, autonomous systems
+
+**3. ONNX Export (Alternative Path)**
+
+For models that don't compile directly, try ONNX:
+
+```python
+import torch.onnx
+
+# Export PyTorch to ONNX
+torch.onnx.export(model, sample_input, "model.onnx",
+                  opset_version=17,
+                  input_names=['input'],
+                  output_names=['output'])
+
+# Try compiling ONNX version
+import forge
+compiled_model = forge.compile("model.onnx", ...)
+```
+
+ONNX may have different operator support than direct PyTorch ingestion.
+
+**4. Multi-Chip Scaling (TT-XLA)**
+
+For production workloads on N300/T3K/TG:
+- TT-XLA is more mature for multi-chip configurations
+- Better tested for production deployment
+- Consider TT-XLA for serious workloads
+
+**5. Contribute to TT-Forge! 💰**
+
+Help expand operator coverage:
+- **Bounty program** pays for model adaptations
+- File bug reports with reproducible examples
+- Share workarounds that work for you
+- Contribute operator implementations
+
+**Repository:** https://github.com/tenstorrent/tt-forge-fe/issues
+
+---
+
+## Debugging Tips
+
+**1. Compilation Errors**
+
+If `forge.compile()` fails:
+
+```python
+# Enable verbose logging
+import os
+os.environ['FORGE_LOG_LEVEL'] = 'DEBUG'
+
+compiled_model = forge.compile(model, sample_inputs=[...])
+```
+
+Common issues:
+- **Unsupported operators:** Check error message, search GitHub issues
+- **Shape mismatches:** Verify sample_inputs match model expectations
+- **Memory errors:** Try smaller batch sizes or models
+- **Data types:** Use float32 tensors
+
+**2. Operator Not Supported**
+
+```
+Error: Operator 'some_op' not implemented
+```
+
+**What to do:**
+1. Search GitHub issues: `site:github.com/tenstorrent/tt-forge-fe "some_op"`
+2. Check if recent nightly fixed it (try latest wheel)
+3. Try ONNX export (different operator mapping)
+4. File detailed bug report with minimal reproduction
+
+**3. Silent Failures / Wrong Results**
+
+If model compiles but gives incorrect results:
+- Verify preprocessing matches training (normalization, resize)
+- Check for numerical precision issues (compare with CPU inference)
+- File bug with model + example showing discrepancy
+
+**4. Performance Issues**
+
+If inference is unexpectedly slow:
+- Verify device detected: `tt-smi`
+- Check for fallback to CPU (look for warnings in logs)
+- Compare with validated benchmark in tt-forge-models
+- Profile with: `FORGE_PROFILE=1 python script.py` (if supported)
+
+---
+
+## Comparison: TT-Forge vs TT-Metal
+
+**TT-Metal (Lessons 1-10):**
+```python
+# Manual kernel programming
+import ttnn
+
+input_t = ttnn.from_torch(input_tensor, device=device)
+weight_t = ttnn.from_torch(weights, device=device)
+output_t = ttnn.matmul(input_t, weight_t)
+result = ttnn.to_torch(output_t)
+```
+
+**Pros:** Full control, predictable behavior, well-documented operators
+**Cons:** Steep learning curve, manual memory management, more code
+
+**TT-Forge:**
+```python
+# Automatic compilation (when it works)
+import forge
+
+compiled_model = forge.compile(model, sample_inputs=[...])
+output = compiled_model(input)
+```
+
+**Pros:** Simpler API, higher-level abstraction, faster iteration for supported models
+**Cons:** Less mature, operator coverage gaps, harder to debug failures
+
+**When to use which?**
+- **TT-Forge:** Experimenting with validated models, rapid prototyping
+- **TT-Metal:** Production code needing reliability, custom kernels, unsupported operators
+- **vLLM (Lesson 6-7):** Production LLM serving (most mature path)
+
+---
+
+## Key Takeaways
+
+**1. Start with Validated Models**
+- ✅ 169 models in tt-forge-models are tested
+- ✅ MobileNetV2, ResNet are reliable starting points
+- ⚠️ Other models may require debugging or workarounds
+
+**2. TT-Forge is Evolving**
+- ✅ Daily nightly builds expand capabilities
+- ✅ Active development improves operator coverage
+- ⚠️ Expect compilation failures for uncommon architectures
+- ✅ Community contributions accelerate progress
+
+**3. Multiple Paths to Production**
+- TT-Forge-FE: Single-chip, experimental
+- TT-XLA: Multi-chip, more mature for PyTorch/JAX
+- TT-Metal: Direct kernel programming (most control)
+- vLLM: Production LLM serving (proven)
+
+**4. Experimentation is Encouraged**
+- Try validated models first
+- Document what works (and what doesn't)
+- File issues to help the community
+- Contribute fixes when possible
+
+**You're now equipped to:**
+- Run validated PyTorch models on TT hardware
+- Understand TT-Forge compilation workflow
+- Troubleshoot common issues
+- Experiment with the growing model library
+
+---
+
+## Resources
+
+**Official Documentation:**
+- TT-Forge Overview: https://github.com/tenstorrent/tt-forge
+- TT-Forge-FE: https://github.com/tenstorrent/tt-forge-fe
+- TT-Forge-Models (validated examples): https://github.com/tenstorrent/tt-forge-models
+- Releases (latest wheels): https://github.com/tenstorrent/tt-forge-fe/releases
+- Issue Tracker: https://github.com/tenstorrent/tt-forge-fe/issues
+
+**Community:**
+- Discord: https://discord.gg/tenstorrent
+- GitHub Issues: Report bugs, check known issues
+- Bounty Program: Contribute and get paid
+
+**Realistic Next Steps:**
+- Try other validated models from tt-forge-models
+- Experiment with similar architectures to working models
+- Document your successes and failures (help the community!)
+- Consider TT-XLA for multi-chip or production needs
+
+**Remember:** TT-Forge is a powerful tool under active development. Start with validated models, be patient with edge cases, and contribute back to accelerate progress! 🚀
