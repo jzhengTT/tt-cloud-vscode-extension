@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.37",
+  "version": "0.0.43",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -314,6 +314,26 @@
         "command": "tenstorrent.copyBountyChecklist",
         "title": "Copy Bounty Workflow Checklist",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.launchTtnnTutorials",
+        "title": "Launch TTNN Tutorials",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.browseModelZoo",
+        "title": "Browse Model Zoo",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.exploreProgrammingExamples",
+        "title": "Explore Programming Examples",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createCookbookProjects",
+        "title": "Create Cookbook Projects",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -441,6 +461,28 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.browseOpenBounties"
+            ]
+          },
+          {
+            "id": "explore-metalium",
+            "title": "Exploring TT-Metalium",
+            "description": "Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the model zoo, and dive into programming examples. Learn the architecture, try Jupyter notebooks, and find inspiration for your own projects.",
+            "media": {
+              "markdown": "content/lessons/11-explore-metalium.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.launchTtnnTutorials"
+            ]
+          },
+          {
+            "id": "metalium-cookbook",
+            "title": "TT-Metalium Cookbook",
+            "description": "Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Conway's Game of Life, Audio Signal Processing, Mandelbrot Fractals, and Image Filters. Deploy all templates with one command and start coding!",
+            "media": {
+              "markdown": "content/lessons/12-metalium-cookbook.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.createCookbookProjects"
             ]
           }
         ]

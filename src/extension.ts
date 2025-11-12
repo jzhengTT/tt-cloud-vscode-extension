@@ -2393,6 +2393,377 @@ async function resetProgress(): Promise<void> {
 }
 
 // ============================================================================
+// Lesson 11 Commands - Exploring TT-Metalium
+// ============================================================================
+
+/**
+ * Command: tenstorrent.launchTtnnTutorials
+ *
+ * Opens the TTNN tutorials directory in the tt-metal repository.
+ * Launches Jupyter notebooks for interactive learning.
+ */
+async function launchTtnnTutorials(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const tutorialsPath = path.join(ttMetalPath, 'ttnn', 'tutorials');
+
+  // Check if tt-metal exists
+  const fs = await import('fs');
+  if (!fs.existsSync(ttMetalPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      'tt-metal repository not found. Would you like to clone it first?',
+      'Clone tt-metal',
+      'Cancel'
+    );
+
+    if (choice === 'Clone tt-metal') {
+      await cloneTTMetal();
+    }
+    return;
+  }
+
+  // Check if tutorials directory exists
+  if (!fs.existsSync(tutorialsPath)) {
+    vscode.window.showErrorMessage(
+      `Tutorials directory not found at ${tutorialsPath}. Please ensure tt-metal is up to date.`
+    );
+    return;
+  }
+
+  // Open the tutorials folder in VS Code
+  const uri = vscode.Uri.file(tutorialsPath);
+  await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
+
+  vscode.window.showInformationMessage(
+    `📓 Opening TTNN Tutorials folder. Start with 001.ipynb for tensor basics!`
+  );
+}
+
+/**
+ * Command: tenstorrent.browseModelZoo
+ *
+ * Opens the model zoo directory and displays information about available demos.
+ */
+async function browseModelZoo(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const modelZooPath = path.join(ttMetalPath, 'models', 'demos');
+
+  // Check if tt-metal exists
+  const fs = await import('fs');
+  if (!fs.existsSync(ttMetalPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      'tt-metal repository not found. Would you like to clone it first?',
+      'Clone tt-metal',
+      'Cancel'
+    );
+
+    if (choice === 'Clone tt-metal') {
+      await cloneTTMetal();
+    }
+    return;
+  }
+
+  // Check if model zoo exists
+  if (!fs.existsSync(modelZooPath)) {
+    vscode.window.showErrorMessage(
+      `Model zoo not found at ${modelZooPath}. Please ensure tt-metal is up to date.`
+    );
+    return;
+  }
+
+  // Open the model zoo folder
+  const uri = vscode.Uri.file(modelZooPath);
+  await vscode.commands.executeCommand('revealInExplorer', uri);
+
+  // Show information panel
+  const message = `
+🔍 Model Zoo Browser
+
+**Production Models:**
+- Llama 3.1 8B - Text generation
+- Whisper - Audio transcription
+- ResNet50 - Image classification
+- BERT - NLP tasks
+- Stable Diffusion 3.5 - Image generation
+
+**Experimental Models:**
+- BlazePose - Pose estimation
+- YOLOv4-v12 - Object detection
+- nanoGPT - Train your own GPT
+
+📂 Location: ${modelZooPath}
+
+Each model has:
+- demo/ - Runnable examples
+- tt/ - TT hardware implementation
+- tests/ - Unit tests
+- README.md - Setup guide
+  `;
+
+  const panel = vscode.window.createWebviewPanel(
+    'modelZoo',
+    'TT-Metal Model Zoo',
+    vscode.ViewColumn.Two,
+    {}
+  );
+
+  panel.webview.html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: var(--vscode-font-family); padding: 20px; }
+        h1 { color: var(--vscode-foreground); }
+        pre { background: var(--vscode-editor-background); padding: 15px; border-radius: 5px; }
+        code { color: var(--vscode-textPreformat-foreground); }
+      </style>
+    </head>
+    <body>
+      <pre>${message}</pre>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Command: tenstorrent.exploreProgrammingExamples
+ *
+ * Opens the programming examples directory showing low-level TT-Metalium examples.
+ */
+async function exploreProgrammingExamples(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const examplesPath = path.join(ttMetalPath, 'tt_metal', 'programming_examples');
+
+  // Check if tt-metal exists
+  const fs = await import('fs');
+  if (!fs.existsSync(ttMetalPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      'tt-metal repository not found. Would you like to clone it first?',
+      'Clone tt-metal',
+      'Cancel'
+    );
+
+    if (choice === 'Clone tt-metal') {
+      await cloneTTMetal();
+    }
+    return;
+  }
+
+  // Check if examples exist
+  if (!fs.existsSync(examplesPath)) {
+    vscode.window.showErrorMessage(
+      `Programming examples not found at ${examplesPath}. Please ensure tt-metal is up to date.`
+    );
+    return;
+  }
+
+  // Open the examples folder
+  const uri = vscode.Uri.file(examplesPath);
+  await vscode.commands.executeCommand('revealInExplorer', uri);
+
+  vscode.window.showInformationMessage(
+    `⚡ Opening programming examples. Start with hello_world_compute_kernel/ for your first kernel!`
+  );
+}
+
+// ============================================================================
+// Lesson 12 Commands - TT-Metalium Cookbook
+// ============================================================================
+
+/**
+ * Command: tenstorrent.createCookbookProjects
+ *
+ * Deploys all cookbook project templates to ~/tt-scratchpad/cookbook/
+ * Creates the complete project structure with all 4 projects.
+ */
+async function createCookbookProjects(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const fs = await import('fs');
+  const homeDir = os.homedir();
+  const scratchpadPath = path.join(homeDir, 'tt-scratchpad', 'cookbook');
+
+  // Get extension's template directory
+  const extensionPath = extensionContext.extensionPath;
+
+  // Try dist/ first (production), then content/ (development)
+  let templatePath = path.join(extensionPath, 'dist', 'content', 'templates', 'cookbook');
+  if (!fs.existsSync(templatePath)) {
+    templatePath = path.join(extensionPath, 'content', 'templates', 'cookbook');
+  }
+
+  // Check if templates exist
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Cookbook templates not found. Checked:\n- ${path.join(extensionPath, 'dist', 'content', 'templates', 'cookbook')}\n- ${path.join(extensionPath, 'content', 'templates', 'cookbook')}`
+    );
+    return;
+  }
+
+  // Check if destination already exists
+  if (fs.existsSync(scratchpadPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      `Cookbook directory already exists at ${scratchpadPath}. Overwrite?`,
+      'Overwrite',
+      'Cancel'
+    );
+
+    if (choice !== 'Overwrite') {
+      return;
+    }
+
+    // Remove existing directory
+    fs.rmSync(scratchpadPath, { recursive: true, force: true });
+  }
+
+  // Create cookbook directory
+  fs.mkdirSync(scratchpadPath, { recursive: true });
+
+  // Copy all templates recursively
+  function copyDir(src: string, dest: string) {
+    fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        copyDir(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
+
+  try {
+    copyDir(templatePath, scratchpadPath);
+
+    // Show success message with file count
+    const projects = ['game_of_life', 'audio_processor', 'mandelbrot', 'image_filters'];
+    const fileCount = projects.reduce((count, project) => {
+      const projectPath = path.join(scratchpadPath, project);
+      if (fs.existsSync(projectPath)) {
+        return count + fs.readdirSync(projectPath).length;
+      }
+      return count;
+    }, 0);
+
+    vscode.window.showInformationMessage(
+      `✓ Created ${projects.length} cookbook projects with ${fileCount} files in ${scratchpadPath}`
+    );
+
+    // Open the cookbook folder in explorer
+    const uri = vscode.Uri.file(scratchpadPath);
+    await vscode.commands.executeCommand('revealInExplorer', uri);
+
+    // Show informational panel
+    const panel = vscode.window.createWebviewPanel(
+      'cookbookProjects',
+      'TT-Metalium Cookbook Projects',
+      vscode.ViewColumn.Two,
+      {}
+    );
+
+    panel.webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: var(--vscode-font-family);
+            padding: 20px;
+            line-height: 1.6;
+          }
+          h1 { color: var(--vscode-foreground); }
+          h2 { color: var(--vscode-foreground); margin-top: 20px; }
+          code {
+            background: var(--vscode-editor-background);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--vscode-textPreformat-foreground);
+          }
+          pre {
+            background: var(--vscode-editor-background);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+          }
+          .project { margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <h1>🎉 Cookbook Projects Created!</h1>
+        <p>All 4 projects have been deployed to: <code>${scratchpadPath}</code></p>
+
+        <h2>Projects</h2>
+
+        <div class="project">
+          <h3>🎮 Game of Life</h3>
+          <p>Cellular automaton with parallel tile computing</p>
+          <pre>cd ${scratchpadPath}/game_of_life
+pip install -r requirements.txt
+python game_of_life.py</pre>
+        </div>
+
+        <div class="project">
+          <h3>🎵 Audio Processor</h3>
+          <p>Real-time audio signal processing</p>
+          <pre>cd ${scratchpadPath}/audio_processor
+pip install -r requirements.txt
+python processor.py examples/sample.wav</pre>
+        </div>
+
+        <div class="project">
+          <h3>🌀 Mandelbrot Explorer</h3>
+          <p>Interactive fractal renderer</p>
+          <pre>cd ${scratchpadPath}/mandelbrot
+pip install -r requirements.txt
+python explorer.py</pre>
+        </div>
+
+        <div class="project">
+          <h3>🖼️ Image Filters</h3>
+          <p>Creative image processing</p>
+          <pre>cd ${scratchpadPath}/image_filters
+pip install -r requirements.txt
+python filters.py examples/sample.jpg</pre>
+        </div>
+
+        <h2>Next Steps</h2>
+        <ol>
+          <li>Install dependencies: <code>cd [project] && pip install -r requirements.txt</code></li>
+          <li>Follow along with Lesson 12 for complete implementations</li>
+          <li>Experiment and extend the projects!</li>
+        </ol>
+
+        <p><strong>📖 See Lesson 12 for detailed explanations and extensions</strong></p>
+      </body>
+      </html>
+    `;
+
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to create cookbook projects: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// ============================================================================
 // Extension Lifecycle
 // ============================================================================
 
@@ -2483,6 +2854,14 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testJukeboxOpenai', testJukeboxOpenai),
     vscode.commands.registerCommand('tenstorrent.testJukeboxCurl', testJukeboxCurl),
     vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
+
+    // Lesson 11 - Exploring TT-Metalium
+    vscode.commands.registerCommand('tenstorrent.launchTtnnTutorials', launchTtnnTutorials),
+    vscode.commands.registerCommand('tenstorrent.browseModelZoo', browseModelZoo),
+    vscode.commands.registerCommand('tenstorrent.exploreProgrammingExamples', exploreProgrammingExamples),
+
+    // Lesson 12 - TT-Metalium Cookbook
+    vscode.commands.registerCommand('tenstorrent.createCookbookProjects', createCookbookProjects),
 
     // Bounty Program
     vscode.commands.registerCommand('tenstorrent.browseOpenBounties', browseOpenBounties),
