@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.36",
+  "version": "0.0.44",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -304,6 +304,56 @@
         "command": "tenstorrent.monitorJukeboxPv",
         "title": "Monitor Jukebox vLLM with pv",
         "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.installForge",
+        "title": "Install TT-Forge",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.testForgeInstall",
+        "title": "Test TT-Forge Installation",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createForgeClassifier",
+        "title": "Create Forge Image Classifier Script",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runForgeClassifier",
+        "title": "Run Forge Image Classifier",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.browseOpenBounties",
+        "title": "Browse Open Bounties on GitHub",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.copyBountyChecklist",
+        "title": "Copy Bounty Workflow Checklist",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.launchTtnnTutorials",
+        "title": "Launch TTNN Tutorials",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.browseModelZoo",
+        "title": "Browse Model Zoo",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.exploreProgrammingExamples",
+        "title": "Explore Programming Examples",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.createCookbookProjects",
+        "title": "Create Cookbook Projects",
+        "category": "Tenstorrent"
       }
     ],
     "walkthroughs": [
@@ -420,6 +470,50 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.copyJukebox"
+            ]
+          },
+          {
+            "id": "forge-image-classification",
+            "title": "Image Classification with TT-Forge",
+            "description": "Explore TT-Forge - Tenstorrent's MLIR-based compiler that brings PyTorch models to TT hardware! Start with validated models like MobileNetV2 for image classification. Learn forge.compile(), experiment with supported architectures, and understand the path to high-level model deployment.",
+            "media": {
+              "markdown": "content/lessons/11-forge-image-classification.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.runForgeClassifier"
+            ]
+          },
+          {
+            "id": "bounty-program",
+            "title": "Bounty Program: Model Bring-Up",
+            "description": "Learn how to contribute to the Tenstorrent Bounty Program by bringing up new models. Master TT-Metal while becoming part of the open-source ecosystem. Uses the successful Phi-3 contribution as a case study.",
+            "media": {
+              "markdown": "content/lessons/11-bounty-program-model-bringup.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.browseOpenBounties"
+            ]
+          },
+          {
+            "id": "explore-metalium",
+            "title": "Exploring TT-Metalium",
+            "description": "Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the model zoo, and dive into programming examples. Learn the architecture, try Jupyter notebooks, and find inspiration for your own projects.",
+            "media": {
+              "markdown": "content/lessons/11-explore-metalium.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.launchTtnnTutorials"
+            ]
+          },
+          {
+            "id": "metalium-cookbook",
+            "title": "TT-Metalium Cookbook",
+            "description": "Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Conway's Game of Life, Audio Signal Processing, Mandelbrot Fractals, and Image Filters. Deploy all templates with one command and start coding!",
+            "media": {
+              "markdown": "content/lessons/12-metalium-cookbook.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.createCookbookProjects"
             ]
           }
         ]

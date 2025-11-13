@@ -520,6 +520,8 @@ const terminals = {
   apiServer: undefined as vscode.Terminal | undefined,
   vllmServer: undefined as vscode.Terminal | undefined,
   imageGeneration: undefined as vscode.Terminal | undefined,
+  forgeInstall: undefined as vscode.Terminal | undefined,
+  forgeClassifier: undefined as vscode.Terminal | undefined,
 };
 
 /**
@@ -2064,6 +2066,249 @@ function monitorJukeboxPv(): void {
 }
 
 // ============================================================================
+// TT-Forge Commands (Lesson 11)
+// ============================================================================
+
+/**
+ * Command: tenstorrent.installForge
+ * Installs TT-Forge-FE and dependencies in dedicated venv
+ */
+function installForge(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Install', 'forgeInstall');
+  const command = TERMINAL_COMMANDS.INSTALL_FORGE.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📦 Installing TT-Forge. This may take several minutes. Watch terminal for progress.'
+  );
+}
+
+/**
+ * Command: tenstorrent.testForgeInstall
+ * Tests forge installation and device detection
+ */
+function testForgeInstall(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Test', 'forgeInstall');
+  const command = TERMINAL_COMMANDS.TEST_FORGE_INSTALL.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔍 Testing forge installation. Check terminal for version and device status.'
+  );
+}
+
+/**
+ * Command: tenstorrent.createForgeClassifier
+ * Copies tt-forge-classifier.py template to ~/tt-scratchpad and opens it
+ */
+async function createForgeClassifier(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-forge-classifier.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Template not found at ${templatePath}. Please reinstall the extension.`
+    );
+    return;
+  }
+
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  const destPath = path.join(scratchpadDir, 'tt-forge-classifier.py');
+
+  try {
+    fs.copyFileSync(templatePath, destPath);
+    fs.chmodSync(destPath, 0o755);
+
+    // Open in editor
+    const doc = await vscode.workspace.openTextDocument(destPath);
+    await vscode.window.showTextDocument(doc);
+
+    vscode.window.showInformationMessage(
+      '✅ Created tt-forge-classifier.py. Review the MobileNetV2 implementation!'
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(`Failed to create classifier script: ${error}`);
+  }
+}
+
+/**
+ * Command: tenstorrent.runForgeClassifier
+ * Runs MobileNetV2 image classification on sample image
+ */
+function runForgeClassifier(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Classifier', 'forgeClassifier');
+  const command = TERMINAL_COMMANDS.RUN_FORGE_CLASSIFIER.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🎨 Running image classifier. First compilation takes 2-5 min, then inference is fast!'
+  );
+}
+
+// ============================================================================
+// Bounty Program Commands
+// ============================================================================
+
+/**
+ * Command: tenstorrent.browseOpenBounties
+ * Opens GitHub issues page filtered for bounty label
+ */
+function browseOpenBounties(): void {
+  const bountyUrl = 'https://github.com/tenstorrent/tt-metal/labels/bounty';
+  vscode.env.openExternal(vscode.Uri.parse(bountyUrl));
+
+  vscode.window.showInformationMessage(
+    '🎯 Opening GitHub bounties page in your browser...'
+  );
+}
+
+/**
+ * Command: tenstorrent.copyBountyChecklist
+ * Creates a bounty workflow checklist file in ~/tt-scratchpad/
+ */
+async function copyBountyChecklist(): Promise<void> {
+  const scratchpadDir = `${process.env.HOME}/tt-scratchpad`;
+  const checklistPath = `${scratchpadDir}/bounty-checklist.md`;
+
+  const checklistContent = `# Bounty Program Workflow Checklist
+
+## Phase 1: Setup & Preparation
+- [ ] Find and claim a bounty on GitHub
+- [ ] Clone tt-metal repository
+- [ ] Build TT-Metal with ./build_metal.sh
+- [ ] Set environment variables (TT_METAL_HOME, PYTHONPATH)
+- [ ] Install Python dependencies
+- [ ] Verify hardware with tt-smi
+- [ ] Run a reference demo (e.g., Llama 3.1 8B)
+
+## Phase 2: Baseline Validation
+- [ ] Run reference model on CPU/GPU
+- [ ] Validate model outputs
+- [ ] Save reference logits for comparison
+- [ ] Analyze model architecture (config.json)
+- [ ] Check architecture compatibility with tt_transformers
+- [ ] Verify model fits on target hardware
+- [ ] Identify special features (RoPE, attention mechanisms)
+
+## Phase 3: Component-Wise Bring-Up
+- [ ] Identify similar models in tt_transformers
+- [ ] Create unit test for RMSNorm/LayerNorm
+- [ ] Create unit test for RotaryEmbedding (RoPE)
+- [ ] Create unit test for Attention module
+- [ ] Create unit test for MLP (feed-forward)
+- [ ] Create unit test for full decoder layer
+- [ ] Implement model-specific modifications (minimal!)
+- [ ] Verify PCC (Pearson Correlation) >0.99 for each module
+
+## Phase 4: Full Model Integration
+- [ ] Implement decode stage (batch=32, single token)
+- [ ] Test decode end-to-end
+- [ ] Implement prefill stage (batch=1, long context)
+- [ ] Test prefill end-to-end
+- [ ] Run full generation (prefill + decode)
+- [ ] Validate token accuracy vs reference
+- [ ] Run teacher forcing test (top-1 >80%, top-5 >95%)
+- [ ] Check generated text is coherent
+
+## Phase 5: Performance Optimization
+- [ ] Measure baseline performance (TTFT, throughput, latency)
+- [ ] Calculate percentage of theoretical max
+- [ ] Try different precision configs (bfp4, bfp8, bf16)
+- [ ] Create custom decoder config if needed
+- [ ] Apply Metal Trace for command buffer optimization
+- [ ] Enable async mode if beneficial
+- [ ] Profile with Tracy profiler
+- [ ] Identify and fix bottlenecks
+- [ ] Document final performance metrics
+
+## Phase 6: Testing & CI Integration
+- [ ] Create accuracy test (test_accuracy.py)
+- [ ] Create performance test (test_perf.py)
+- [ ] Create demo test (simple_text_demo.py)
+- [ ] Generate reference outputs for CI
+- [ ] Add model to CI test dispatch
+- [ ] Run all tests locally
+- [ ] Verify all tests pass
+
+## Phase 7: Documentation & Submission
+- [ ] Write or update README with setup instructions
+- [ ] Document performance metrics (table format)
+- [ ] Document accuracy results (top-1, top-5)
+- [ ] Create pull request(s) following MODEL_ADD.md
+- [ ] Write clear PR description with summary
+- [ ] Link to bounty issue in PR
+- [ ] Run CI pipelines (Pipeline Select)
+- [ ] Respond to reviewer feedback promptly
+- [ ] Make requested changes
+- [ ] Get PR approved and merged
+- [ ] Contribution complete! ✅
+
+---
+
+## Performance Tiers (Remember!)
+- **Easy**: ≥25% of theoretical max throughput
+- **Medium**: ≥50% of theoretical max throughput
+- **Hard**: ≥70% of theoretical max throughput
+
+## Accuracy Requirements
+- **Top-1**: ≥80% token accuracy
+- **Top-5**: ≥95% token accuracy
+
+## Pro Tips
+- ✅ Start with easy/warmup bounties to learn workflow
+- ✅ Communicate progress in issue thread every few days
+- ✅ Reuse existing tt_transformers code (reviewers love this!)
+- ✅ Test incrementally - don't wait until the end
+- ✅ Profile early to identify bottlenecks
+- ✅ Break large PRs into smaller ones (easier to review)
+- ❌ Don't copy-paste entire codebases
+- ❌ Don't skip baseline validation
+- ❌ Don't optimize before correctness
+- ❌ Don't ignore CI failures
+
+## Resources
+- Model Bring-Up Guide: https://github.com/tenstorrent/tt-metal/blob/main/models/docs/model_bring_up.md
+- TT-NN Docs: https://docs.tenstorrent.com/tt-metal/latest/ttnn/
+- Bounty Terms: https://docs.tenstorrent.com/bounty_terms.html
+- Discord: https://discord.gg/tenstorrent
+
+---
+
+Good luck with your contribution! 🚀
+`;
+
+  // Ensure scratchpad directory exists
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(scratchpadDir));
+
+  // Write checklist file
+  await vscode.workspace.fs.writeFile(
+    vscode.Uri.file(checklistPath),
+    Buffer.from(checklistContent)
+  );
+
+  // Open the file in editor
+  const doc = await vscode.workspace.openTextDocument(checklistPath);
+  await vscode.window.showTextDocument(doc);
+
+  vscode.window.showInformationMessage(
+    '✅ Bounty workflow checklist created! Check off items as you progress.'
+  );
+}
+
+// ============================================================================
 // Device Management Commands
 // ============================================================================
 
@@ -2243,6 +2488,377 @@ async function resetProgress(): Promise<void> {
 }
 
 // ============================================================================
+// Lesson 11 Commands - Exploring TT-Metalium
+// ============================================================================
+
+/**
+ * Command: tenstorrent.launchTtnnTutorials
+ *
+ * Opens the TTNN tutorials directory in the tt-metal repository.
+ * Launches Jupyter notebooks for interactive learning.
+ */
+async function launchTtnnTutorials(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const tutorialsPath = path.join(ttMetalPath, 'ttnn', 'tutorials');
+
+  // Check if tt-metal exists
+  const fs = await import('fs');
+  if (!fs.existsSync(ttMetalPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      'tt-metal repository not found. Would you like to clone it first?',
+      'Clone tt-metal',
+      'Cancel'
+    );
+
+    if (choice === 'Clone tt-metal') {
+      await cloneTTMetal();
+    }
+    return;
+  }
+
+  // Check if tutorials directory exists
+  if (!fs.existsSync(tutorialsPath)) {
+    vscode.window.showErrorMessage(
+      `Tutorials directory not found at ${tutorialsPath}. Please ensure tt-metal is up to date.`
+    );
+    return;
+  }
+
+  // Open the tutorials folder in VS Code
+  const uri = vscode.Uri.file(tutorialsPath);
+  await vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
+
+  vscode.window.showInformationMessage(
+    `📓 Opening TTNN Tutorials folder. Start with 001.ipynb for tensor basics!`
+  );
+}
+
+/**
+ * Command: tenstorrent.browseModelZoo
+ *
+ * Opens the model zoo directory and displays information about available demos.
+ */
+async function browseModelZoo(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const modelZooPath = path.join(ttMetalPath, 'models', 'demos');
+
+  // Check if tt-metal exists
+  const fs = await import('fs');
+  if (!fs.existsSync(ttMetalPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      'tt-metal repository not found. Would you like to clone it first?',
+      'Clone tt-metal',
+      'Cancel'
+    );
+
+    if (choice === 'Clone tt-metal') {
+      await cloneTTMetal();
+    }
+    return;
+  }
+
+  // Check if model zoo exists
+  if (!fs.existsSync(modelZooPath)) {
+    vscode.window.showErrorMessage(
+      `Model zoo not found at ${modelZooPath}. Please ensure tt-metal is up to date.`
+    );
+    return;
+  }
+
+  // Open the model zoo folder
+  const uri = vscode.Uri.file(modelZooPath);
+  await vscode.commands.executeCommand('revealInExplorer', uri);
+
+  // Show information panel
+  const message = `
+🔍 Model Zoo Browser
+
+**Production Models:**
+- Llama 3.1 8B - Text generation
+- Whisper - Audio transcription
+- ResNet50 - Image classification
+- BERT - NLP tasks
+- Stable Diffusion 3.5 - Image generation
+
+**Experimental Models:**
+- BlazePose - Pose estimation
+- YOLOv4-v12 - Object detection
+- nanoGPT - Train your own GPT
+
+📂 Location: ${modelZooPath}
+
+Each model has:
+- demo/ - Runnable examples
+- tt/ - TT hardware implementation
+- tests/ - Unit tests
+- README.md - Setup guide
+  `;
+
+  const panel = vscode.window.createWebviewPanel(
+    'modelZoo',
+    'TT-Metal Model Zoo',
+    vscode.ViewColumn.Two,
+    {}
+  );
+
+  panel.webview.html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: var(--vscode-font-family); padding: 20px; }
+        h1 { color: var(--vscode-foreground); }
+        pre { background: var(--vscode-editor-background); padding: 15px; border-radius: 5px; }
+        code { color: var(--vscode-textPreformat-foreground); }
+      </style>
+    </head>
+    <body>
+      <pre>${message}</pre>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Command: tenstorrent.exploreProgrammingExamples
+ *
+ * Opens the programming examples directory showing low-level TT-Metalium examples.
+ */
+async function exploreProgrammingExamples(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const homeDir = os.homedir();
+  const defaultPath = path.join(homeDir, 'tt-metal');
+  const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
+
+  const examplesPath = path.join(ttMetalPath, 'tt_metal', 'programming_examples');
+
+  // Check if tt-metal exists
+  const fs = await import('fs');
+  if (!fs.existsSync(ttMetalPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      'tt-metal repository not found. Would you like to clone it first?',
+      'Clone tt-metal',
+      'Cancel'
+    );
+
+    if (choice === 'Clone tt-metal') {
+      await cloneTTMetal();
+    }
+    return;
+  }
+
+  // Check if examples exist
+  if (!fs.existsSync(examplesPath)) {
+    vscode.window.showErrorMessage(
+      `Programming examples not found at ${examplesPath}. Please ensure tt-metal is up to date.`
+    );
+    return;
+  }
+
+  // Open the examples folder
+  const uri = vscode.Uri.file(examplesPath);
+  await vscode.commands.executeCommand('revealInExplorer', uri);
+
+  vscode.window.showInformationMessage(
+    `⚡ Opening programming examples. Start with hello_world_compute_kernel/ for your first kernel!`
+  );
+}
+
+// ============================================================================
+// Lesson 12 Commands - TT-Metalium Cookbook
+// ============================================================================
+
+/**
+ * Command: tenstorrent.createCookbookProjects
+ *
+ * Deploys all cookbook project templates to ~/tt-scratchpad/cookbook/
+ * Creates the complete project structure with all 4 projects.
+ */
+async function createCookbookProjects(): Promise<void> {
+  const os = await import('os');
+  const path = await import('path');
+  const fs = await import('fs');
+  const homeDir = os.homedir();
+  const scratchpadPath = path.join(homeDir, 'tt-scratchpad', 'cookbook');
+
+  // Get extension's template directory
+  const extensionPath = extensionContext.extensionPath;
+
+  // Try dist/ first (production), then content/ (development)
+  let templatePath = path.join(extensionPath, 'dist', 'content', 'templates', 'cookbook');
+  if (!fs.existsSync(templatePath)) {
+    templatePath = path.join(extensionPath, 'content', 'templates', 'cookbook');
+  }
+
+  // Check if templates exist
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage(
+      `Cookbook templates not found. Checked:\n- ${path.join(extensionPath, 'dist', 'content', 'templates', 'cookbook')}\n- ${path.join(extensionPath, 'content', 'templates', 'cookbook')}`
+    );
+    return;
+  }
+
+  // Check if destination already exists
+  if (fs.existsSync(scratchpadPath)) {
+    const choice = await vscode.window.showWarningMessage(
+      `Cookbook directory already exists at ${scratchpadPath}. Overwrite?`,
+      'Overwrite',
+      'Cancel'
+    );
+
+    if (choice !== 'Overwrite') {
+      return;
+    }
+
+    // Remove existing directory
+    fs.rmSync(scratchpadPath, { recursive: true, force: true });
+  }
+
+  // Create cookbook directory
+  fs.mkdirSync(scratchpadPath, { recursive: true });
+
+  // Copy all templates recursively
+  function copyDir(src: string, dest: string) {
+    fs.mkdirSync(dest, { recursive: true });
+    const entries = fs.readdirSync(src, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+
+      if (entry.isDirectory()) {
+        copyDir(srcPath, destPath);
+      } else {
+        fs.copyFileSync(srcPath, destPath);
+      }
+    }
+  }
+
+  try {
+    copyDir(templatePath, scratchpadPath);
+
+    // Show success message with file count
+    const projects = ['game_of_life', 'audio_processor', 'mandelbrot', 'image_filters'];
+    const fileCount = projects.reduce((count, project) => {
+      const projectPath = path.join(scratchpadPath, project);
+      if (fs.existsSync(projectPath)) {
+        return count + fs.readdirSync(projectPath).length;
+      }
+      return count;
+    }, 0);
+
+    vscode.window.showInformationMessage(
+      `✓ Created ${projects.length} cookbook projects with ${fileCount} files in ${scratchpadPath}`
+    );
+
+    // Open the cookbook folder in explorer
+    const uri = vscode.Uri.file(scratchpadPath);
+    await vscode.commands.executeCommand('revealInExplorer', uri);
+
+    // Show informational panel
+    const panel = vscode.window.createWebviewPanel(
+      'cookbookProjects',
+      'TT-Metalium Cookbook Projects',
+      vscode.ViewColumn.Two,
+      {}
+    );
+
+    panel.webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: var(--vscode-font-family);
+            padding: 20px;
+            line-height: 1.6;
+          }
+          h1 { color: var(--vscode-foreground); }
+          h2 { color: var(--vscode-foreground); margin-top: 20px; }
+          code {
+            background: var(--vscode-editor-background);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--vscode-textPreformat-foreground);
+          }
+          pre {
+            background: var(--vscode-editor-background);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+          }
+          .project { margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <h1>🎉 Cookbook Projects Created!</h1>
+        <p>All 4 projects have been deployed to: <code>${scratchpadPath}</code></p>
+
+        <h2>Projects</h2>
+
+        <div class="project">
+          <h3>🎮 Game of Life</h3>
+          <p>Cellular automaton with parallel tile computing</p>
+          <pre>cd ${scratchpadPath}/game_of_life
+pip install -r requirements.txt
+python game_of_life.py</pre>
+        </div>
+
+        <div class="project">
+          <h3>🎵 Audio Processor</h3>
+          <p>Real-time audio signal processing</p>
+          <pre>cd ${scratchpadPath}/audio_processor
+pip install -r requirements.txt
+python processor.py examples/sample.wav</pre>
+        </div>
+
+        <div class="project">
+          <h3>🌀 Mandelbrot Explorer</h3>
+          <p>Interactive fractal renderer</p>
+          <pre>cd ${scratchpadPath}/mandelbrot
+pip install -r requirements.txt
+python explorer.py</pre>
+        </div>
+
+        <div class="project">
+          <h3>🖼️ Image Filters</h3>
+          <p>Creative image processing</p>
+          <pre>cd ${scratchpadPath}/image_filters
+pip install -r requirements.txt
+python filters.py examples/sample.jpg</pre>
+        </div>
+
+        <h2>Next Steps</h2>
+        <ol>
+          <li>Install dependencies: <code>cd [project] && pip install -r requirements.txt</code></li>
+          <li>Follow along with Lesson 12 for complete implementations</li>
+          <li>Experiment and extend the projects!</li>
+        </ol>
+
+        <p><strong>📖 See Lesson 12 for detailed explanations and extensions</strong></p>
+      </body>
+      </html>
+    `;
+
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `Failed to create cookbook projects: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+// ============================================================================
 // Extension Lifecycle
 // ============================================================================
 
@@ -2333,6 +2949,24 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testJukeboxOpenai', testJukeboxOpenai),
     vscode.commands.registerCommand('tenstorrent.testJukeboxCurl', testJukeboxCurl),
     vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
+
+    // Lesson 11 - Image Classification with TT-Forge
+    vscode.commands.registerCommand('tenstorrent.installForge', installForge),
+    vscode.commands.registerCommand('tenstorrent.testForgeInstall', testForgeInstall),
+    vscode.commands.registerCommand('tenstorrent.createForgeClassifier', createForgeClassifier),
+    vscode.commands.registerCommand('tenstorrent.runForgeClassifier', runForgeClassifier),
+
+    // Lesson 12 - Exploring TT-Metalium
+    vscode.commands.registerCommand('tenstorrent.launchTtnnTutorials', launchTtnnTutorials),
+    vscode.commands.registerCommand('tenstorrent.browseModelZoo', browseModelZoo),
+    vscode.commands.registerCommand('tenstorrent.exploreProgrammingExamples', exploreProgrammingExamples),
+
+    // Lesson 12 - TT-Metalium Cookbook
+    vscode.commands.registerCommand('tenstorrent.createCookbookProjects', createCookbookProjects),
+
+    // Bounty Program
+    vscode.commands.registerCommand('tenstorrent.browseOpenBounties', browseOpenBounties),
+    vscode.commands.registerCommand('tenstorrent.copyBountyChecklist', copyBountyChecklist),
 
     // Device Management
     vscode.commands.registerCommand('tenstorrent.resetDevice', resetDevice),
