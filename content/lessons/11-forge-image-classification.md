@@ -100,8 +100,8 @@ source ~/tt-forge-venv/bin/activate
 **Install TT-Forge-FE and TT-TVM:**
 
 ```bash
-pip install tt_forge_fe==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/
-pip install tt_tvm==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 ```
 
 **Install additional dependencies:**
@@ -110,9 +110,10 @@ pip install tt_tvm==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.ten
 pip install pillow torch torchvision requests tabulate
 ```
 
-**Why these versions?**
-- Nightly builds updated daily (using Nov 11, 2025 release)
-- Check https://github.com/tenstorrent/tt-forge-fe/releases for latest
+**Why install without version pinning?**
+- Gets the latest stable release automatically (currently 0.4.0 series)
+- Nightly builds are updated frequently with bug fixes and operator additions
+- Check https://github.com/tenstorrent/tt-forge-fe/releases for specific versions
 - Separate venv avoids conflicts with tt-metal or vLLM dependencies
 
 **Note:** Installation may take several minutes due to dependencies.
@@ -132,9 +133,9 @@ source ~/tt-forge-venv/bin/activate
 python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully!')"
 ```
 
-Expected output:
+Expected output (version will vary):
 ```
-✓ TT-Forge 0.6.0.dev20251111 loaded successfully!
+✓ TT-Forge 0.4.0.dev20250917 loaded successfully!
 ```
 
 **Device detection:**

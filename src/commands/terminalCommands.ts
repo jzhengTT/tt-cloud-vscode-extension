@@ -332,8 +332,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   INSTALL_FORGE: {
     id: 'install-forge',
     name: 'Install TT-Forge',
-    template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && pip install tt_forge_fe==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install tt_tvm==0.6.0.dev20251111 --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install pillow torch torchvision requests tabulate',
-    description: 'Creates venv and installs TT-Forge-FE, TT-TVM, and dependencies',
+    template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install pillow torch torchvision requests tabulate',
+    description: 'Creates venv and installs TT-Forge-FE (latest), TT-TVM, and dependencies',
   },
 
   TEST_FORGE_INSTALL: {
