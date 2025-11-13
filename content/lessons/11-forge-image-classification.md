@@ -130,13 +130,37 @@ Verify `forge` module loads:
 
 ```bash
 source ~/tt-forge-venv/bin/activate
-python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully!')"
+python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully\!')"
 ```
 
 Expected output (version will vary):
 ```
 ✓ TT-Forge 0.4.0.dev20250917 loaded successfully!
 ```
+
+**If you see `ImportError: undefined symbol` errors:**
+
+This usually means TT-Forge was built against a different version of TT-Metal than what's on your system. TT-Forge is under active development and version compatibility is still being stabilized.
+
+**Workaround options:**
+
+**Option 1: Skip version check (recommended for now)**
+```bash
+# Just verify the package installed
+source ~/tt-forge-venv/bin/activate
+pip list | grep forge
+```
+
+You should see `tt_forge_fe` and `tt_tvm` in the list. The actual test will be whether the classifier script works.
+
+**Option 2: Use Docker (if available)**
+Docker images have pre-matched versions:
+```bash
+docker pull ghcr.io/tenstorrent/tt-forge-fe-slim:latest
+```
+
+**Option 3: Build from source**
+For bleeding-edge compatibility, build tt-forge-fe from source against your tt-metal installation. See: https://github.com/tenstorrent/tt-forge-fe
 
 **Device detection:**
 
@@ -495,7 +519,45 @@ Help expand operator coverage:
 
 ## Debugging Tips
 
-**1. Compilation Errors**
+**1. ImportError: undefined symbol (Version Mismatch)**
+
+**Error:**
+```
+ImportError: /path/to/libTTMLIRRuntime.so: undefined symbol: _ZN4ttnn...
+```
+
+**Cause:** TT-Forge wheels are built against specific TT-Metal versions. Your system may have a different version.
+
+**Solutions:**
+
+**A. Skip forge import test (recommended)**
+The import check is just verification - the actual model compilation might still work. Skip directly to Step 3 (creating the classifier script) and try running it. Many times the runtime compatibility is better than the import-time checks suggest.
+
+**B. Match TT-Metal version**
+Check which TT-Metal version your forge was built against:
+```bash
+# In tt-forge-venv
+pip show tt_forge_fe
+```
+
+Look at the release date, then checkout the corresponding tt-metal commit from around that time.
+
+**C. Use Docker (if available)**
+Docker images have pre-matched versions:
+```bash
+docker run -it --rm --device /dev/tenstorrent \
+  ghcr.io/tenstorrent/tt-forge-fe-slim:latest
+```
+
+**D. Build from source**
+Clone tt-forge-fe and build against your exact tt-metal installation:
+```bash
+git clone https://github.com/tenstorrent/tt-forge-fe.git
+cd tt-forge-fe
+# Follow build instructions in README
+```
+
+**2. Compilation Errors**
 
 If `forge.compile()` fails:
 
@@ -513,7 +575,7 @@ Common issues:
 - **Memory errors:** Try smaller batch sizes or models
 - **Data types:** Use float32 tensors
 
-**2. Operator Not Supported**
+**3. Operator Not Supported**
 
 ```
 Error: Operator 'some_op' not implemented
@@ -525,14 +587,14 @@ Error: Operator 'some_op' not implemented
 3. Try ONNX export (different operator mapping)
 4. File detailed bug report with minimal reproduction
 
-**3. Silent Failures / Wrong Results**
+**4. Silent Failures / Wrong Results**
 
 If model compiles but gives incorrect results:
 - Verify preprocessing matches training (normalization, resize)
 - Check for numerical precision issues (compare with CPU inference)
 - File bug with model + example showing discrepancy
 
-**4. Performance Issues**
+**5. Performance Issues**
 
 If inference is unexpectedly slow:
 - Verify device detected: `tt-smi`

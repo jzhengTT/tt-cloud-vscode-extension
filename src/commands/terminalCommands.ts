@@ -339,7 +339,7 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   TEST_FORGE_INSTALL: {
     id: 'test-forge-install',
     name: 'Test Forge Installation',
-    template: 'source ~/tt-forge-venv/bin/activate && python3 -c "import forge; print(f\'✓ TT-Forge {forge.__version__} loaded successfully!\')" && tt-smi',
+    template: 'source ~/tt-forge-venv/bin/activate && python3 -c "import forge; print(f\'✓ TT-Forge {forge.__version__} loaded successfully\\!\')" && tt-smi',
     description: 'Verifies forge module loads and TT device is detected',
   },
 
