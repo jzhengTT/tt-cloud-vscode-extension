@@ -102,28 +102,43 @@ Building from source against your tt-metal installation **guarantees compatibili
 **Build steps:**
 
 ```bash
-# 1. Create dedicated venv
-python3 -m venv ~/tt-forge-venv
-source ~/tt-forge-venv/bin/activate
+# 1. Create toolchain directories (one-time setup)
+sudo mkdir -p /opt/ttforge-toolchain
+sudo chown -R $USER /opt/ttforge-toolchain
+sudo mkdir -p /opt/ttmlir-toolchain
+sudo chown -R $USER /opt/ttmlir-toolchain
 
-# 2. Clone tt-forge-fe (same branch as your tt-metal)
+# 2. Clone tt-forge-fe
 cd ~
 git clone https://github.com/tenstorrent/tt-forge-fe.git
 cd tt-forge-fe
-git checkout main  # or match your tt-metal branch
 
-# 3. Set tt-metal path
-export TT_METAL_HOME=~/tt-metal
+# 3. Initialize environment (sets up paths)
+source env/activate
 
-# 4. Install Python dependencies
-pip install --upgrade pip
-pip install -r requirements-dev.txt
+# 4. Initialize submodules (includes tt-mlir)
+git submodule update --init --recursive
 
-# 5. Build forge (takes 10-20 minutes)
-python -m pip install -e .
+# 5. Build the environment (creates venv, installs deps - takes 10-20 min)
+cmake -B env/build env
+cmake --build env/build
 
-# 6. Install additional dependencies
-pip install pillow torch torchvision requests tabulate
+# 6. Activate the virtual environment
+source env/activate
+
+# 7. Build TT-Forge-FE
+cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
+cmake --build build
+
+# 8. Install additional dependencies for our classifier
+pip install pillow requests tabulate
+```
+
+**Note:** If you don't have clang-17, install it:
+```bash
+wget https://apt.llvm.org/llvm.sh
+chmod u+x llvm.sh
+sudo ./llvm.sh 17
 ```
 
 **Why build from source?**
@@ -160,6 +175,14 @@ pip install pillow torch torchvision requests tabulate
 
 Verify `forge` module loads:
 
+**If you built from source (Option A):**
+```bash
+cd ~/tt-forge-fe
+source env/activate
+python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully\!')"
+```
+
+**If you used wheels (Option B):**
 ```bash
 source ~/tt-forge-venv/bin/activate
 python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully\!')"

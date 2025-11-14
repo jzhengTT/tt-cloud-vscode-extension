@@ -332,8 +332,8 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   BUILD_FORGE_FROM_SOURCE: {
     id: 'build-forge-from-source',
     name: 'Build TT-Forge from Source',
-    template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && git checkout main && export TT_METAL_HOME=~/tt-metal && pip install --upgrade pip && pip install -r requirements-dev.txt && python -m pip install -e . && pip install pillow torch torchvision requests tabulate',
-    description: 'Builds TT-Forge from source against your tt-metal installation (recommended)',
+    template: 'sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain && sudo chown -R $USER /opt/ttforge-toolchain /opt/ttmlir-toolchain && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && source env/activate && git submodule update --init --recursive && cmake -B env/build env && cmake --build env/build && source env/activate && cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17 && cmake --build build && pip install pillow requests tabulate',
+    description: 'Builds TT-Forge from source with official build process (takes 10-20 min)',
   },
 
   INSTALL_FORGE: {
@@ -346,8 +346,15 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   TEST_FORGE_INSTALL: {
     id: 'test-forge-install',
     name: 'Test Forge Installation',
+    template: 'cd ~/tt-forge-fe && source env/activate && python3 -c "import forge; print(f\'✓ TT-Forge {forge.__version__} loaded successfully\\!\')" && tt-smi',
+    description: 'Verifies forge module loads and TT device is detected (for source build)',
+  },
+
+  TEST_FORGE_INSTALL_WHEEL: {
+    id: 'test-forge-install-wheel',
+    name: 'Test Forge Installation (Wheel)',
     template: 'source ~/tt-forge-venv/bin/activate && python3 -c "import forge; print(f\'✓ TT-Forge {forge.__version__} loaded successfully\\!\')" && tt-smi',
-    description: 'Verifies forge module loads and TT device is detected',
+    description: 'Verifies forge module loads and TT device is detected (for wheel install)',
   },
 
   CREATE_FORGE_CLASSIFIER: {
@@ -361,8 +368,15 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   RUN_FORGE_CLASSIFIER: {
     id: 'run-forge-classifier',
     name: 'Run Image Classifier',
+    template: 'cd ~/tt-scratchpad && cd ~/tt-forge-fe && source env/activate && cd ~/tt-scratchpad && python tt-forge-classifier.py',
+    description: 'Runs MobileNetV2 image classification with TT-Forge on sample image (source build)',
+  },
+
+  RUN_FORGE_CLASSIFIER_WHEEL: {
+    id: 'run-forge-classifier-wheel',
+    name: 'Run Image Classifier (Wheel)',
     template: 'cd ~/tt-scratchpad && source ~/tt-forge-venv/bin/activate && python tt-forge-classifier.py',
-    description: 'Runs MobileNetV2 image classification with TT-Forge on sample image',
+    description: 'Runs MobileNetV2 image classification with TT-Forge on sample image (wheel install)',
   },
 
   RUN_FORGE_CUSTOM_IMAGE: {
