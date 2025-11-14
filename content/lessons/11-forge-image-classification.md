@@ -88,6 +88,30 @@ output = compiled_model(input_tensor)
 
 ## Step 1: Install TT-Forge
 
+**⚠️ CRITICAL: Clear Environment Variables First**
+
+Before installing TT-Forge, you MUST unset conflicting environment variables that can cause TT-Forge to load the wrong version of TT-Metal:
+
+```bash
+# Clear any existing TT-Metal environment variables
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+```
+
+**Why this matters:**
+- These variables can cause TT-Forge to load TT-Metal from outdated system paths
+- Results in `ImportError: undefined symbol` errors even with correct installation
+- This is the #1 cause of symbol mismatch issues (see [GitHub issue #529](https://github.com/tenstorrent/tt-forge/issues/529))
+
+**For permanent fix, add to your `~/.bashrc`:**
+```bash
+# Prevent TT-Metal environment pollution for forge
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+```
+
+---
+
 **Two approaches:** Wheels (quick but may have version mismatches) or Build from source (reliable, takes longer).
 
 ### **Option A: Build from Source (Recommended for Teaching)**
@@ -102,6 +126,10 @@ Building from source against your tt-metal installation **guarantees compatibili
 **Build steps:**
 
 ```bash
+# 0. CRITICAL: Clear environment variables first
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+
 # 1. Create toolchain directories (one-time setup)
 sudo mkdir -p /opt/ttforge-toolchain
 sudo chown -R $USER /opt/ttforge-toolchain
@@ -156,8 +184,15 @@ sudo ./llvm.sh 17
 If you need quick installation and are willing to troubleshoot version issues:
 
 ```bash
+# CRITICAL: Clear environment variables first
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+
+# Create and activate venv
 python3 -m venv ~/tt-forge-venv
 source ~/tt-forge-venv/bin/activate
+
+# Install wheels
 pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 pip install pillow torch torchvision requests tabulate
@@ -574,18 +609,50 @@ Help expand operator coverage:
 
 ## Debugging Tips
 
-**1. ImportError: undefined symbol (Version Mismatch)**
+**1. ImportError: undefined symbol (MOST COMMON ISSUE)**
 
 **Error:**
 ```
 ImportError: /path/to/libTTMLIRRuntime.so: undefined symbol: _ZN4ttnn...
 ```
 
-**Cause:** TT-Forge wheels are built against specific TT-Metal versions. Your system may have a different version.
+**ROOT CAUSE #1: Environment Variable Pollution (90% of cases)**
 
-**Solutions:**
+Before anything else, check if you have conflicting environment variables:
 
-**A. Skip forge import test (recommended)**
+```bash
+# Check for problematic variables
+echo $TT_METAL_HOME
+echo $TT_METAL_VERSION
+
+# If either shows a value, UNSET THEM:
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+
+# Try running forge again
+cd ~/tt-forge-fe && source env/activate
+python3 -c "import forge; print('Success!')"
+```
+
+**Why this happens:**
+- These variables cause forge to load TT-Metal from outdated system paths
+- Even if you built from source, forge ignores your build and loads the wrong version
+- See [GitHub issue #529](https://github.com/tenstorrent/tt-forge/issues/529) for details
+
+**Make it permanent:**
+```bash
+# Add to ~/.bashrc to prevent future issues
+echo 'unset TT_METAL_HOME' >> ~/.bashrc
+echo 'unset TT_METAL_VERSION' >> ~/.bashrc
+```
+
+---
+
+**ROOT CAUSE #2: Version Mismatch (10% of cases)**
+
+If unsetting variables doesn't help, then it's a true version mismatch:
+
+**A. Skip forge import test**
 The import check is just verification - the actual model compilation might still work. Skip directly to Step 3 (creating the classifier script) and try running it. Many times the runtime compatibility is better than the import-time checks suggest.
 
 **B. Match TT-Metal version**

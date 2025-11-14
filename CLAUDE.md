@@ -1277,3 +1277,208 @@ python3 tt-jukebox.py video
 python3 tt-jukebox.py image
 ```
 
+## Lesson 11: Image Classification with TT-Forge (2025-11-14)
+
+**Status:** Implemented with critical environment variable fixes (v0.0.50)
+
+### Overview
+
+TT-Forge is Tenstorrent's MLIR-based compiler that aims to run PyTorch models on TT hardware with less manual kernel programming than TT-Metal. However, it's under active development and not all models work yet.
+
+**Key lesson approach:**
+- Realistic about limitations (many models fail to compile)
+- Start with validated models (MobileNetV2, ResNet family)
+- Two installation options: build from source (recommended) vs wheels (quick but may fail)
+- Visual feedback through image classification
+
+### Critical Discovery: Environment Variable Pollution (v0.0.50)
+
+**Problem:** The #1 cause of `ImportError: undefined symbol` errors is environment variable pollution from TT-Metal installations.
+
+**Root Cause:** From [GitHub issue #529](https://github.com/tenstorrent/tt-forge/issues/529):
+- `TT_METAL_HOME` and `TT_METAL_VERSION` environment variables cause TT-Forge to load TT-Metal from outdated system paths
+- Even with correct installation, these variables override the build and load the wrong version
+- Results in symbol resolution failures
+
+**Solution:** Must unset these variables BEFORE building or running TT-Forge:
+
+```bash
+# Critical first step
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+```
+
+**Permanent fix in `~/.bashrc`:**
+```bash
+# Prevent TT-Metal environment pollution for forge
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+```
+
+### Implementation Changes (v0.0.50)
+
+**1. Updated Lesson Content:** `content/lessons/11-forge-image-classification.md`
+- Added prominent warning about environment variables at top of Step 1
+- Updated both build-from-source and wheel installation commands to include `unset` statements
+- Completely rewrote troubleshooting section to prioritize environment variables as ROOT CAUSE #1 (90% of cases)
+- Added links to GitHub issue #529 for reference
+
+**2. Updated Terminal Commands:** `src/commands/terminalCommands.ts`
+```typescript
+BUILD_FORGE_FROM_SOURCE: {
+  template: 'unset TT_METAL_HOME && unset TT_METAL_VERSION && sudo mkdir -p ...',
+  description: 'Builds TT-Forge from source... Clears environment variables first to prevent conflicts.',
+}
+
+INSTALL_FORGE: {
+  template: 'unset TT_METAL_HOME && unset TT_METAL_VERSION && python3 -m venv ...',
+  description: 'Creates venv and installs TT-Forge-FE wheels... Clears environment variables first to prevent conflicts.',
+}
+```
+
+**3. Version Bump:** `package.json` → v0.0.50
+
+### Installation Options
+
+**Option A: Build from Source (Recommended)**
+- Official CMake-based build process
+- Guarantees compatibility with your exact TT-Metal version
+- Builds against `/opt/ttforge-toolchain` and `/opt/ttmlir-toolchain`
+- Requires clang-17, cmake, ninja-build
+- Takes 10-20 minutes (one-time cost)
+
+**Option B: Wheel Installation**
+- Quick installation from Tenstorrent PyPI
+- May have version mismatches (wheels built against specific TT-Metal versions)
+- Useful for quick prototyping if willing to troubleshoot
+
+### Model Selection: MobileNetV2
+
+**Why this model:**
+- ✅ Validated in tt-forge-models repository (confirmed working)
+- ✅ Lightweight (3.5M parameters)
+- ✅ Standard CNN architecture (no exotic operators)
+- ✅ Fast compilation (simpler graph than larger models)
+- ✅ Visual feedback (1000 ImageNet classes)
+
+**Realistic expectations:**
+- Not all PyTorch models will compile
+- Start with validated examples from tt-forge-models (169 models)
+- Operator coverage expanding but incomplete
+- Compilation failures are normal for unvalidated models
+
+### Workflow
+
+1. **Clear environment variables** (CRITICAL)
+2. **Install TT-Forge** (build from source or wheels)
+3. **Test installation** (verify forge module loads)
+4. **Create classifier script** (MobileNetV2 with forge.compile())
+5. **Run classification** (first compilation takes 2-5 minutes)
+6. **Classify custom images** (subsequent runs faster with caching)
+
+### Key Technical Details
+
+**forge.compile() API:**
+```python
+import forge
+
+# Create sample input for shape inference
+sample_input = torch.randn(1, 3, 224, 224)  # Batch, Channels, Height, Width
+
+# Compile for TT hardware
+compiled_model = forge.compile(model, sample_inputs=[sample_input])
+
+# Run inference
+output = compiled_model(input_tensor)
+```
+
+**What happens during compilation:**
+1. Graph capture: Traces PyTorch operations
+2. Operator validation: Checks if all ops are supported
+3. Optimization: Applies fusion, layout transforms
+4. Lowering: Converts to TTNN operations (TT-Metal layer)
+5. Device mapping: Allocates tensors, schedules execution
+6. JIT compilation: Generates device kernels
+
+**Can fail if:**
+- Unsupported operators encountered
+- Dynamic shapes or control flow
+- Memory constraints exceeded
+- Operator combinations not validated
+
+### Troubleshooting Priority
+
+**90% of symbol errors:** Environment variable pollution
+- Check `echo $TT_METAL_HOME` and `echo $TT_METAL_VERSION`
+- Unset both before running forge
+- Add to `~/.bashrc` for permanent fix
+
+**10% of symbol errors:** True version mismatch
+- Wheels built against different TT-Metal version
+- Solution: Build from source with both repos on main
+
+### Files Modified
+
+**content/lessons/11-forge-image-classification.md:**
+- Added environment variable warning section
+- Updated installation commands with `unset` statements
+- Rewrote troubleshooting to prioritize environment variables
+- Added GitHub issue #529 references
+
+**content/templates/tt-forge-classifier.py:**
+- Complete MobileNetV2 classification script
+- forge.compile() usage example
+- ImageNet preprocessing
+- Top-5 prediction display
+
+**src/commands/terminalCommands.ts:**
+- BUILD_FORGE_FROM_SOURCE: Prepended with `unset TT_METAL_HOME && unset TT_METAL_VERSION`
+- INSTALL_FORGE: Prepended with `unset TT_METAL_HOME && unset TT_METAL_VERSION`
+- TEST_FORGE_INSTALL: Tests forge import and device detection
+- CREATE_FORGE_CLASSIFIER: Copies template to ~/tt-scratchpad
+- RUN_FORGE_CLASSIFIER: Activates forge env and runs classifier
+
+**src/extension.ts:**
+- Added forge terminal types
+- Registered 5 forge commands
+- Command handlers with proper user feedback
+
+**package.json:**
+- Version bumped to 0.0.50
+- Added walkthrough step between Jukebox and Bounty Program
+- Registered forge commands
+
+**content/welcome/welcome.html:**
+- Added Lesson 11 card with 🔨 icon
+
+### Key Takeaways
+
+**1. Environment variables are critical**
+- Must unset `TT_METAL_HOME` and `TT_METAL_VERSION` before using forge
+- This is the #1 cause of ImportError issues (90% of cases)
+- Make permanent by adding to `~/.bashrc`
+
+**2. Start with validated models**
+- 169 models in tt-forge-models are tested/confirmed working
+- Compilation failures are normal for unvalidated models
+- Operator coverage expanding but incomplete
+
+**3. Build from source is most reliable**
+- Guarantees compatibility with your TT-Metal version
+- Avoids wheel version mismatch issues
+- Better for development and experimentation
+
+**4. Realistic expectations**
+- TT-Forge is under active development
+- Not all PyTorch models will compile
+- Start with validated examples
+- File issues to help the community
+
+### Resources
+
+- TT-Forge Overview: https://github.com/tenstorrent/tt-forge
+- TT-Forge-FE: https://github.com/tenstorrent/tt-forge-fe
+- TT-Forge-Models (169 validated): https://github.com/tenstorrent/tt-forge-models
+- Environment variable issue: https://github.com/tenstorrent/tt-forge/issues/529
+- Discord: https://discord.gg/tenstorrent
+

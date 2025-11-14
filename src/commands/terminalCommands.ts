@@ -332,15 +332,15 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   BUILD_FORGE_FROM_SOURCE: {
     id: 'build-forge-from-source',
     name: 'Build TT-Forge from Source',
-    template: 'sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain && sudo chown -R $USER /opt/ttforge-toolchain /opt/ttmlir-toolchain && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && source env/activate && git submodule update --init --recursive && cmake -B env/build env && cmake --build env/build && source env/activate && cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17 && cmake --build build && pip install pillow requests tabulate',
-    description: 'Builds TT-Forge from source with official build process (takes 10-20 min)',
+    template: 'unset TT_METAL_HOME && unset TT_METAL_VERSION && sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain && sudo chown -R $USER /opt/ttforge-toolchain /opt/ttmlir-toolchain && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && source env/activate && git submodule update --init --recursive && cmake -B env/build env && cmake --build env/build && source env/activate && cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17 && cmake --build build && pip install pillow requests tabulate',
+    description: 'Builds TT-Forge from source with official build process (takes 10-20 min). Clears environment variables first to prevent conflicts.',
   },
 
   INSTALL_FORGE: {
     id: 'install-forge',
     name: 'Install TT-Forge (Wheels)',
-    template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install pillow torch torchvision requests tabulate',
-    description: 'Creates venv and installs TT-Forge-FE wheels (quick but may have version issues)',
+    template: 'unset TT_METAL_HOME && unset TT_METAL_VERSION && python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install pillow torch torchvision requests tabulate',
+    description: 'Creates venv and installs TT-Forge-FE wheels (quick but may have version issues). Clears environment variables first to prevent conflicts.',
   },
 
   TEST_FORGE_INSTALL: {
