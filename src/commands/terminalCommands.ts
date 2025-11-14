@@ -329,11 +329,18 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   },
 
   // Image Classification with TT-Forge (Lesson 11)
+  BUILD_FORGE_FROM_SOURCE: {
+    id: 'build-forge-from-source',
+    name: 'Build TT-Forge from Source',
+    template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && git checkout main && export TT_METAL_HOME=~/tt-metal && pip install --upgrade pip && pip install -r requirements-dev.txt && python -m pip install -e . && pip install pillow torch torchvision requests tabulate',
+    description: 'Builds TT-Forge from source against your tt-metal installation (recommended)',
+  },
+
   INSTALL_FORGE: {
     id: 'install-forge',
-    name: 'Install TT-Forge',
+    name: 'Install TT-Forge (Wheels)',
     template: 'python3 -m venv ~/tt-forge-venv && source ~/tt-forge-venv/bin/activate && pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/ && pip install pillow torch torchvision requests tabulate',
-    description: 'Creates venv and installs TT-Forge-FE (latest), TT-TVM, and dependencies',
+    description: 'Creates venv and installs TT-Forge-FE wheels (quick but may have version issues)',
   },
 
   TEST_FORGE_INSTALL: {

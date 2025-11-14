@@ -2070,8 +2070,23 @@ function monitorJukeboxPv(): void {
 // ============================================================================
 
 /**
+ * Command: tenstorrent.buildForgeFromSource
+ * Builds TT-Forge from source against your tt-metal installation
+ */
+function buildForgeFromSource(): void {
+  const terminal = getOrCreateTerminal('TT-Forge Build', 'forgeInstall');
+  const command = TERMINAL_COMMANDS.BUILD_FORGE_FROM_SOURCE.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔨 Building TT-Forge from source (10-20 min). This ensures compatibility with your tt-metal!'
+  );
+}
+
+/**
  * Command: tenstorrent.installForge
- * Installs TT-Forge-FE and dependencies in dedicated venv
+ * Installs TT-Forge-FE wheels (quick but may have version issues)
  */
 function installForge(): void {
   const terminal = getOrCreateTerminal('TT-Forge Install', 'forgeInstall');
@@ -2080,7 +2095,7 @@ function installForge(): void {
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '📦 Installing TT-Forge. This may take several minutes. Watch terminal for progress.'
+    '📦 Installing TT-Forge wheels. If you get symbol errors, try building from source instead.'
   );
 }
 
@@ -2951,6 +2966,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
 
     // Lesson 11 - Image Classification with TT-Forge
+    vscode.commands.registerCommand('tenstorrent.buildForgeFromSource', buildForgeFromSource),
     vscode.commands.registerCommand('tenstorrent.installForge', installForge),
     vscode.commands.registerCommand('tenstorrent.testForgeInstall', testForgeInstall),
     vscode.commands.registerCommand('tenstorrent.createForgeClassifier', createForgeClassifier),

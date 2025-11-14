@@ -86,39 +86,71 @@ output = compiled_model(input_tensor)
 
 ---
 
-## Step 1: Install TT-Forge (No Docker!)
+## Step 1: Install TT-Forge
 
-We'll use **wheel-based installation** (works on instances without Docker).
+**Two approaches:** Wheels (quick but may have version mismatches) or Build from source (reliable, takes longer).
 
-**Create dedicated virtual environment:**
+### **Option A: Build from Source (Recommended for Teaching)**
+
+Building from source against your tt-metal installation **guarantees compatibility** and avoids symbol mismatch errors.
+
+**Prerequisites:**
+- tt-metal already installed (from Lessons 1-10)
+- Git installed
+- Build tools: `sudo apt install build-essential cmake ninja-build`
+
+**Build steps:**
+
+```bash
+# 1. Create dedicated venv
+python3 -m venv ~/tt-forge-venv
+source ~/tt-forge-venv/bin/activate
+
+# 2. Clone tt-forge-fe (same branch as your tt-metal)
+cd ~
+git clone https://github.com/tenstorrent/tt-forge-fe.git
+cd tt-forge-fe
+git checkout main  # or match your tt-metal branch
+
+# 3. Set tt-metal path
+export TT_METAL_HOME=~/tt-metal
+
+# 4. Install Python dependencies
+pip install --upgrade pip
+pip install -r requirements-dev.txt
+
+# 5. Build forge (takes 10-20 minutes)
+python -m pip install -e .
+
+# 6. Install additional dependencies
+pip install pillow torch torchvision requests tabulate
+```
+
+**Why build from source?**
+- ✅ Built against YOUR exact tt-metal version (no symbol mismatches)
+- ✅ Can update both repos in sync
+- ✅ Better for development and experimentation
+- ✅ Most reliable for teaching environments
+
+**Build time:** 10-20 minutes (one-time cost)
+
+[🔨 Build TT-Forge from Source](command:tenstorrent.buildForgeFromSource)
+
+### **Option B: Wheel Installation (Quick but May Fail)**
+
+If you need quick installation and are willing to troubleshoot version issues:
 
 ```bash
 python3 -m venv ~/tt-forge-venv
 source ~/tt-forge-venv/bin/activate
-```
-
-**Install TT-Forge-FE and TT-TVM:**
-
-```bash
 pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/
-```
-
-**Install additional dependencies:**
-
-```bash
 pip install pillow torch torchvision requests tabulate
 ```
 
-**Why install without version pinning?**
-- Gets the latest stable release automatically (currently 0.4.0 series)
-- Nightly builds are updated frequently with bug fixes and operator additions
-- Check https://github.com/tenstorrent/tt-forge-fe/releases for specific versions
-- Separate venv avoids conflicts with tt-metal or vLLM dependencies
+**Note:** Wheels are built against specific tt-metal versions. If you get `ImportError: undefined symbol` errors, use Option A instead.
 
-**Note:** Installation may take several minutes due to dependencies.
-
-[🚀 Install TT-Forge](command:tenstorrent.installForge)
+[🚀 Install TT-Forge (Wheel)](command:tenstorrent.installForge)
 
 ---
 

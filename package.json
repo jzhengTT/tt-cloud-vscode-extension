@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.47",
+  "version": "0.0.48",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -306,8 +306,13 @@
         "category": "Tenstorrent"
       },
       {
+        "command": "tenstorrent.buildForgeFromSource",
+        "title": "Build TT-Forge from Source (Recommended)",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.installForge",
-        "title": "Install TT-Forge",
+        "title": "Install TT-Forge (Wheels)",
         "category": "Tenstorrent"
       },
       {
