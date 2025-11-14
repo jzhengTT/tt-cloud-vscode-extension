@@ -131,10 +131,7 @@ unset TT_METAL_HOME
 unset TT_METAL_VERSION
 
 # 1. Create toolchain directories (one-time setup)
-sudo mkdir -p /opt/ttforge-toolchain
-sudo chown -R $USER /opt/ttforge-toolchain
-sudo mkdir -p /opt/ttmlir-toolchain
-sudo chown -R $USER /opt/ttmlir-toolchain
+sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain
 
 # 2. Clone tt-forge-fe
 cd ~

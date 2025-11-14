@@ -332,7 +332,7 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
   BUILD_FORGE_FROM_SOURCE: {
     id: 'build-forge-from-source',
     name: 'Build TT-Forge from Source',
-    template: 'unset TT_METAL_HOME && unset TT_METAL_VERSION && sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain && sudo chown -R $USER /opt/ttforge-toolchain /opt/ttmlir-toolchain && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && source env/activate && git submodule update --init --recursive && cmake -B env/build env && cmake --build env/build && source env/activate && cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17 && cmake --build build && pip install pillow requests tabulate',
+    template: 'unset TT_METAL_HOME && unset TT_METAL_VERSION && sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain && cd ~ && git clone https://github.com/tenstorrent/tt-forge-fe.git && cd tt-forge-fe && source env/activate && git submodule update --init --recursive && cmake -B env/build env && cmake --build env/build && source env/activate && cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17 && cmake --build build && pip install pillow requests tabulate',
     description: 'Builds TT-Forge from source with official build process (takes 10-20 min). Clears environment variables first to prevent conflicts.',
   },
 
