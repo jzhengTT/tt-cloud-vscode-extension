@@ -122,6 +122,7 @@ Building from source against your tt-metal installation **guarantees compatibili
 - tt-metal already installed (from Lessons 1-10)
 - Git installed
 - Build tools: `sudo apt install build-essential cmake ninja-build`
+- **Python 3.11** (will be installed in build steps - required by JAX 0.7.1)
 
 **Build steps:**
 
@@ -130,32 +131,41 @@ Building from source against your tt-metal installation **guarantees compatibili
 unset TT_METAL_HOME
 unset TT_METAL_VERSION
 
-# 1. Create toolchain directories (one-time setup)
-sudo mkdir -p /opt/ttforge-toolchain /opt/ttmlir-toolchain
+# 1. Install Python 3.11 (required by JAX 0.7.1)
+sudo apt-get update
+sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
 
-# 2. Clone tt-forge-fe
+# 2. Create user-owned toolchain directories (avoid permission issues)
+mkdir -p ~/ttforge-toolchain ~/ttmlir-toolchain
+
+# 3. Clone tt-forge-fe
 cd ~
 git clone https://github.com/tenstorrent/tt-forge-fe.git
 cd tt-forge-fe
 
-# 3. Initialize environment (sets up paths)
+# 4. Configure to use user directories and Python 3.11
+export TTFORGE_TOOLCHAIN_DIR=~/ttforge-toolchain
+export TTMLIR_TOOLCHAIN_DIR=~/ttmlir-toolchain
+export TTFORGE_PYTHON_VERSION=python3.11
+
+# 5. Initialize environment (sets up paths, uses env vars above)
 source env/activate
 
-# 4. Initialize submodules (includes tt-mlir)
+# 6. Initialize submodules (includes tt-mlir)
 git submodule update --init --recursive
 
-# 5. Build the environment (creates venv, installs deps - takes 10-20 min)
+# 7. Build the environment (creates venv with python3.11, installs deps - takes 10-20 min)
 cmake -B env/build env
 cmake --build env/build
 
-# 6. Activate the virtual environment
+# 8. Re-activate to ensure venv is active
 source env/activate
 
-# 7. Build TT-Forge-FE
+# 9. Build TT-Forge-FE
 cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=clang++-17 -DCMAKE_C_COMPILER=clang-17
 cmake --build build
 
-# 8. Install additional dependencies for our classifier
+# 10. Install additional dependencies for our classifier
 pip install pillow requests tabulate
 ```
 
@@ -171,8 +181,11 @@ sudo ./llvm.sh 17
 - ✅ Can update both repos in sync
 - ✅ Better for development and experimentation
 - ✅ Most reliable for teaching environments
+- ✅ Uses user directories (no permission issues)
 
 **Build time:** 10-20 minutes (one-time cost)
+
+**Note:** We use `~/ttforge-toolchain` and `~/ttmlir-toolchain` instead of `/opt/` to avoid permission issues.
 
 [🔨 Build TT-Forge from Source](command:tenstorrent.buildForgeFromSource)
 
@@ -713,7 +726,32 @@ If model compiles but gives incorrect results:
 - Check for numerical precision issues (compare with CPU inference)
 - File bug with model + example showing discrepancy
 
-**5. Performance Issues**
+**5. Python Version Error (JAX 0.7.1 not found)**
+
+**Error:**
+```
+ERROR: Could not find a version that satisfies the requirement jax==0.7.1
+ERROR: Ignored the following versions that require a different python version: ... Requires-Python >=3.11
+```
+
+**Cause:** JAX 0.7.1 requires Python >=3.11. The build process needs Python 3.11 specifically.
+
+**Solution:** The build steps now include Python 3.11 installation:
+```bash
+sudo apt-get update
+sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
+```
+
+Then set `TTFORGE_PYTHON_VERSION` BEFORE sourcing the activate script:
+```bash
+cd ~/tt-forge-fe
+export TTFORGE_PYTHON_VERSION=python3.11
+source env/activate
+```
+
+The `env/activate` script defaults to `python3.11`, but explicitly setting it ensures the correct version is used when creating the venv.
+
+**6. Performance Issues**
 
 If inference is unexpectedly slow:
 - Verify device detected: `tt-smi`

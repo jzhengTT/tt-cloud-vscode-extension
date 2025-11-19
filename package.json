@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.51",
+  "version": "0.0.54",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
