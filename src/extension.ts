@@ -149,6 +149,7 @@ let cachedDeviceInfo: DeviceInfo = {
 };
 
 let statusBarItem: vscode.StatusBarItem | undefined;
+let commandMenuStatusBarItem: vscode.StatusBarItem | undefined;
 let statusUpdateTimer: NodeJS.Timeout | undefined;
 
 /**
@@ -554,12 +555,14 @@ function getOrCreateTerminal(
 /**
  * Executes a command in the specified terminal.
  * Shows the terminal to the user so they can see the output.
+ * Uses preserveFocus: false to ensure terminal is visible and focused.
  *
  * @param terminal - The terminal to execute the command in
  * @param command - The shell command to execute
  */
 function runInTerminal(terminal: vscode.Terminal, command: string): void {
-  terminal.show();
+  // Show terminal and give it focus (preserveFocus: false ensures terminal panel is visible)
+  terminal.show(false);
   terminal.sendText(command);
 }
 
@@ -1168,9 +1171,13 @@ async function createChatScriptDirect(): Promise<void> {
     fs.copyFileSync(templatePath, destPath);
     fs.chmodSync(destPath, 0o755);
 
-    // Open the file in the editor
+    // Open the file in the editor (to the side, preserving focus on terminal)
     const doc = await vscode.workspace.openTextDocument(destPath);
-    await vscode.window.showTextDocument(doc);
+    await vscode.window.showTextDocument(doc, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preserveFocus: true,
+      preview: false
+    });
 
     vscode.window.showInformationMessage(
       `✅ Created direct API chat script at ${destPath}. The file is now open - review the code!`
@@ -1235,9 +1242,13 @@ async function createApiServerDirect(): Promise<void> {
     fs.copyFileSync(templatePath, destPath);
     fs.chmodSync(destPath, 0o755);
 
-    // Open the file in the editor
+    // Open the file in the editor (to the side, preserving focus on terminal)
     const doc = await vscode.workspace.openTextDocument(destPath);
-    await vscode.window.showTextDocument(doc);
+    await vscode.window.showTextDocument(doc, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preserveFocus: true,
+      preview: false
+    });
 
     vscode.window.showInformationMessage(
       `✅ Created direct API server at ${destPath}. The file is now open - review the code!`
@@ -1834,9 +1845,13 @@ async function createCodingAssistantScript(): Promise<void> {
     fs.copyFileSync(templatePath, destPath);
     fs.chmodSync(destPath, 0o755);
 
-    // Open the file in the editor
+    // Open the file in the editor (to the side, preserving focus on terminal)
     const doc = await vscode.workspace.openTextDocument(destPath);
-    await vscode.window.showTextDocument(doc);
+    await vscode.window.showTextDocument(doc, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preserveFocus: true,
+      preview: false
+    });
 
     vscode.window.showInformationMessage(
       `✅ Created coding assistant script at ${destPath}. The file is now open - review the code!`
@@ -2146,9 +2161,13 @@ async function createForgeClassifier(): Promise<void> {
     fs.copyFileSync(templatePath, destPath);
     fs.chmodSync(destPath, 0o755);
 
-    // Open in editor
+    // Open in editor (to the side, preserving focus on terminal)
     const doc = await vscode.workspace.openTextDocument(destPath);
-    await vscode.window.showTextDocument(doc);
+    await vscode.window.showTextDocument(doc, {
+      viewColumn: vscode.ViewColumn.Beside,
+      preserveFocus: true,
+      preview: false
+    });
 
     vscode.window.showInformationMessage(
       '✅ Created tt-forge-classifier.py. Review the MobileNetV2 implementation!'
@@ -2314,9 +2333,13 @@ Good luck with your contribution! 🚀
     Buffer.from(checklistContent)
   );
 
-  // Open the file in editor
+  // Open the file in editor (to the side, preserving focus on terminal)
   const doc = await vscode.workspace.openTextDocument(checklistPath);
-  await vscode.window.showTextDocument(doc);
+  await vscode.window.showTextDocument(doc, {
+    viewColumn: vscode.ViewColumn.Beside,
+    preserveFocus: true,
+    preview: false
+  });
 
   vscode.window.showInformationMessage(
     '✅ Bounty workflow checklist created! Check off items as you progress.'
@@ -2410,7 +2433,7 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
   const panel = vscode.window.createWebviewPanel(
     'tenstorrentWelcome',
     'Welcome to Tenstorrent',
-    vscode.ViewColumn.Active,
+    { viewColumn: vscode.ViewColumn.One, preserveFocus: false },
     {
       enableScripts: true,
       localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'welcome')]
@@ -2874,6 +2897,115 @@ python filters.py examples/sample.jpg</pre>
 }
 
 // ============================================================================
+// Command Menu
+// ============================================================================
+
+/**
+ * Shows a quick-pick menu with all available Tenstorrent commands organized by category.
+ * Triggered by clicking the Tenstorrent icon in the status bar.
+ */
+async function showCommandMenu(): Promise<void> {
+  interface CommandItem extends vscode.QuickPickItem {
+    command?: string;
+    isCategory?: boolean;
+  }
+
+  const items: CommandItem[] = [
+    // Welcome & Getting Started
+    { label: '🏠 Welcome & Getting Started', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(home) Show Welcome Page', description: 'Overview and lesson cards', command: 'tenstorrent.showWelcome' },
+    { label: '$(book) Open Walkthrough', description: 'Step-by-step setup guide', command: 'tenstorrent.openWalkthrough' },
+    { label: '$(refresh) Reset Walkthrough Progress', description: 'Start walkthrough from beginning', command: 'tenstorrent.resetProgress' },
+
+    // Hardware & Setup
+    { label: '⚙️ Hardware & Setup', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(device-desktop) Run Hardware Detection', description: 'Detect Tenstorrent devices (tt-smi)', command: 'tenstorrent.runHardwareDetection' },
+    { label: '$(check) Verify Installation', description: 'Test tt-metal installation', command: 'tenstorrent.verifyInstallation' },
+    { label: '$(pulse) Show Device Actions', description: 'Device status and management', command: 'tenstorrent.showDeviceActions' },
+    { label: '$(sync) Reset Device', description: 'Soft reset with tt-smi -r', command: 'tenstorrent.resetDevice' },
+    { label: '$(trash) Clear Device State', description: 'Full cleanup (processes + /dev/shm)', command: 'tenstorrent.clearDeviceState' },
+
+    // Models & Downloads
+    { label: '📦 Models & Downloads', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(cloud-download) Download Model', description: 'Download Llama 3.1 8B from HuggingFace', command: 'tenstorrent.downloadModel' },
+    { label: '$(key) Set HuggingFace Token', description: 'Configure HF authentication', command: 'tenstorrent.setHuggingFaceToken' },
+    { label: '$(sign-in) Login to HuggingFace', description: 'Authenticate with HF CLI', command: 'tenstorrent.loginHuggingFace' },
+
+    // Inference & Chat
+    { label: '💬 Inference & Chat', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(play) Run Llama Inference', description: 'Test model with pytest demo', command: 'tenstorrent.runInference' },
+    { label: '$(comment) Create Chat Script', description: 'Generate interactive chat script', command: 'tenstorrent.createChatScriptDirect' },
+    { label: '$(comment-discussion) Start Chat Session', description: 'Run interactive chat with Direct API', command: 'tenstorrent.startChatSessionDirect' },
+    { label: '$(code) Create Coding Assistant', description: 'AI coding assistant with prompt engineering', command: 'tenstorrent.createCodingAssistantScript' },
+    { label: '$(robot) Start Coding Assistant', description: 'Launch coding assistant chat', command: 'tenstorrent.startCodingAssistant' },
+
+    // API Server
+    { label: '🌐 API Server', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(file-code) Create API Server', description: 'Generate Flask API server script', command: 'tenstorrent.createApiServerDirect' },
+    { label: '$(server) Start API Server', description: 'Launch Flask API server', command: 'tenstorrent.startApiServerDirect' },
+    { label: '$(debug-start) Test API (Basic)', description: 'Send test query to API', command: 'tenstorrent.testApiBasicDirect' },
+    { label: '$(debug-console) Test API (Multiple)', description: 'Send multiple queries', command: 'tenstorrent.testApiMultipleDirect' },
+
+    // vLLM Production
+    { label: '🚀 vLLM Production', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(git-branch) Clone vLLM', description: 'Clone Tenstorrent vLLM fork', command: 'tenstorrent.cloneVllm' },
+    { label: '$(package) Install vLLM', description: 'Install vLLM with dependencies', command: 'tenstorrent.installVllm' },
+    { label: '$(terminal) Run vLLM Offline', description: 'Test vLLM offline inference', command: 'tenstorrent.runVllmOffline' },
+    { label: '$(server-process) Start vLLM Server', description: 'Launch OpenAI-compatible API', command: 'tenstorrent.startVllmServer' },
+    { label: '$(beaker) Test vLLM (OpenAI SDK)', description: 'Test with Python SDK', command: 'tenstorrent.testVllmOpenai' },
+    { label: '$(symbol-method) Test vLLM (curl)', description: 'Test with HTTP request', command: 'tenstorrent.testVllmCurl' },
+
+    // VSCode Chat
+    { label: '💭 VSCode Chat Integration', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(rocket) Start vLLM for Chat', description: 'Start vLLM server for @tenstorrent', command: 'tenstorrent.startVllmForChat' },
+    { label: '$(comment) Test Chat Integration', description: 'Verify @tenstorrent chat works', command: 'tenstorrent.testChat' },
+
+    // Image Generation
+    { label: '🎨 Image Generation', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(file-media) Generate Sample Image', description: 'SD 3.5 Large (1024x1024)', command: 'tenstorrent.generateRetroImage' },
+    { label: '$(paintcan) Interactive Image Gen', description: 'Custom prompts with SD 3.5', command: 'tenstorrent.startInteractiveImageGen' },
+
+    // TT-Jukebox (Environment Management)
+    { label: '🎵 TT-Jukebox (Environment Manager)', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(copy) Copy Jukebox to Scratchpad', description: 'Deploy TT-Jukebox script', command: 'tenstorrent.copyJukebox' },
+    { label: '$(list-unordered) List Compatible Models', description: 'Show models for your hardware', command: 'tenstorrent.listJukeboxModels' },
+    { label: '$(search) Find Chat Models', description: 'Search for chat-capable models', command: 'tenstorrent.jukeboxFindChat' },
+    { label: '$(search) Search Llama Models', description: 'Find Llama model variants', command: 'tenstorrent.jukeboxSearchLlama' },
+    { label: '$(tools) Generate Setup Script', description: 'Create environment setup script', command: 'tenstorrent.jukeboxSetupLlama' },
+
+    // TT-Forge (Image Classification)
+    { label: '🔨 TT-Forge (MLIR Compiler)', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(building) Build Forge from Source', description: 'Recommended installation method', command: 'tenstorrent.buildForgeFromSource' },
+    { label: '$(package) Install Forge (Wheels)', description: 'Quick install via pip', command: 'tenstorrent.installForge' },
+    { label: '$(test-view-icon) Test Forge Install', description: 'Verify forge module loads', command: 'tenstorrent.testForgeInstall' },
+    { label: '$(file-code) Create Forge Classifier', description: 'MobileNetV2 image classifier', command: 'tenstorrent.createForgeClassifier' },
+    { label: '$(play) Run Forge Classifier', description: 'Classify images with PyTorch', command: 'tenstorrent.runForgeClassifier' },
+
+    // Bounty Program
+    { label: '💰 Bounty Program & Contribution', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(globe) Browse Open Bounties', description: 'View available model bring-up bounties', command: 'tenstorrent.browseOpenBounties' },
+    { label: '$(checklist) Copy Bounty Checklist', description: 'Workflow template for contributions', command: 'tenstorrent.copyBountyChecklist' },
+
+    // Exploration & Learning
+    { label: '🔍 Exploration & Learning', kind: vscode.QuickPickItemKind.Separator },
+    { label: '$(mortar-board) Launch TTNN Tutorials', description: 'Interactive Jupyter notebooks', command: 'tenstorrent.launchTtnnTutorials' },
+    { label: '$(library) Browse Model Zoo', description: 'Explore validated models', command: 'tenstorrent.browseModelZoo' },
+    { label: '$(code) Programming Examples', description: 'Sample code and patterns', command: 'tenstorrent.exploreProgrammingExamples' },
+    { label: '$(book) Create Cookbook Projects', description: 'Deploy 4 complete recipes', command: 'tenstorrent.createCookbookProjects' },
+  ];
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Search Tenstorrent commands...',
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+
+  if (selected?.command) {
+    vscode.commands.executeCommand(selected.command);
+  }
+}
+
+// ============================================================================
 // Extension Lifecycle
 // ============================================================================
 
@@ -2894,6 +3026,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register all commands (walkthrough management + step commands)
   const commands = [
+    // Command menu
+    vscode.commands.registerCommand('tenstorrent.showCommandMenu', showCommandMenu),
+
     // Welcome page
     vscode.commands.registerCommand('tenstorrent.showWelcome', () => showWelcome(context)),
 
@@ -3002,7 +3137,20 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(chatParticipant);
 
-  // Initialize statusbar item
+  // Initialize command menu statusbar item (left side, high priority)
+  commandMenuStatusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Left,
+    1000 // High priority = far left
+  );
+
+  commandMenuStatusBarItem.text = '$(circuit-board) Tenstorrent';
+  commandMenuStatusBarItem.tooltip = 'Tenstorrent Commands';
+  commandMenuStatusBarItem.command = 'tenstorrent.showCommandMenu';
+  commandMenuStatusBarItem.show();
+
+  context.subscriptions.push(commandMenuStatusBarItem);
+
+  // Initialize device status statusbar item (right side)
   statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100 // Priority (higher = further left)
@@ -3070,8 +3218,9 @@ export function deactivate(): void {
   terminals.vllmServer = undefined;
   terminals.imageGeneration = undefined;
 
-  // Clear statusbar reference
+  // Clear statusbar references
   statusBarItem = undefined;
+  commandMenuStatusBarItem = undefined;
 
   console.log('Tenstorrent Developer Extension has been deactivated');
 }
