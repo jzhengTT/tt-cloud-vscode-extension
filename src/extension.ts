@@ -3183,15 +3183,15 @@ export function activate(context: vscode.ExtensionContext): void {
   // Don't show it immediately - let user open it when needed
   context.subscriptions.push(defaultTerminal);
 
-  // Auto-open the walkthrough on first activation
-  const hasSeenWalkthrough = context.globalState.get<boolean>('hasSeenWalkthrough', false);
-  if (!hasSeenWalkthrough) {
+  // Auto-open the welcome page on first activation
+  const hasSeenWelcome = context.globalState.get<boolean>('hasSeenWelcome', false);
+  if (!hasSeenWelcome) {
     // Mark as seen first to avoid reopening if command fails
-    context.globalState.update('hasSeenWalkthrough', true);
+    context.globalState.update('hasSeenWelcome', true);
 
-    // Open the walkthrough automatically on first run
+    // Open the welcome page automatically on first run
     setTimeout(() => {
-      openWalkthrough();
+      showWelcome(context);
     }, 1000); // Small delay to ensure extension is fully activated
   }
 }
