@@ -510,45 +510,56 @@ function stopStatusUpdateTimer(): void {
 // ============================================================================
 
 /**
- * Stores references to terminals used by the walkthrough steps.
- * Each step gets its own dedicated terminal for better organization.
+ * Stores references to terminals used by the extension.
+ *
+ * Strategy: Two-terminal approach for optimal UX
+ * 1. "Tenstorrent" - Main terminal for all commands, setup, testing
+ *    - Persists environment variables, Python venvs across lessons
+ *    - Users can build up their environment incrementally
+ * 2. "Tenstorrent Server" - Dedicated terminal for long-running processes
+ *    - vLLM servers, API servers, interactive sessions
+ *    - Keeps main terminal available for testing/exploration
+ *
+ * This approach balances:
+ * ✅ Environment persistence (vs 9 different terminals)
+ * ✅ Non-blocking workflow (vs single terminal)
+ * ✅ Simplicity (vs complex context-based routing)
  */
 const terminals = {
-  hardwareDetection: undefined as vscode.Terminal | undefined,
-  verifyInstallation: undefined as vscode.Terminal | undefined,
-  modelDownload: undefined as vscode.Terminal | undefined,
-  interactiveChat: undefined as vscode.Terminal | undefined,
-  apiServer: undefined as vscode.Terminal | undefined,
-  vllmServer: undefined as vscode.Terminal | undefined,
-  imageGeneration: undefined as vscode.Terminal | undefined,
-  forgeInstall: undefined as vscode.Terminal | undefined,
-  forgeClassifier: undefined as vscode.Terminal | undefined,
+  main: undefined as vscode.Terminal | undefined,      // "Tenstorrent" - all general commands
+  server: undefined as vscode.Terminal | undefined,    // "Tenstorrent Server" - long-running processes
 };
 
 /**
- * Gets or creates a terminal with the specified name.
+ * Terminal type for command routing
+ */
+type TerminalType = 'main' | 'server';
+
+/**
+ * Gets or creates a terminal based on the terminal type.
  * Reuses existing terminals if they're still alive.
  *
- * @param name - Display name for the terminal
- * @param terminalRef - Reference to store/retrieve the terminal
+ * Terminal routing:
+ * - 'main': General commands, setup, testing (named "Tenstorrent")
+ * - 'server': Long-running processes like vLLM, API servers (named "Tenstorrent Server")
+ *
+ * @param type - Terminal type ('main' or 'server')
  * @returns Active terminal instance
  */
-function getOrCreateTerminal(
-  name: string,
-  terminalRef: keyof typeof terminals
-): vscode.Terminal {
+function getOrCreateTerminal(type: TerminalType = 'main'): vscode.Terminal {
   // Check if terminal still exists
-  if (terminals[terminalRef] && vscode.window.terminals.includes(terminals[terminalRef]!)) {
-    return terminals[terminalRef]!;
+  if (terminals[type] && vscode.window.terminals.includes(terminals[type]!)) {
+    return terminals[type]!;
   }
 
-  // Create new terminal with workspace root as cwd
+  // Create new terminal with appropriate name
+  const name = type === 'server' ? 'Tenstorrent Server' : 'Tenstorrent';
   const terminal = vscode.window.createTerminal({
     name,
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   });
 
-  terminals[terminalRef] = terminal;
+  terminals[type] = terminal;
   return terminal;
 }
 
@@ -592,7 +603,7 @@ async function checkVllmServerRunning(): Promise<boolean> {
  * This is Step 1 in the walkthrough.
  */
 function runHardwareDetection(): void {
-  const terminal = getOrCreateTerminal('Hardware Detection', 'hardwareDetection');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.TT_SMI.template;
 
   runInTerminal(terminal, command);
@@ -609,7 +620,7 @@ function runHardwareDetection(): void {
  * This is Step 2 in the walkthrough.
  */
 function verifyInstallation(): void {
-  const terminal = getOrCreateTerminal('TT-Metal Verification', 'verifyInstallation');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.VERIFY_INSTALLATION.template;
 
   runInTerminal(terminal, command);
@@ -640,7 +651,7 @@ async function setHuggingFaceToken(): Promise<void> {
   }
 
   // Set the token as an environment variable in the terminal
-  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  const terminal = getOrCreateTerminal('main');
   const command = replaceVariables(TERMINAL_COMMANDS.SET_HF_TOKEN.template, { token });
 
   runInTerminal(terminal, command);
@@ -657,7 +668,7 @@ async function setHuggingFaceToken(): Promise<void> {
  * This is Step 3b in the walkthrough.
  */
 function loginHuggingFace(): void {
-  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.LOGIN_HF.template;
 
   runInTerminal(terminal, command);
@@ -675,7 +686,7 @@ function loginHuggingFace(): void {
  * This is Step 3c in the walkthrough.
  */
 function downloadModel(): void {
-  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.DOWNLOAD_MODEL.template;
 
   // Create models directory and download to absolute path
@@ -753,7 +764,7 @@ async function cloneTTMetal(): Promise<void> {
       // Clone to user-specified location and store the path
       await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, userPath);
 
-      const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+      const terminal = getOrCreateTerminal('main');
       const command = replaceVariables(TERMINAL_COMMANDS.CLONE_TT_METAL.template, {
         path: userPath,
       });
@@ -777,7 +788,7 @@ async function cloneTTMetal(): Promise<void> {
       // Clone to default location and store the path
       await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, defaultTTMetalPath);
 
-      const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+      const terminal = getOrCreateTerminal('main');
       const command = replaceVariables(TERMINAL_COMMANDS.CLONE_TT_METAL.template, {
         path: defaultTTMetalPath,
       });
@@ -820,7 +831,7 @@ async function cloneTTMetal(): Promise<void> {
       // Clone to user-specified location and store the path
       await extensionContext.globalState.update(STATE_KEYS.TT_METAL_PATH, userPath);
 
-      const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+      const terminal = getOrCreateTerminal('main');
       const command = replaceVariables(TERMINAL_COMMANDS.CLONE_TT_METAL.template, {
         path: userPath,
       });
@@ -850,7 +861,7 @@ async function setupEnvironment(): Promise<void> {
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
-  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  const terminal = getOrCreateTerminal('main');
 
   // Run setup commands in sequence using the stored path
   const command = replaceVariables(TERMINAL_COMMANDS.SETUP_ENVIRONMENT.template, {
@@ -882,7 +893,7 @@ async function runInference(): Promise<void> {
   // Model path using constants
   const modelPath = await getModelOriginalPath();
 
-  const terminal = getOrCreateTerminal('Model Download', 'modelDownload');
+  const terminal = getOrCreateTerminal('main');
 
   // Run inference demo with LLAMA_DIR set to the model location
   // and reasonable default parameters for seq length and token generation
@@ -905,7 +916,7 @@ async function runInference(): Promise<void> {
  * This is Step 4-1 in the walkthrough - Interactive Chat
  */
 function installInferenceDeps(): void {
-  const terminal = getOrCreateTerminal('Interactive Chat', 'interactiveChat');
+  const terminal = getOrCreateTerminal('server');
   const command = TERMINAL_COMMANDS.INSTALL_INFERENCE_DEPS.template;
 
   runInTerminal(terminal, command);
@@ -983,7 +994,7 @@ async function startChatSession(): Promise<void> {
   // Model path using constants
   const modelPath = await getModelOriginalPath();
 
-  const terminal = getOrCreateTerminal('Interactive Chat', 'interactiveChat');
+  const terminal = getOrCreateTerminal('server');
 
   // Run the interactive chat script with proper environment setup
   const command = replaceVariables(TERMINAL_COMMANDS.START_CHAT_SESSION.template, {
@@ -1056,7 +1067,7 @@ async function createApiServer(): Promise<void> {
  * This is Step 5b in the walkthrough - HTTP API Server
  */
 function installFlask(): void {
-  const terminal = getOrCreateTerminal('API Server', 'apiServer');
+  const terminal = getOrCreateTerminal('server');
   const command = TERMINAL_COMMANDS.INSTALL_FLASK.template;
 
   runInTerminal(terminal, command);
@@ -1083,7 +1094,7 @@ async function startApiServer(): Promise<void> {
   // Model path using constants
   const modelPath = await getModelOriginalPath();
 
-  const terminal = getOrCreateTerminal('API Server', 'apiServer');
+  const terminal = getOrCreateTerminal('server');
 
   // Run the API server with proper environment setup
   const command = replaceVariables(TERMINAL_COMMANDS.START_API_SERVER.template, {
@@ -1106,7 +1117,7 @@ async function startApiServer(): Promise<void> {
  */
 function testApiBasic(): void {
   // Use a different terminal for testing so we don't interfere with the server
-  const terminal = getOrCreateTerminal('API Test', 'interactiveChat');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.TEST_API_BASIC.template;
 
   runInTerminal(terminal, command);
@@ -1124,7 +1135,7 @@ function testApiBasic(): void {
  */
 function testApiMultiple(): void {
   // Use a different terminal for testing so we don't interfere with the server
-  const terminal = getOrCreateTerminal('API Test', 'interactiveChat');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.TEST_API_MULTIPLE.template;
 
   runInTerminal(terminal, command);
@@ -1198,7 +1209,7 @@ async function startChatSessionDirect(): Promise<void> {
   const ttMetalPath = path.join(homeDir, 'tt-metal');
   const modelPath = await getModelBasePath();
 
-  const terminal = getOrCreateTerminal('Direct API Chat', 'interactiveChat');
+  const terminal = getOrCreateTerminal('server');
 
   const command = `cd ${ttMetalPath} && export HF_MODEL=${modelPath} && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-chat-direct.py`;
 
@@ -1269,7 +1280,7 @@ async function startApiServerDirect(): Promise<void> {
   const ttMetalPath = path.join(homeDir, 'tt-metal');
   const modelPath = await getModelBasePath();
 
-  const terminal = getOrCreateTerminal('Direct API Server', 'apiServer');
+  const terminal = getOrCreateTerminal('server');
 
   const command = `cd ${ttMetalPath} && export HF_MODEL=${modelPath} && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080`;
 
@@ -1285,7 +1296,7 @@ async function startApiServerDirect(): Promise<void> {
  * Tests the direct API server with a basic query
  */
 function testApiBasicDirect(): void {
-  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
 
   const command = `curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{"prompt": "What is machine learning?"}'`;
 
@@ -1301,7 +1312,7 @@ function testApiBasicDirect(): void {
  * Tests the direct API with multiple queries
  */
 function testApiMultipleDirect(): void {
-  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
 
   const commands = [
     `curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d '{"prompt": "Explain neural networks"}'`,
@@ -1330,7 +1341,7 @@ async function updateTTMetal(): Promise<void> {
   const homeDir = os.homedir();
   const ttMetalPath = path.join(homeDir, 'tt-metal');
 
-  const terminal = getOrCreateTerminal('TT-Metal Update', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
 
   const command = `cd ${ttMetalPath} && git checkout main && git pull origin main && git submodule update --init --recursive && ./build_metal.sh`;
 
@@ -1346,7 +1357,7 @@ async function updateTTMetal(): Promise<void> {
  * Clones the TT vLLM repository
  */
 function cloneVllm(): void {
-  const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
 
   const command = `cd ~ && git clone --branch dev https://github.com/tenstorrent/vllm.git tt-vllm && cd tt-vllm`;
 
@@ -1362,7 +1373,7 @@ function cloneVllm(): void {
  * Creates a dedicated venv and installs vLLM and dependencies
  */
 function installVllm(): void {
-  const terminal = getOrCreateTerminal('vLLM Setup', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
 
   const command = `cd ~/tt-vllm && python3 -m venv ~/tt-vllm-venv && source ~/tt-vllm-venv/bin/activate && pip install --upgrade pip && export vllm_dir=$(pwd) && source $vllm_dir/tt_metal/setup-metal.sh && pip install --upgrade ttnn pytest && pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48 && pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu`;
 
@@ -1380,7 +1391,7 @@ function installVllm(): void {
  */
 async function runVllmOffline(): Promise<void> {
   const modelPath = await getModelBasePath();
-  const terminal = getOrCreateTerminal('vLLM Offline', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
 
   const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export HF_MODEL=${modelPath} && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
 
@@ -1421,7 +1432,7 @@ async function startVllmServer(): Promise<void> {
   }
 
   const modelPath = await getModelBasePath();
-  const terminal = getOrCreateTerminal('vLLM Server', 'apiServer');
+  const terminal = getOrCreateTerminal('server');
 
   const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
 
@@ -1437,7 +1448,7 @@ async function startVllmServer(): Promise<void> {
  * Tests vLLM with OpenAI SDK
  */
 function testVllmOpenai(): void {
-  const terminal = getOrCreateTerminal('vLLM Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const modelConfig = getModelConfig(DEFAULT_MODEL_KEY);
 
   const command = `python3 -c "from openai import OpenAI; client = OpenAI(base_url='http://localhost:8000/v1', api_key='dummy'); response = client.chat.completions.create(model='${modelConfig.huggingfaceId}', messages=[{'role': 'user', 'content': 'What is machine learning?'}], max_tokens=128); print(response.choices[0].message.content)"`;
@@ -1454,7 +1465,7 @@ function testVllmOpenai(): void {
  * Tests vLLM with curl
  */
 function testVllmCurl(): void {
-  const terminal = getOrCreateTerminal('vLLM Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const modelConfig = getModelConfig(DEFAULT_MODEL_KEY);
 
   const command = `curl http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "${modelConfig.huggingfaceId}", "messages": [{"role": "user", "content": "Explain neural networks"}], "max_tokens": 128}'`;
@@ -1509,7 +1520,7 @@ async function startVllmForChat(): Promise<void> {
   }
 
   const modelPath = await getModelBasePath();
-  const terminal = getOrCreateTerminal('TT vLLM Server', 'vllmServer');
+  const terminal = getOrCreateTerminal('server');
 
   const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
 
@@ -1709,7 +1720,7 @@ async function generateRetroImage(): Promise<void> {
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
-  const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
+  const terminal = getOrCreateTerminal('server');
 
   const command = replaceVariables(TERMINAL_COMMANDS.GENERATE_RETRO_IMAGE.template, {
     ttMetalPath,
@@ -1780,7 +1791,7 @@ async function startInteractiveImageGen(): Promise<void> {
   const defaultPath = path.join(homeDir, 'tt-metal');
   const ttMetalPath = extensionContext.globalState.get<string>(STATE_KEYS.TT_METAL_PATH, defaultPath);
 
-  const terminal = getOrCreateTerminal('Image Generation', 'imageGeneration');
+  const terminal = getOrCreateTerminal('server');
 
   const command = replaceVariables(TERMINAL_COMMANDS.START_INTERACTIVE_IMAGE_GEN.template, {
     ttMetalPath,
@@ -1802,7 +1813,7 @@ async function startInteractiveImageGen(): Promise<void> {
  * Verifies Llama 3.1 8B model is available for coding assistant
  */
 function verifyCodingModel(): void {
-  const terminal = getOrCreateTerminal('Coding Assistant Setup', 'modelDownload');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.VERIFY_CODING_MODEL.template;
 
   runInTerminal(terminal, command);
@@ -1875,7 +1886,7 @@ async function startCodingAssistant(): Promise<void> {
   // Model path for Llama 3.1 8B (original subdirectory for Direct API)
   const modelPath = await getModelOriginalPath();
 
-  const terminal = getOrCreateTerminal('Coding Assistant', 'interactiveChat');
+  const terminal = getOrCreateTerminal('server');
 
   const command = `cd "${ttMetalPath}" && export LLAMA_DIR="${modelPath}" && export PYTHONPATH=$(pwd) && python3 ~/tt-scratchpad/tt-coding-assistant.py`;
 
@@ -1935,7 +1946,7 @@ async function copyJukebox(): Promise<void> {
  * Lists all models compatible with detected hardware
  */
 function listJukeboxModels(): void {
-  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.LIST_JUKEBOX_MODELS.template;
 
   runInTerminal(terminal, command);
@@ -1950,7 +1961,7 @@ function listJukeboxModels(): void {
  * Finds models suitable for chat tasks
  */
 function jukeboxFindChat(): void {
-  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.JUKEBOX_FIND_CHAT.template;
 
   runInTerminal(terminal, command);
@@ -1965,7 +1976,7 @@ function jukeboxFindChat(): void {
  * Fuzzy search for Llama model variants
  */
 function jukeboxSearchLlama(): void {
-  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.JUKEBOX_SEARCH_LLAMA.template;
 
   runInTerminal(terminal, command);
@@ -1980,7 +1991,7 @@ function jukeboxSearchLlama(): void {
  * Generates setup script for Llama 3.1 8B environment
  */
 function jukeboxSetupLlama(): void {
-  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.JUKEBOX_SETUP_LLAMA.template;
 
   runInTerminal(terminal, command);
@@ -1995,7 +2006,7 @@ function jukeboxSetupLlama(): void {
  * Executes generated setup script to build environment
  */
 function runJukeboxSetup(): void {
-  const terminal = getOrCreateTerminal('TT-Jukebox Setup', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.RUN_JUKEBOX_SETUP.template;
 
   runInTerminal(terminal, command);
@@ -2010,7 +2021,7 @@ function runJukeboxSetup(): void {
  * Verifies tt-metal and vLLM commits match specifications
  */
 function verifyJukeboxEnv(): void {
-  const terminal = getOrCreateTerminal('TT-Jukebox', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.VERIFY_JUKEBOX_ENV.template;
 
   runInTerminal(terminal, command);
@@ -2025,7 +2036,7 @@ function verifyJukeboxEnv(): void {
  * Starts vLLM server with configuration from model spec
  */
 function startJukeboxVllm(): void {
-  const terminal = getOrCreateTerminal('vLLM Server', 'vllmServer');
+  const terminal = getOrCreateTerminal('server');
   const command = TERMINAL_COMMANDS.START_JUKEBOX_VLLM.template;
 
   runInTerminal(terminal, command);
@@ -2040,7 +2051,7 @@ function startJukeboxVllm(): void {
  * Tests vLLM server with OpenAI SDK
  */
 function testJukeboxOpenai(): void {
-  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.TEST_JUKEBOX_OPENAI.template;
 
   runInTerminal(terminal, command);
@@ -2055,7 +2066,7 @@ function testJukeboxOpenai(): void {
  * Tests vLLM server with curl HTTP request
  */
 function testJukeboxCurl(): void {
-  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.TEST_JUKEBOX_CURL.template;
 
   runInTerminal(terminal, command);
@@ -2070,7 +2081,7 @@ function testJukeboxCurl(): void {
  * Monitors streaming API response with pv (pipe viewer)
  */
 function monitorJukeboxPv(): void {
-  const terminal = getOrCreateTerminal('API Test', 'apiServer');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.MONITOR_JUKEBOX_PV.template;
 
   runInTerminal(terminal, command);
@@ -2089,7 +2100,7 @@ function monitorJukeboxPv(): void {
  * Builds TT-Forge from source against your tt-metal installation
  */
 function buildForgeFromSource(): void {
-  const terminal = getOrCreateTerminal('TT-Forge Build', 'forgeInstall');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.BUILD_FORGE_FROM_SOURCE.template;
 
   runInTerminal(terminal, command);
@@ -2104,7 +2115,7 @@ function buildForgeFromSource(): void {
  * Installs TT-Forge-FE wheels (quick but may have version issues)
  */
 function installForge(): void {
-  const terminal = getOrCreateTerminal('TT-Forge Install', 'forgeInstall');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.INSTALL_FORGE.template;
 
   runInTerminal(terminal, command);
@@ -2119,7 +2130,7 @@ function installForge(): void {
  * Tests forge installation and device detection
  */
 function testForgeInstall(): void {
-  const terminal = getOrCreateTerminal('TT-Forge Test', 'forgeInstall');
+  const terminal = getOrCreateTerminal('main');
   const command = TERMINAL_COMMANDS.TEST_FORGE_INSTALL.template;
 
   runInTerminal(terminal, command);
@@ -2182,7 +2193,7 @@ async function createForgeClassifier(): Promise<void> {
  * Runs MobileNetV2 image classification on sample image
  */
 function runForgeClassifier(): void {
-  const terminal = getOrCreateTerminal('TT-Forge Classifier', 'forgeClassifier');
+  const terminal = getOrCreateTerminal('server');
   const command = TERMINAL_COMMANDS.RUN_FORGE_CLASSIFIER.template;
 
   runInTerminal(terminal, command);
@@ -2365,7 +2376,7 @@ async function resetDevice(): Promise<void> {
     return;
   }
 
-  const terminal = getOrCreateTerminal('Device Management', 'hardwareDetection');
+  const terminal = getOrCreateTerminal('main');
   runInTerminal(terminal, 'tt-smi -r');
 
   vscode.window.showInformationMessage(
@@ -2393,7 +2404,7 @@ async function clearDeviceState(): Promise<void> {
     return;
   }
 
-  const terminal = getOrCreateTerminal('Device Management', 'hardwareDetection');
+  const terminal = getOrCreateTerminal('main');
 
   // Multi-step cleanup command
   const commands = [
@@ -3180,14 +3191,24 @@ export function activate(context: vscode.ExtensionContext): void {
     name: 'Tenstorrent',
     cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
   });
-  // Don't show it immediately - let user open it when needed
+  // Show the terminal by default for better UX
+  defaultTerminal.show(true); // preserveFocus=true keeps focus on editor
   context.subscriptions.push(defaultTerminal);
 
-  // Auto-open the welcome page on first activation
+  // Auto-configure user experience on first activation
   const hasSeenWelcome = context.globalState.get<boolean>('hasSeenWelcome', false);
   if (!hasSeenWelcome) {
     // Mark as seen first to avoid reopening if command fails
     context.globalState.update('hasSeenWelcome', true);
+
+    // Set Solarized Dark theme for optimal terminal visibility
+    const config = vscode.workspace.getConfiguration();
+    const currentTheme = config.get<string>('workbench.colorTheme');
+
+    // Only set theme if it's still the default (to respect user's existing preference)
+    if (currentTheme === 'Default Dark Modern' || currentTheme === 'Default Light Modern' || !currentTheme) {
+      config.update('workbench.colorTheme', 'Solarized Dark', vscode.ConfigurationTarget.Global);
+    }
 
     // Open the welcome page automatically on first run
     setTimeout(() => {
@@ -3210,13 +3231,8 @@ export function deactivate(): void {
 
   // Clear all terminal references
   // VS Code will handle actual disposal
-  terminals.hardwareDetection = undefined;
-  terminals.verifyInstallation = undefined;
-  terminals.modelDownload = undefined;
-  terminals.interactiveChat = undefined;
-  terminals.apiServer = undefined;
-  terminals.vllmServer = undefined;
-  terminals.imageGeneration = undefined;
+  terminals.main = undefined;
+  terminals.server = undefined;
 
   // Clear statusbar references
   statusBarItem = undefined;

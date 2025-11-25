@@ -10,6 +10,7 @@ This is a VS Code extension for Tenstorrent hardware setup and development. The 
 2. **Device Status Monitoring** - Real-time statusbar integration with tt-smi for device monitoring
 3. **VSCode Chat Integration** - @tenstorrent chat participant powered by local vLLM server
 4. **Template Scripts** - Production-ready Python scripts for inference and API servers
+5. **Auto-configured UX** - Automatically sets Solarized Dark theme and opens terminal on first activation
 
 ## Build and Development Commands
 
@@ -71,6 +72,165 @@ The extension creates a dedicated directory for all generated scripts and files:
 - ✅ All scripts in one predictable location
 - ✅ Easy to customize, backup, or delete generated files
 - ✅ No clutter in home directory root
+
+## First-Time User Experience (v0.0.65+)
+
+The extension automatically configures an optimal development environment on first activation:
+
+### Auto-Configured Settings
+
+**1. Terminal Auto-Open**
+- Creates and opens a "Tenstorrent" terminal immediately
+- Terminal is ready for command execution
+- Uses `preserveFocus=true` to keep editor focus
+- Terminal persists across the session
+
+**2. Solarized Dark Theme**
+- Automatically sets `workbench.colorTheme` to "Solarized Dark"
+- Only applies if user is on default theme (respects existing preferences)
+- Optimal contrast for terminal visibility
+- Professional, eye-friendly color scheme
+
+**3. Welcome Page**
+- Opens automatically on first activation
+- Provides overview of all walkthrough lessons
+- Links to documentation and resources
+
+### Implementation Details
+
+**Location:** `src/extension.ts` (lines 3177-3206)
+
+The auto-configuration happens during the `activate()` function:
+
+```typescript
+// Create and show terminal
+const defaultTerminal = vscode.window.createTerminal({
+  name: 'Tenstorrent',
+  cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+});
+defaultTerminal.show(true); // preserveFocus=true
+
+// Set theme on first run only
+const hasSeenWelcome = context.globalState.get<boolean>('hasSeenWelcome', false);
+if (!hasSeenWelcome) {
+  context.globalState.update('hasSeenWelcome', true);
+
+  const config = vscode.workspace.getConfiguration();
+  const currentTheme = config.get<string>('workbench.colorTheme');
+
+  // Only set if still on default theme
+  if (currentTheme === 'Default Dark Modern' || currentTheme === 'Default Light Modern' || !currentTheme) {
+    config.update('workbench.colorTheme', 'Solarized Dark', vscode.ConfigurationTarget.Global);
+  }
+
+  // Show welcome page
+  setTimeout(() => showWelcome(context), 1000);
+}
+```
+
+**Key Design Decisions:**
+- ✅ **Respects user preferences:** Only sets theme if user is on a default theme
+- ✅ **One-time configuration:** Uses `hasSeenWelcome` flag to avoid repeated changes
+- ✅ **Non-intrusive terminal:** Opens with `preserveFocus=true` to not disrupt workflow
+- ✅ **Global settings:** Uses `ConfigurationTarget.Global` so theme persists across workspaces
+
+**For code-server/cloud deployments:**
+This configuration works automatically when the extension is installed. No Docker image modifications needed - the extension handles everything at runtime.
+
+## Terminal Management (v0.0.66+)
+
+### Two-Terminal Strategy
+
+The extension uses a **unified two-terminal approach** to prevent terminal clutter and preserve environment state across lessons:
+
+**1. "Tenstorrent" (main terminal)**
+- Used for: All setup, testing, one-off commands
+- Examples: Hardware detection, downloads, installs, tests, script creation
+- **Environment persists:** Python venvs, exported variables stay active across lessons
+- Users can incrementally build their environment
+
+**2. "Tenstorrent Server" (server terminal)**
+- Used for: Long-running interactive processes
+- Examples: vLLM servers, API servers, chat sessions, image generation, coding assistant
+- **Keeps main terminal free:** Users can test/explore while servers run
+- Can be stopped with Ctrl+C without affecting main environment
+
+### Benefits
+
+✅ **Environment persistence** - No need to re-export vars or re-activate venvs when switching lessons
+✅ **Clean UI** - Maximum 2 terminal tabs (vs 9 with old approach)
+✅ **Realistic workflow** - Matches how developers actually work
+✅ **Non-blocking** - Servers don't block the main terminal
+✅ **Simple mental model** - Easy to predict which terminal will be used
+
+### Implementation
+
+**Location:** `src/extension.ts` (lines 512-564)
+
+```typescript
+/**
+ * Stores references to terminals used by the extension.
+ */
+const terminals = {
+  main: undefined as vscode.Terminal | undefined,      // "Tenstorrent"
+  server: undefined as vscode.Terminal | undefined,    // "Tenstorrent Server"
+};
+
+type TerminalType = 'main' | 'server';
+
+function getOrCreateTerminal(type: TerminalType = 'main'): vscode.Terminal {
+  // Check if terminal still exists
+  if (terminals[type] && vscode.window.terminals.includes(terminals[type]!)) {
+    return terminals[type]!;
+  }
+
+  // Create new terminal with appropriate name
+  const name = type === 'server' ? 'Tenstorrent Server' : 'Tenstorrent';
+  const terminal = vscode.window.createTerminal({
+    name,
+    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+  });
+
+  terminals[type] = terminal;
+  return terminal;
+}
+```
+
+### Routing Rules
+
+Commands are automatically routed to the appropriate terminal:
+
+**Main Terminal (`'main'`):**
+- Hardware detection (`tt-smi`)
+- Installation verification
+- Model downloads
+- Package installations
+- Environment setup
+- Testing commands (curl, pytest one-offs)
+- Script creation/copying
+- Jukebox operations
+- Forge builds and tests
+
+**Server Terminal (`'server'`):**
+- Interactive chat sessions (`startChatSession*`)
+- API servers (`startApiServer*`)
+- vLLM servers (`startVllmServer`, `startVllmForChat`)
+- Image generation (`startInteractiveImageGen`)
+- Coding assistant (`startCodingAssistant`)
+- Forge classifier (interactive mode)
+
+### Migration from v0.0.65
+
+**Old approach:** 9 different terminal types
+- `hardwareDetection`, `verifyInstallation`, `modelDownload`, `interactiveChat`, `apiServer`, `vllmServer`, `imageGeneration`, `forgeInstall`, `forgeClassifier`
+
+**New approach:** 2 terminal types
+- `main`, `server`
+
+**User impact:**
+- Environment variables and Python venvs now persist across lessons
+- Less terminal clutter (2 tabs max vs 9)
+- Easier to follow lesson progression without losing context
 
 ## Architecture
 
