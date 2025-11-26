@@ -91,7 +91,19 @@ The extension automatically configures an optimal development environment on fir
 - Optimal contrast for terminal visibility
 - Professional, eye-friendly color scheme
 
-**3. Welcome Page**
+**3. Recommended Extensions Prompt (v0.0.67+)**
+- **Non-intrusive notification** prompts user to install recommended extensions
+- User choices: "Install All", "Not Now", or "Show Details"
+- Only shows extensions that aren't already installed
+- Installs in background without blocking workflow
+- Recommended extensions:
+  - **Python** - Python language support
+  - **Pylance** - Fast Python IntelliSense
+  - **Jupyter** - Notebook support
+  - **C/C++** - For tt-metal C++ development
+  - **CMake Tools** - Build system integration
+
+**4. Welcome Page**
 - Opens automatically on first activation
 - Provides overview of all walkthrough lessons
 - Links to documentation and resources
@@ -133,6 +145,52 @@ if (!hasSeenWelcome) {
 - ✅ **One-time configuration:** Uses `hasSeenWelcome` flag to avoid repeated changes
 - ✅ **Non-intrusive terminal:** Opens with `preserveFocus=true` to not disrupt workflow
 - ✅ **Global settings:** Uses `ConfigurationTarget.Global` so theme persists across workspaces
+- ✅ **User choice for extensions (v0.0.67+):** Prompts instead of auto-installing, respects user control
+
+**Extension Installation Strategy (v0.0.67+):**
+
+The extension uses a **prompt-based approach** instead of `extensionPack` to give users control:
+
+```typescript
+async function promptRecommendedExtensions(): Promise<void> {
+  const recommendedExtensions = [
+    { id: 'ms-python.python', name: 'Python' },
+    { id: 'ms-python.vscode-pylance', name: 'Pylance' },
+    { id: 'ms-toolsai.jupyter', name: 'Jupyter' },
+    { id: 'ms-vscode.cpptools', name: 'C/C++' },
+    { id: 'ms-vscode.cmake-tools', name: 'CMake Tools' },
+  ];
+
+  // Check which are missing
+  const missingExtensions = recommendedExtensions.filter(
+    (ext) => !vscode.extensions.getExtension(ext.id)
+  );
+
+  if (missingExtensions.length === 0) return;
+
+  // Show non-intrusive notification
+  const choice = await vscode.window.showInformationMessage(
+    `Install recommended extensions? (${extensionNames})`,
+    'Install All',
+    'Not Now',
+    'Show Details'
+  );
+
+  if (choice === 'Install All') {
+    // Install in background
+    for (const ext of missingExtensions) {
+      await vscode.commands.executeCommand('workbench.extensions.installExtension', ext.id);
+    }
+  }
+}
+```
+
+**Why this approach:**
+- ❌ **Old:** `extensionPack` auto-installs all extensions (no user control)
+- ✅ **New:** User prompt with clear options (Install All / Not Now / Show Details)
+- ✅ **Background installation:** Non-blocking, doesn't interrupt workflow
+- ✅ **Smart detection:** Only prompts for missing extensions
+- ✅ **One-time:** Only shows on first activation
 
 **For code-server/cloud deployments:**
 This configuration works automatically when the extension is installed. No Docker image modifications needed - the extension handles everything at runtime.
@@ -270,6 +328,45 @@ This declarative structure defines:
 - Ordered list of steps
 - Each step's title, description, and markdown content file
 - Completion events (what triggers step completion)
+
+**Scroll Behavior Workaround (v0.0.68):**
+
+VS Code's native walkthrough API doesn't provide control over scroll position. When navigating between walkthrough steps, the scroll position can persist from the previous step, creating a confusing UX.
+
+**Solution:** Force-reopen the walkthrough when navigating from the Welcome page:
+
+**Location:** `src/extension.ts` (lines 2529-2549)
+
+```typescript
+case 'openWalkthrough':
+  // Workaround: Close active editor if it's a walkthrough, then reopen
+  // This forces scroll-to-top behavior
+  const activeEditor = vscode.window.activeTextEditor;
+  if (!activeEditor || vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes('Tenstorrent')) {
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  }
+
+  // Small delay to ensure close completes
+  setTimeout(() => {
+    vscode.commands.executeCommand(
+      'workbench.action.openWalkthrough',
+      {
+        category: 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup',
+        step: message.stepId
+      }
+    );
+  }, 100);
+  break;
+```
+
+**Why this works:**
+- Detects if a Tenstorrent walkthrough/welcome tab is currently active
+- Closes it before opening the new step
+- 100ms delay ensures close operation completes
+- Fresh walkthrough view always starts at top
+- Only closes Tenstorrent tabs (preserves user's code files)
+
+**Limitation:** This workaround only applies when navigating from the Welcome page. Direct navigation within the walkthrough UI still has the scroll issue (VS Code limitation).
 
 **Adding a New Lesson:**
 1. Create a new markdown file in `content/lessons/`
@@ -951,16 +1048,46 @@ python ~/tt-scratchpad/start-vllm-server.py \
     --block-size 64
 ```
 
-**Why a custom starter script?**
-The example scripts validate model names against a hardcoded list and try to download from HuggingFace. Our custom script (`start-vllm-server.py`):
-1. Registers TT models with vLLM (required)
-2. Accepts local model paths without validation
-3. Passes all args directly to the API server
+**Why a custom starter script? (v0.0.69+)**
 
-The extension automatically creates this script in `~/tt-scratchpad/` from a template.
+vLLM requires explicit registration of Tenstorrent model implementations before starting. Our production-ready starter script (`start-vllm-server.py`):
+
+1. **Self-contained registration** - Inlines the model registration code (no dependency on fragile `examples/` directory)
+2. **Production-ready** - Can be version controlled, deployed, and maintained
+3. **Accepts local model paths** - No validation against hardcoded lists
+4. **Passes all args through** - Full control over vLLM server flags
+
+**What it does:**
+```python
+from vllm import ModelRegistry
+
+def register_tt_models():
+    # Register TT Llama implementation with vLLM
+    ModelRegistry.register_model(
+        "TTLlamaForCausalLM",
+        "models.tt_transformers.tt.generator_vllm:LlamaForCausalLM"
+    )
+    print("✓ Registered Tenstorrent models with vLLM")
+
+if __name__ == '__main__':
+    register_tt_models()  # Must happen before server starts
+    runpy.run_module("vllm.entrypoints.openai.api_server", run_name="__main__")
+```
+
+The extension automatically creates this script in `~/tt-scratchpad/` from the template at `content/templates/start-vllm-server.py`.
+
+**Why not import from examples/?**
+- ❌ `examples/` is not production code (may change/break)
+- ❌ Creates fragile dependency on repository structure
+- ❌ Not suitable for deployment
+
+**Why not use `python -m vllm.entrypoints.openai.api_server` directly?**
+- ❌ TT models not registered → ValidationError
+- ❌ No CLI flags or environment variables for registration
+- ❌ Falls back to CPU-based HuggingFace Transformers (slow)
 
 **Key Insight:**
-The example scripts (`offline_inference_tt.py`, `server_example_tt.py`) all include `register_tt_models()` at the top. This is not optional - without it, vLLM cannot find the TT model implementations even with correct PYTHONPATH and TT_METAL_HOME settings.
+Model registration via `ModelRegistry.register_model()` is NOT optional. Without it, vLLM cannot find TT model implementations even with correct PYTHONPATH and TT_METAL_HOME.
 
 **Environment variables still required:**
 - `TT_METAL_HOME=~/tt-metal` - Required by setup-metal.sh

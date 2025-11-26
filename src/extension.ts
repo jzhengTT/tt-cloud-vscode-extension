@@ -592,6 +592,66 @@ async function checkVllmServerRunning(): Promise<boolean> {
   }
 }
 
+/**
+ * Prompts the user to install recommended extensions on first activation.
+ * Uses a non-intrusive notification that allows user to install all at once or dismiss.
+ *
+ * Recommended extensions:
+ * - Python, Pylance, Jupyter (for Python development)
+ * - C/C++, CMake Tools (for tt-metal C++ development)
+ *
+ * @param context - Extension context for accessing extension API
+ */
+async function promptRecommendedExtensions(): Promise<void> {
+  const recommendedExtensions = [
+    { id: 'ms-python.python', name: 'Python' },
+    { id: 'ms-python.vscode-pylance', name: 'Pylance' },
+    { id: 'ms-toolsai.jupyter', name: 'Jupyter' },
+    { id: 'ms-vscode.cpptools', name: 'C/C++' },
+    { id: 'ms-vscode.cmake-tools', name: 'CMake Tools' },
+  ];
+
+  // Check which extensions are not installed
+  const missingExtensions = recommendedExtensions.filter(
+    (ext) => !vscode.extensions.getExtension(ext.id)
+  );
+
+  if (missingExtensions.length === 0) {
+    // All recommended extensions already installed
+    return;
+  }
+
+  // Show notification with install action
+  const extensionNames = missingExtensions.map((ext) => ext.name).join(', ');
+  const message = `Install recommended extensions for Tenstorrent development? (${extensionNames})`;
+
+  const choice = await vscode.window.showInformationMessage(
+    message,
+    'Install All',
+    'Not Now',
+    'Show Details'
+  );
+
+  if (choice === 'Install All') {
+    // Install extensions one by one
+    for (const ext of missingExtensions) {
+      try {
+        await vscode.commands.executeCommand('workbench.extensions.installExtension', ext.id);
+      } catch (error) {
+        console.error(`Failed to install ${ext.name}:`, error);
+      }
+    }
+
+    vscode.window.showInformationMessage(
+      `Installing ${missingExtensions.length} extension(s) in the background...`
+    );
+  } else if (choice === 'Show Details') {
+    // Open Extensions view filtered to recommended
+    vscode.commands.executeCommand('workbench.extensions.action.showRecommendedExtensions');
+  }
+  // "Not Now" or dismissed = do nothing
+}
+
 // ============================================================================
 // Command Handlers
 // ============================================================================
@@ -2468,13 +2528,24 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
       switch (message.command) {
         case 'openWalkthrough':
           // Open the main walkthrough at a specific step
-          vscode.commands.executeCommand(
-            'workbench.action.openWalkthrough',
-            {
-              category: 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup',
-              step: message.stepId
-            }
-          );
+          // Workaround for VS Code scroll issue: Close active editor if it's a walkthrough,
+          // then reopen. This forces scroll-to-top behavior.
+          const activeEditor = vscode.window.activeTextEditor;
+          if (!activeEditor || vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes('Tenstorrent')) {
+            // Close the current walkthrough/welcome tab
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+          }
+
+          // Small delay to ensure close completes
+          setTimeout(() => {
+            vscode.commands.executeCommand(
+              'workbench.action.openWalkthrough',
+              {
+                category: 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup',
+                step: message.stepId
+              }
+            );
+          }, 100);
           break;
         case 'executeCommand':
           // Execute a command by ID
@@ -3210,10 +3281,15 @@ export function activate(context: vscode.ExtensionContext): void {
       config.update('workbench.colorTheme', 'Solarized Dark', vscode.ConfigurationTarget.Global);
     }
 
+    // Prompt to install recommended extensions (non-blocking)
+    setTimeout(() => {
+      promptRecommendedExtensions();
+    }, 1500);
+
     // Open the welcome page automatically on first run
     setTimeout(() => {
       showWelcome(context);
-    }, 1000); // Small delay to ensure extension is fully activated
+    }, 2000); // Small delay to ensure extension is fully activated
   }
 }
 

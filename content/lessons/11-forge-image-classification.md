@@ -1,40 +1,52 @@
-# Lesson 11: Image Classification with TT-Forge
+# Lesson 11: Image Classification with TT-XLA
 
 ## Welcome to the High-Level Compiler! 🎨
 
-You've been working with **TT-Metal** (low-level kernels) and **vLLM** (production LLM serving). Now meet **TT-Forge**: Tenstorrent's **MLIR-based compiler** that aims to make PyTorch models runnable on TT hardware with less manual kernel programming.
+You've been working with **TT-Metal** (low-level kernels) and **vLLM** (production LLM serving). Now meet **TT-XLA**: Tenstorrent's **XLA-based compiler** that brings PyTorch and JAX models to TT hardware with production-grade multi-chip support.
 
 **The Goal:**
 ```python
 import torch
-import forge
+import torch_xla
+import torch_xla.core.xla_model as xm
 
-# PyTorch model (if supported by current operators)
+# PyTorch model
 model = torchvision.models.mobilenet_v2(pretrained=True)
 
-# Compile for TT hardware
-compiled_model = forge.compile(model, sample_inputs=[input_tensor])
+# Move to XLA device (TT hardware)
+device = xm.xla_device()
+model = model.to(device)
+input_tensor = input_tensor.to(device)
 
 # Run on TT accelerators
-output = compiled_model(input_tensor)
+output = model(input_tensor)
 ```
 
-**Reality check:** TT-Forge is under active development. Not all PyTorch operators are supported yet, and compilation can fail for complex or uncommon architectures. This lesson focuses on **validated models** that are known to work.
+**Why TT-XLA?**
+- ✅ **Production-ready:** Most mature compiler for TT hardware
+- ✅ **Multi-chip support:** Tensor parallelism across N150/N300/T3K/Galaxy
+- ✅ **PyTorch + JAX:** Support for both major frameworks
+- ✅ **XLA ecosystem:** Leverage Google's battle-tested compiler infrastructure
 
 ---
 
-## What is TT-Forge?
+## What is TT-XLA?
 
-**TT-Forge** is the **abstraction layer** between AI frameworks (PyTorch, JAX, ONNX) and TT hardware:
+**TT-XLA** is Tenstorrent's **XLA (Accelerated Linear Algebra)** backend that connects PyTorch and JAX to TT hardware:
 
 ```
 ┌─────────────────────────────────────────┐
-│   PyTorch / JAX / ONNX / TensorFlow     │  ← Your models
+│         PyTorch / JAX Models            │  ← Your code
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│            TT-FORGE COMPILER            │  ← Optimization & lowering
-│  (MLIR-based graph optimization)        │
+│        XLA Compiler (Google)            │  ← Graph optimization
+│     (Fusion, layout, lowering)          │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│         TT-XLA PJRT Plugin              │  ← TT-specific backend
+│   (Tenstorrent's XLA implementation)    │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
@@ -43,22 +55,26 @@ output = compiled_model(input_tensor)
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│         N150 / N300 / T3K / TG          │  ← Hardware
+│         N150 / N300 / T3K / Nebula      │  ← Hardware
 └─────────────────────────────────────────┘
 ```
 
 **Key Benefits:**
-- ✅ **Higher-level API:** Less manual kernel programming than TT-Metal
-- ✅ **Multi-framework support:** PyTorch, JAX, ONNX, TensorFlow (with varying levels of maturity)
-- ✅ **Automatic optimization:** Layout transforms, fusion, operator lowering where supported
-- ✅ **Active development:** Daily nightly builds with expanding operator coverage
+- ✅ **Production-ready:** Most mature TT compiler stack
+- ✅ **Multi-chip support:** Tensor parallelism (TP), data parallelism (DP)
+- ✅ **Battle-tested:** Based on Google's XLA (used in TPUs, GPUs)
+- ✅ **PyTorch + JAX:** Support for two major frameworks
+- ✅ **Performance:** Graph-level optimizations + TT hardware acceleration
 
-**Three Frontends:**
-1. **TT-XLA**: PyTorch + JAX (multi-chip support) - most mature for production
-2. **TT-Forge-FE**: ONNX, TensorFlow (single-chip) - **we'll use this for learning**
-3. **TT-Torch**: PyTorch 2.X (deprecated, use TT-XLA instead)
+**Compiler Stack Comparison:**
 
-**Current Status:** TT-Forge is evolving rapidly. The 169 models in tt-forge-models represent validated examples, but many other models may require operator additions or workarounds. Check release notes and issues for current compatibility.
+| Compiler | Maturity | Multi-chip | Frameworks | Use Case |
+|----------|----------|------------|------------|----------|
+| **TT-XLA** | Production | ✅ Yes (TP/DP) | PyTorch, JAX | **Recommended for production** |
+| TT-Forge-FE | Beta | ❌ Single-chip | ONNX, TF | Experimental |
+| TT-Metal | Stable | ✅ Yes | Direct API | Low-level control |
+
+**Current Status:** TT-XLA is the **recommended path** for bringing PyTorch/JAX models to TT hardware. Supports Nebula boards (N150/N300/T3K); Galaxy support coming soon.
 
 ---
 
@@ -86,42 +102,75 @@ output = compiled_model(input_tensor)
 
 ---
 
-## Step 1: Install TT-Forge
+## Step 1: Install TT-XLA
 
-**⚠️ CRITICAL: Clear Environment Variables First**
+**Prerequisites:**
+- tt-metal already installed and working (from Lessons 1-10)
+- tt-mlir toolchain must be built first
+- clang-17 installed (for building)
+- Build tools: `sudo apt install build-essential cmake ninja-build clang-17`
 
-Before installing TT-Forge, you MUST unset conflicting environment variables that can cause TT-Forge to load the wrong version of TT-Metal:
+**⚠️ IMPORTANT:** TT-XLA currently supports **Nebula boards only** (N150/N300/T3K). Galaxy board support is coming soon.
+
+---
+
+### Step 1a: Install and Build TT-MLIR Toolchain
+
+TT-XLA depends on the tt-mlir toolchain. You need to build it first:
 
 ```bash
-# Clear any existing TT-Metal environment variables
-unset TT_METAL_HOME
-unset TT_METAL_VERSION
+# Clone tt-mlir
+cd ~
+git clone https://github.com/tenstorrent/tt-mlir.git
+cd tt-mlir
+
+# Create Python virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Build tt-mlir toolchain
+cmake -G Ninja -B build
+cmake --build build
+
+# Set environment variable (add to ~/.bashrc for persistence)
+export TTMLIR_TOOLCHAIN_DIR=~/tt-mlir/build
 ```
 
-**Why this matters:**
-- These variables can cause TT-Forge to load TT-Metal from outdated system paths
-- Results in `ImportError: undefined symbol` errors even with correct installation
-- This is the #1 cause of symbol mismatch issues (see [GitHub issue #529](https://github.com/tenstorrent/tt-forge/issues/529))
-
-**For permanent fix, add to your `~/.bashrc`:**
+**Verify tt-mlir installation:**
 ```bash
-# Prevent TT-Metal environment pollution for forge
-unset TT_METAL_HOME
-unset TT_METAL_VERSION
+ls $TTMLIR_TOOLCHAIN_DIR/bin/ttmlir-opt
+# Should show: /home/user/tt-mlir/build/bin/ttmlir-opt
 ```
 
 ---
 
-**Two approaches:** Wheels (quick but may have version mismatches) or Build from source (reliable, takes longer).
+### Step 1b: Build TT-XLA from Source
 
-### **Option A: Build from Source (Recommended for Teaching)**
+Now build TT-XLA against your tt-mlir toolchain:
 
-Building from source against your tt-metal installation **guarantees compatibility** and avoids symbol mismatch errors.
+```bash
+# Clone tt-xla
+cd ~
+git clone https://github.com/tenstorrent/tt-xla.git
+cd tt-xla
 
-**Prerequisites:**
-- tt-metal already installed (from Lessons 1-10)
-- Git installed
-- Build tools: `sudo apt install build-essential cmake ninja-build`
+# Activate Python environment (or create new one)
+python3 -m venv venv
+source venv/bin/activate
+
+# Ensure clang-17 is used
+export CC=clang-17
+export CXX=clang++-17
+
+# Build tt-xla
+cmake -G Ninja -B build
+cmake --build build
+
+# Install Python package
+pip install -e .
+```
+
+**Build time:** 15-30 minutes depending on your system.
 - **Python 3.11** (will be installed in build steps - required by JAX 0.7.1)
 
 **Build steps:**

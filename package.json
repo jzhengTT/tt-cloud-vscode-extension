@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.66",
+  "version": "0.0.70",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -17,13 +17,6 @@
   },
   "categories": [
     "Other"
-  ],
-  "extensionPack": [
-    "ms-python.python",
-    "ms-python.vscode-pylance",
-    "ms-toolsai.jupyter",
-    "ms-vscode.cpptools",
-    "ms-vscode.cmake-tools"
   ],
   "main": "./dist/extension.js",
   "activationEvents": [

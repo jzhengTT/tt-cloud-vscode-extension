@@ -193,6 +193,7 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 **Environment:**
 ```bash
 export MESH_DEVICE=P100
+export TT_METAL_ARCH_NAME=blackhole  # Required for device type inference
 export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 ```
@@ -443,9 +444,42 @@ cd ~/tt-vllm && \
 
 ### Why a Custom Starter Script?
 
-vLLM needs to register TT-specific models before starting the server. Our custom script (`~/tt-scratchpad/start-vllm-server.py`) calls `register_tt_models()` which tells vLLM how to find TTLlamaForCausalLM and other TT model implementations in the tt-metal repository.
+**The Problem:** vLLM doesn't automatically know about Tenstorrent's custom model implementations (like `TTLlamaForCausalLM`). Without registration, vLLM will fail with:
+```
+ValidationError: Cannot find model module 'TTLlamaForCausalLM'
+```
 
-**The extension creates this script automatically** when you click the button above. If you need to create it manually, see the template in `content/templates/start-vllm-server.py`.
+**The Solution:** A production-ready starter script that:
+1. **Registers TT models** with vLLM's `ModelRegistry` API before the server starts
+2. **Self-contained** - No dependency on fragile `examples/` directory
+3. **Production-ready** - Can be version controlled, deployed, and maintained
+
+**What the script does:**
+```python
+from vllm import ModelRegistry
+
+# Register TT Llama implementation
+ModelRegistry.register_model(
+    "TTLlamaForCausalLM",
+    "models.tt_transformers.tt.generator_vllm:LlamaForCausalLM"
+)
+
+# Then start vLLM server with all your flags
+```
+
+**Why not use `python -m vllm.entrypoints.openai.api_server` directly?**
+- ❌ TT models not registered → ValidationError
+- ❌ Falls back to slow HuggingFace Transformers (CPU)
+- ❌ No way to register via CLI flags or environment variables
+
+**Why not import from examples/?**
+- ❌ `examples/` is not production code (may change/move/break)
+- ❌ Creates fragile dependency on repository structure
+- ❌ Not suitable for deployment or version control
+
+**✅ Our approach:** Self-contained, production-ready script with inline registration
+
+**The extension creates this script automatically** when you click the button above. You can also view/customize it at `~/tt-scratchpad/start-vllm-server.py`.
 
 ---
 
@@ -454,6 +488,7 @@ vLLM needs to register TT-specific models before starting the server. Our custom
 **Environment variables (all hardware types need these):**
 - `TT_METAL_HOME=~/tt-metal` - Points to tt-metal installation (required by setup-metal.sh)
 - `MESH_DEVICE=<your-hardware>` - Targets your specific hardware (N150, N300, T3K, P100)
+- `TT_METAL_ARCH_NAME=<architecture>` - **Required for Blackhole (P100)**: Set to `blackhole`. Wormhole chips (N150/N300/T3K) auto-detect but P100 needs explicit specification.
 - `PYTHONPATH=$TT_METAL_HOME` - Required so Python can import TT model classes from tt-metal
 
 **vLLM flags (vary by hardware):**
@@ -852,14 +887,47 @@ pip install --upgrade ttnn
 
 **Why rebuild?** tt-metal includes compiled components (SFPI libraries, kernels) that must be built after code updates. The vLLM dev branch expects the latest tt-metal APIs.
 
+**RuntimeError: Failed to infer device type (Blackhole P100):**
+If you see `RuntimeError: Failed to infer device type`, you need to explicitly set the architecture:
+```bash
+export TT_METAL_ARCH_NAME=blackhole
+export MESH_DEVICE=P100
+```
+
+**Why this happens:** Blackhole hardware (P100) requires explicit architecture specification. Wormhole chips (N150/N300/T3K) auto-detect, but Blackhole needs `TT_METAL_ARCH_NAME=blackhole`.
+
+**Full Blackhole startup command:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=P100 && \
+  export TT_METAL_ARCH_NAME=blackhole && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
+```
+
 **ValidationError: Cannot find model module 'TTLlamaForCausalLM':**
 This error means vLLM cannot find the TT model implementation. Solution:
 ```bash
-# Use the example script which registers TT models (see Step 4)
-python examples/server_example_tt.py --model ~/models/Llama-3.1-8B-Instruct
+# Use the starter script (Step 4) which registers TT models
+python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct
 ```
 
-**Why this happens:** vLLM needs to explicitly register TT models using `ModelRegistry.register_model()`. The example scripts (`server_example_tt.py`, `offline_inference_tt.py`) call `register_tt_models()` which performs this registration. Do NOT call `python -m vllm.entrypoints.openai.api_server` directly - it will not have TT models registered.
+**Why this happens:** vLLM needs to explicitly register TT models using `ModelRegistry.register_model()` before starting. The starter script does this automatically. Do NOT call `python -m vllm.entrypoints.openai.api_server` directly - it will fail because TT models aren't registered.
+
+**Verify your starter script exists:**
+```bash
+ls -la ~/tt-scratchpad/start-vllm-server.py
+# If missing, use the extension button "Create vLLM Server Starter Script" in Lesson 6
+```
 
 **If you encounter other import errors (e.g., "No module named 'xyz'"):**
 ```bash
