@@ -18,8 +18,8 @@
 1. Detects your hardware automatically
 2. Fetches official model specifications from GitHub
 3. Matches your task/model to compatible configurations
-4. Generates setup scripts with EXACT commit SHAs
-5. Builds reproducible environments
+4. **Shows you the exact CLI commands to run** (no script layers!)
+5. Makes environments reproducible and transparent
 
 ---
 
@@ -39,11 +39,13 @@
 │     ↓                                                       │
 │  4. Intelligent Matching (fuzzy search, task mapping)      │
 │     ↓                                                       │
-│  5. Generate Setup Script (bash with exact commits)        │
+│  5. Format CLI Commands (ready to copy-paste)              │
 │     ↓                                                       │
-│  6. Execute (optional) → Reproducible Environment          │
+│  6. Display → User runs commands directly in terminal      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**Key Philosophy:** No hidden script layers! TT-Jukebox shows you **exactly** what commands to run, so you understand and can modify them.
 
 **Data Source:**
 TT-Jukebox fetches live data from:
@@ -284,172 +286,110 @@ Status: Setup required
 
 ---
 
-## Step 6: Generate Setup Script
+## Step 6: Get CLI Commands
 
-**Automatically create a setup script:**
+**Display ready-to-run commands:**
 ```bash
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b
 ```
 
-[🛠️ Generate Setup Script for Llama](command:tenstorrent.jukeboxSetupLlama)
+[🛠️ Find Llama Models](command:tenstorrent.jukeboxSearchLlama)
 
-**What the generated script does:**
+**What TT-Jukebox shows you:**
 
-1. **Download model from HuggingFace (if not already present):**
-   - Checks if model is already downloaded in `~/models/` or HF cache
-   - If missing, downloads using `huggingface-cli download`
-   - Requires HF_TOKEN or huggingface-cli login for gated models
-   - Example output:
-     ```
-     Checking for model: Llama-3.1-8B-Instruct...
-     Model: Not downloaded
-       Will download to: ~/models/Llama-3.1-8B-Instruct
-     Downloading meta-llama/Llama-3.1-8B-Instruct to ~/models/Llama-3.1-8B-Instruct...
-     ✓ Model downloaded to ~/models/Llama-3.1-8B-Instruct
-     ```
-
-2. **Check out exact tt-metal commit:**
-   ```bash
-   cd ~/tt-metal
-   git fetch origin
-   git checkout 9b67e09
-   git submodule update --init --recursive
-   ./build_metal.sh
-   ```
-
-3. **Check out exact vLLM commit:**
-   ```bash
-   cd ~/tt-vllm
-   git fetch origin
-   git checkout a91b644
-   ```
-
-4. **Create/update Python venv:**
-   ```bash
-   python3 -m venv ~/tt-vllm-venv
-   source ~/tt-vllm-venv/bin/activate
-   ```
-
-5. **Install dependencies:**
-   ```bash
-   pip install --upgrade pip
-   export vllm_dir=~/tt-vllm
-   source $vllm_dir/tt_metal/setup-metal.sh
-   pip install --upgrade ttnn pytest
-   pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
-   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
-   ```
-
-6. **Display environment variables:**
-   ```bash
-   echo 'To use this configuration:'
-   echo '  export TT_METAL_HOME=~/tt-metal'
-   echo '  export MESH_DEVICE=N150'
-   echo '  source ~/tt-vllm-venv/bin/activate'
-   ```
-
-**Script saved to:**
 ```
-~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
+======================================================================
+Ready-to-Run Commands
+======================================================================
+
+✓ Model already downloaded
+
+Step 1: Start vLLM Server
+# Start vLLM server with Llama-3.1-8B-Instruct on N150
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
+
+# Note: First model load takes 2-5 minutes
+# Server will be available at http://localhost:8000
+
+Step 2: Test Server
+# Test vLLM server
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "messages": [
+      {"role": "user", "content": "Hello!"}
+    ],
+    "max_tokens": 128
+  }'
+
+Configuration Details:
+  Model: Llama-3.1-8B-Instruct
+  Device: N150
+  tt-metal commit: 9b67e09
+  vLLM commit: a91b644
+  Max context: 65,536 tokens
+  Max sequences: 16
+
+======================================================================
+Copy-paste the commands above to get started!
+======================================================================
 ```
 
-**HuggingFace Authentication Options:**
+**Why this approach:**
+- ✅ **Transparent** - You see exactly what runs
+- ✅ **Educational** - Learn the actual vLLM CLI
+- ✅ **Flexible** - Easy to modify flags or paths
+- ✅ **Reproducible** - Copy-paste to share with team
+- ✅ **No hidden layers** - Direct CLI invocation, no script wrappers
 
-If the model is gated (like Llama models), you need authentication:
+**HuggingFace Authentication (for gated models like Llama):**
+
+If the model needs to be downloaded:
 
 **Option 1: Environment variable (recommended)**
 ```bash
 export HF_TOKEN=hf_...
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
+# Then run jukebox to see commands
 ```
 
-**Option 2: Command line argument**
-```bash
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup --hf-token hf_...
-```
-
-**Option 3: Use existing huggingface-cli login**
+**Option 2: Use existing huggingface-cli login**
 ```bash
 huggingface-cli login
 # Enter token when prompted
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
-```
-
-**What happens during model download:**
-- TT-Jukebox checks if model already exists in `~/models/` or HF cache
-- If model exists: Shows "✓ Model already exists at {path}"
-- If model missing: Downloads using `huggingface-cli download {hf_repo} --local-dir {path}`
-- If authentication fails: Shows clear error with instructions
-
----
-
-## Step 7: Execute Setup Script
-
-**Option 1: Run interactively (recommended first time)**
-```bash
-bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
-```
-
-[▶️ Run Setup Script](command:tenstorrent.runJukeboxSetup)
-
-**Option 2: Use TT-Jukebox with auto-execute**
-```bash
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
-
-# TT-Jukebox asks:
-# "Run setup now? (y/N):"
-# Type 'y' to execute immediately
-```
-
-**Setup takes ~10-15 minutes:**
-- Git operations: ~1-2 min
-- tt-metal build: ~5-8 min
-- Python venv + deps: ~3-5 min
-
-**Progress monitoring:**
-```bash
-# Watch in real-time
-tail -f ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.log
 ```
 
 ---
 
-## Step 8: Verify Setup
+## Step 7: Before Running - Check tt-metal/vLLM Commits
 
-**After setup completes, verify:**
+**Important:** TT-Jukebox shows you which commits to use, but you need to check them out manually:
 
-1. **Check tt-metal commit:**
-   ```bash
-   cd ~/tt-metal && git rev-parse --short HEAD
-   # Should show: 9b67e09
-   ```
+```bash
+# Check tt-metal commit (from jukebox output)
+cd ~/tt-metal && git checkout 9b67e09
 
-2. **Check vLLM commit:**
-   ```bash
-   cd ~/tt-vllm && git rev-parse --short HEAD
-   # Should show: a91b644
-   ```
+# Check vLLM commit (from jukebox output)
+cd ~/tt-vllm && git checkout a91b644
+```
 
-3. **Activate environment:**
-   ```bash
-   source ~/tt-vllm-venv/bin/activate
-   export TT_METAL_HOME=~/tt-metal
-   export MESH_DEVICE=N150
-   source ~/tt-vllm/tt_metal/setup-metal.sh
-   ```
-
-4. **Test imports:**
-   ```bash
-   python -c "import ttnn; import vllm; print('✓ Environment ready!')"
-   ```
-
-[✅ Verify Environment](command:tenstorrent.verifyJukeboxEnv)
+💡 **Why manual?** So you understand what versions you're using and can troubleshoot if needed.
 
 ---
 
-## Step 9: Start vLLM Server with Correct Configuration
+## Step 8: Run the CLI Command
 
-**Now that your environment matches the spec, start vLLM:**
+**Copy-paste the vLLM command from jukebox output:**
 
 ```bash
 cd ~/tt-vllm
@@ -654,12 +594,13 @@ python3 ~/tt-scratchpad/tt-jukebox.py chat
 #   - Context: 65,536 tokens
 #   - Status: Validated configuration
 
-# 4. Generate and review setup script
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
-# Script saved to: ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
+# 4. Get CLI commands
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b
+# Displays: Model info, vLLM startup command, test command
 
-# 5. Execute setup (10-15 minutes)
-bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
+# 5. Checkout commits (from jukebox output)
+cd ~/tt-metal && git checkout 9b67e09
+cd ~/tt-vllm && git checkout a91b644
 
 # 6. Activate environment
 cd ~/tt-vllm
@@ -718,8 +659,9 @@ python3 ~/tt-scratchpad/tt-jukebox.py code_assistant
 # 4. Generate setup with TP=2 configuration
 python3 ~/tt-scratchpad/tt-jukebox.py --model qwen-2.5-7b --setup
 
-# 5. Execute setup
-bash ~/tt-scratchpad/setup-scripts/setup_qwen_2_5_7b_coder.sh
+# 5. Checkout commits (from jukebox output)
+cd ~/tt-metal && git checkout <commit>
+cd ~/tt-vllm && git checkout <commit>
 
 # 6. Activate environment
 cd ~/tt-vllm
@@ -786,8 +728,8 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model qwen-2.5-7b --setup --show-experim
 #   - Reduces max-context by 33% for safety
 #   - Warns about unvalidated status
 
-# 4. Execute setup
-bash ~/tt-scratchpad/setup-scripts/setup_<model>.sh
+# 4. Checkout commits and run CLI command
+# (Copy-paste from jukebox output)
 
 # 5. Activate environment
 cd ~/tt-vllm
@@ -848,9 +790,8 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model llama-70b
 # 3. Generate setup (includes TP=8 config)
 python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-70b --setup
 
-# 4. Execute setup (may take longer - large model)
-bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_70b_instruct.sh
-# Downloads ~140GB model
+# 4. Checkout commits and copy-paste CLI command
+# Note: Model download may take longer (~140GB)
 
 # 5. Activate environment
 cd ~/tt-vllm
@@ -911,8 +852,9 @@ python3 ~/tt-scratchpad/tt-jukebox.py --model mistral --setup
 # 2. Stop current vLLM server
 # (Ctrl+C in server terminal)
 
-# 3. Execute Mistral setup
-bash ~/tt-scratchpad/setup-scripts/setup_mistral_7b_instruct.sh
+# 3. Get Mistral CLI commands and run them
+python3 ~/tt-scratchpad/tt-jukebox.py --model mistral
+# Copy-paste and run the vLLM command
 
 # 4. Start Mistral
 cd ~/tt-vllm
@@ -932,9 +874,8 @@ python ~/tt-scratchpad/start-vllm-server.py \
 # Same prompts, different models, compare results
 
 # 6. Switch back to Llama
-python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b --setup
-bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
-# (restart server with Llama)
+python3 ~/tt-scratchpad/tt-jukebox.py --model llama-3.1-8b
+# Copy-paste and run the Llama vLLM command
 ```
 
 **Result:** Safe model switching with environment isolation.
@@ -982,9 +923,9 @@ bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh
 
 **"vLLM server crashes on startup"**
 - Problem: Wrong commits, missing dependencies, or wrong flags
-- Solution: Re-run setup script to ensure exact versions
-- Check: All environment variables set correctly
-- Verify: `--max-model-len` matches your hardware (64K for N150)
+- Solution: Verify tt-metal and vLLM are on the correct commits (check `git rev-parse HEAD`)
+- Check: All environment variables set correctly (TT_METAL_HOME, MESH_DEVICE, PYTHONPATH)
+- Verify: `--max-model-len` matches your hardware (64K for N150, 128K for N300)
 
 ---
 
@@ -1042,21 +983,21 @@ RUN git clone https://github.com/tenstorrent/tt-metal.git && \
 
 ## Key Takeaways
 
-✅ **TT-Jukebox eliminates version mismatch** - Uses official tested commits
+✅ **TT-Jukebox eliminates version mismatch** - Shows you exact commits to use
 
-✅ **Reproducible environments** - Share setup scripts with team
+✅ **Transparent CLI commands** - Copy-paste ready, no hidden layers
 
 ✅ **Intelligent matching** - Find models by task or name
 
 ✅ **Hardware-aware** - Only shows compatible models for your device
 
-✅ **Automated setup** - Generate bash scripts that do everything
+✅ **Educational** - Learn the actual vLLM CLI instead of hidden scripts
 
 ✅ **Production-ready configs** - vLLM flags from tested specifications
 
 **You now have:**
 - Tool to explore 100+ model configurations
-- Automated environment setup scripts
+- Ready-to-run CLI commands (no script layers!)
 - Correct vLLM server flags for each model
 - Testing tools (curl, OpenAI SDK, pv)
 - Workflow for switching between models
@@ -1065,7 +1006,7 @@ RUN git clone https://github.com/tenstorrent/tt-metal.git && \
 - Try different models (Gemma, Qwen, Mistral)
 - Compare performance across model families
 - Build production deployments with confidence
-- Share environments with your team via setup scripts
+- Share CLI commands with your team (transparent and reproducible)
 
 **The power of TT-Jukebox:**
-No more guessing. No more version errors. Just reproducible, tested environments that work the first time.
+No more guessing. No more version errors. No hidden layers. Just transparent, tested commands that work the first time.

@@ -753,389 +753,131 @@ def check_hf_token() -> Optional[str]:
 
 
 # ============================================================================
-# Setup Functions
+# CLI Command Generation (v0.0.71 - No More Script Layers!)
 # ============================================================================
 
-def generate_setup_script(spec: Dict, metal_info: Optional[Dict], vllm_info: Optional[Dict]) -> str:
-    """Generate a bash setup script for the specified model configuration."""
+def format_cli_command(spec: Dict, model_info: Dict) -> Dict[str, str]:
+    """
+    Generate ready-to-run CLI commands for starting vLLM with the given model.
 
-    script_lines = [
-        "#!/bin/bash",
-        "# Auto-generated setup script by tt-jukebox",
-        f"# Model: {spec.get('model_name', 'Unknown')}",
-        f"# Device: {spec.get('device_type', 'Unknown')}",
-        "",
-        "set -e  # Exit on error",
-        "",
-        "echo '================================'",
-        f"echo 'Setting up: {spec.get('model_name', 'Unknown')}'",
-        "echo '================================'",
-        "",
-    ]
-
-    # Model download from HuggingFace
-    model_info = detect_model_download(spec)
+    Returns a dict with:
+    - 'download': Command to download model from HuggingFace (if needed)
+    - 'run': The main vLLM startup command
+    - 'test': Command to test the server
+    """
+    device_type = spec.get('device_type', 'N150')
+    model_name = spec.get('model_name', 'Unknown')
+    model_path = model_info['path']
+    model_exists = model_info['exists']
     hf_repo = spec.get('hf_model_repo', '')
 
-    if hf_repo and model_info:
-        model_path = model_info['path']
-        model_exists = model_info['exists']
-
-        if not model_exists:
-            script_lines.extend([
-                "# Download model from HuggingFace",
-                f"echo 'Checking for model: {spec.get('model_name', 'Unknown')}...'",
-                "",
-                "# Check if HF_TOKEN is set",
-                "if [ -z \"$HF_TOKEN\" ]; then",
-                "    echo 'HF_TOKEN not set. Checking huggingface-cli login...'",
-                "    if ! huggingface-cli whoami &>/dev/null; then",
-                "        echo ''",
-                "        echo 'ERROR: Not logged into HuggingFace!'",
-                "        echo ''",
-                "        echo 'Please either:'",
-                "        echo '  1. Set HF_TOKEN environment variable:'",
-                "        echo '     export HF_TOKEN=hf_...'",
-                "        echo ''",
-                "        echo '  2. Or login with huggingface-cli:'",
-                "        echo '     huggingface-cli login'",
-                "        echo ''",
-                "        exit 1",
-                "    fi",
-                "else",
-                "    echo 'Using HF_TOKEN from environment'",
-                "fi",
-                "",
-                f"echo 'Downloading {hf_repo} to {model_path}...'",
-                f"mkdir -p {model_path}",
-                "",
-                "# Use hf download (huggingface-hub CLI)",
-                f"huggingface-cli download {hf_repo} --local-dir {model_path}",
-                "",
-                f"echo '✓ Model downloaded to {model_path}'",
-                "",
-            ])
-        else:
-            script_lines.extend([
-                "# Model already downloaded",
-                f"echo '✓ Model already exists at {model_path}'",
-                "",
-            ])
-
-    # tt-metal setup - sandboxed installation
-    metal_commit = spec.get('tt_metal_commit', '')
-    if metal_commit and vllm_info:
-        # Create sandboxed tt-metal next to vLLM
-        vllm_parent = str(Path(vllm_info['path']).parent)
-        sandbox_metal_path = f"{vllm_parent}/tt-metal-{metal_commit[:7]}"
-
-        script_lines.extend([
-            "# Setup sandboxed tt-metal (isolated from main installation)",
-            f"echo 'Setting up tt-metal commit {metal_commit} in sandbox...'",
-            "",
-            f"# Check if sandbox already exists",
-            f"if [ -d {sandbox_metal_path} ]; then",
-            f"    echo '  Sandbox exists at {sandbox_metal_path}'",
-            f"    cd {sandbox_metal_path}",
-            f"    git fetch origin",
-            f"    git checkout {metal_commit}",
-            "else",
-            f"    echo '  Cloning tt-metal to {sandbox_metal_path}...'",
-            f"    git clone https://github.com/tenstorrent/tt-metal.git {sandbox_metal_path}",
-            f"    cd {sandbox_metal_path}",
-            f"    git checkout {metal_commit}",
-            "fi",
-            "",
-            "# Check build dependencies before compiling",
-            "echo 'Checking build dependencies...'",
-            "MISSING_DEPS=0",
-            "",
-            "# Check for clang-17",
-            "if ! command -v clang-17 &> /dev/null; then",
-            "    echo '  ✗ clang-17 not found'",
-            "    echo '    Install: sudo apt install clang-17 (Ubuntu/Debian)'",
-            "    MISSING_DEPS=1",
-            "else",
-            "    echo '  ✓ clang-17 found'",
-            "fi",
-            "",
-            "# Check for numactl",
-            "if ! command -v numactl &> /dev/null; then",
-            "    echo '  ✗ numactl not found'",
-            "    echo '    Install: sudo apt install numactl (Ubuntu/Debian)'",
-            "    MISSING_DEPS=1",
-            "else",
-            "    echo '  ✓ numactl found'",
-            "fi",
-            "",
-            "# Check for MPI (openmpi or mpich)",
-            "if ! command -v mpirun &> /dev/null && ! command -v mpiexec &> /dev/null; then",
-            "    echo '  ✗ MPI not found (openmpi or mpich)'",
-            "    echo '    Install: sudo apt install libopenmpi-dev (Ubuntu/Debian)'",
-            "    MISSING_DEPS=1",
-            "else",
-            "    echo '  ✓ MPI found'",
-            "fi",
-            "",
-            "# Check for libcapstone",
-            "if ! ldconfig -p | grep -q libcapstone.so; then",
-            "    echo '  ✗ libcapstone not found'",
-            "    echo '    Install: sudo apt install libcapstone-dev (Ubuntu/Debian)'",
-            "    MISSING_DEPS=1",
-            "else",
-            "    echo '  ✓ libcapstone found'",
-            "fi",
-            "",
-            "if [ $MISSING_DEPS -eq 1 ]; then",
-            "    echo ''",
-            "    echo 'ERROR: Missing required build dependencies!'",
-            "    echo 'Please install the missing packages and run this script again.'",
-            "    exit 1",
-            "fi",
-            "",
-            "echo 'All dependencies found. Proceeding with build...'",
-            "",
-            "git submodule update --init --recursive",
-            "",
-            "# Build tt-metal with RPATH flag to avoid library linking issues",
-            "CMAKE_BUILD_WITH_INSTALL_RPATH=TRUE ./build_metal.sh",
-            "",
-        ])
-
-    # vLLM setup
-    vllm_commit = spec.get('vllm_commit', '')
-    if vllm_commit and vllm_info:
-        script_lines.extend([
-            "# Setup vLLM",
-            f"echo 'Checking out vLLM commit {vllm_commit}...'",
-            f"cd {vllm_info['path']}",
-            "git fetch origin",
-            f"git checkout {vllm_commit}",
-            "",
-            "# Create/update venv",
-            "if [ ! -d ~/tt-vllm-venv ]; then",
-            "    python3 -m venv ~/tt-vllm-venv",
-            "fi",
-            "source ~/tt-vllm-venv/bin/activate",
-            "",
-            "# Install dependencies",
-            "pip install --upgrade pip",
-            f"export vllm_dir={vllm_info['path']}",
-            "source $vllm_dir/tt_metal/setup-metal.sh",
-            "",
-            "# Install the sandboxed tt-metal build into venv",
-            f"echo 'Installing tt-metal from {sandbox_metal_path}...'",
-            f"pip install -e {sandbox_metal_path}",
-            "",
-            "# Check if ttnn is already accessible (may be from tt-metal build)",
-            "if python3 -c 'import ttnn' 2>/dev/null; then",
-            "    echo '✓ ttnn already accessible, skipping pip install'",
-            "else",
-            "    echo 'Installing ttnn via pip...'",
-            "    pip install --upgrade ttnn",
-            "fi",
-            "",
-            "pip install --upgrade pytest",
-            "pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48",
-            "pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu",
-            "",
-        ])
-
-    # Get vLLM configuration from spec
+    # Get vLLM parameters from spec
     device_model_spec = spec.get('device_model_spec', {})
     max_context = device_model_spec.get('max_context', 65536)
     max_num_seqs = device_model_spec.get('max_num_seqs', 16)
     block_size = device_model_spec.get('block_size', 64)
-    device_type = spec.get('device_type', 'N150')
 
-    # Determine sandboxed tt-metal path
-    if metal_commit and vllm_info:
-        vllm_parent = str(Path(vllm_info['path']).parent)
-        sandbox_metal_path = f"{vllm_parent}/tt-metal-{metal_commit[:7]}"
+    # Get tensor parallel size (optional, only for multi-chip)
+    tensor_parallel = spec.get('vllm_args', {}).get('tensor_parallel_size')
+
+    # Get tt-metal commit
+    metal_commit = spec.get('tt_metal_commit', 'main')
+    vllm_commit = spec.get('vllm_commit', 'dev')
+
+    commands = {}
+
+    # === DOWNLOAD COMMAND (if model not downloaded) ===
+    if not model_exists and hf_repo:
+        commands['download'] = f"""# Download model from HuggingFace
+huggingface-cli download {hf_repo} --local-dir {model_path}
+
+# Note: If you get authentication errors, either:
+#   1. Set HF_TOKEN environment variable: export HF_TOKEN=hf_...
+#   2. Or login with: huggingface-cli login"""
     else:
-        sandbox_metal_path = metal_info['path'] if metal_info else '~/tt-metal'
+        commands['download'] = f"# Model already downloaded at {model_path}"
 
-    # Model path from detection
-    model_info = detect_model_download(spec)
-    model_path = model_info['path'] if model_info else f"~/models/{spec.get('model_name', 'model')}"
+    # === RUN COMMAND ===
+    # Build environment variables
+    env_vars = f"export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE={device_type} && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH"
 
-    # Configuration info
-    script_lines.extend([
-        "echo ''",
-        "echo '================================'",
-        "echo 'Setup complete!'",
-        "echo '================================'",
-        "echo ''",
-        "echo 'Configuration:'",
-        f"echo '  Model: {spec.get('model_name', 'N/A')}'",
-        f"echo '  Device: {device_type}'",
-        f"echo '  Max context: {max_context:,} tokens'",
-        f"echo '  Sandboxed tt-metal: {sandbox_metal_path}'",
-        "echo ''",
-    ])
+    # Add architecture name for Blackhole devices
+    if 'P' in device_type.upper():  # P100, P150, etc.
+        env_vars += " && export TT_METAL_ARCH_NAME=blackhole"
 
-    # Generate companion scripts
-    safe_name = re.sub(r'[^a-zA-Z0-9-]', '_', spec.get('model_name', 'model').lower())
-    launcher_script = f"~/tt-scratchpad/vllm-scripts/vllm_launcher_{safe_name}.py"
-    start_script_path = f"~/tt-scratchpad/vllm-scripts/start_{safe_name}.sh"
+    # Build vLLM command
+    vllm_flags = [
+        f"--model {model_path}",
+        "--host 0.0.0.0",
+        "--port 8000",
+        f"--max-model-len {max_context}",
+        f"--max-num-seqs {max_num_seqs}",
+        f"--block-size {block_size}",
+    ]
 
-    script_lines.extend([
-        "# Create vLLM launcher script (handles TT model registration)",
-        "mkdir -p ~/tt-scratchpad/vllm-scripts",
-        f"cat > {launcher_script} << 'EOFLAUNCHER'",
-        "#!/usr/bin/env python3",
-        "\"\"\"",
-        f"vLLM Launcher for {spec.get('model_name', 'N/A')}",
-        f"Device: {device_type}",
-        "\"\"\"",
-        "import runpy",
-        "import sys",
-        "import os",
-        "",
-        "# Add tt-vllm to path",
-        "sys.path.insert(0, os.path.expanduser('~/tt-vllm'))",
-        "",
-        "# Import and register TT models",
-        "from examples.offline_inference_tt import register_tt_models",
-        "",
-        "if __name__ == '__main__':",
-        "    # Display environment configuration",
-        "    print('='*70)",
-        f"    print('vLLM Launcher for {spec.get('model_name', 'N/A')}')",
-        "    print('='*70)",
-        "    print()",
-        "    ",
-        "    # Verify and display device configuration",
-        "    mesh_device = os.environ.get('MESH_DEVICE')",
-        "    tt_metal_home = os.environ.get('TT_METAL_HOME')",
-        "    ",
-        "    print(f'MESH_DEVICE: {mesh_device}')",
-        "    print(f'TT_METAL_HOME: {tt_metal_home}')",
-        "    print(f'PYTHONPATH: {os.environ.get(\"PYTHONPATH\", \"not set\")}')",
-        "    print()",
-        "    ",
-        "    if not mesh_device:",
-        "        print('WARNING: MESH_DEVICE not set!')",
-        "        print('This may cause device detection issues.')",
-        "        print()",
-        "    ",
-        "    print('Registering Tenstorrent models with vLLM...')",
-        "    register_tt_models()",
-        "    print('✓ TT models registered')",
-        "    print()",
-        "    print('Starting vLLM API server...')",
-        "    print('This may take 2-5 minutes for first model load.')",
-        "    print('='*70)",
-        "    print()",
-        "    ",
-        "    # Start the vLLM API server with provided arguments",
-        "    runpy.run_module('vllm.entrypoints.openai.api_server', run_name='__main__')",
-        "EOFLAUNCHER",
-        "",
-        f"chmod +x {launcher_script}",
-        "",
-        "# Generate start script with recommended parameters",
-        f"cat > {start_script_path} << 'EOFSTART'",
-        "#!/bin/bash",
-        "# Auto-generated vLLM start script",
-        f"# Model: {spec.get('model_name', 'N/A')}",
-        f"# Device: {device_type}",
-        "",
-        "cd ~/tt-vllm",
-        "source ~/tt-vllm-venv/bin/activate",
-        f"export TT_METAL_HOME={sandbox_metal_path}",
-        f"export MESH_DEVICE={device_type}",
-        f"export HF_MODEL={model_path}",
-        f"export LLAMA_DIR={model_path}",
-        "export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH",
-        "source ~/tt-vllm/tt_metal/setup-metal.sh",
-        "",
-        "echo 'Starting vLLM with recommended parameters...'",
-        "echo 'This may take 2-5 minutes for model loading on first run.'",
-        "echo ''",
-        "",
-        "# Use the generated launcher script (self-contained, no external dependencies)",
-        f"python {launcher_script} \\",
-        f"    --model {model_path} \\",
-        "    --host 0.0.0.0 \\",
-        "    --port 8000 \\",
-        f"    --max-model-len {max_context} \\",
-        f"    --max-num-seqs {max_num_seqs} \\",
-        f"    --block-size {block_size}",
-        "EOFSTART",
-        "",
-        f"chmod +x {start_script_path}",
-        "",
-        "# Generate scaled-down alternative script",
-        f"cat > {start_script_path}.scaled_down << 'EOFSCALED'",
-        "#!/bin/bash",
-        "# Auto-generated vLLM start script (SCALED DOWN)",
-        f"# Model: {spec.get('model_name', 'N/A')}",
-        f"# Device: {device_type}",
-        "# Use this if recommended parameters cause OOM",
-        "",
-        "cd ~/tt-vllm",
-        "source ~/tt-vllm-venv/bin/activate",
-        f"export TT_METAL_HOME={sandbox_metal_path}",
-        f"export MESH_DEVICE={device_type}",
-        f"export HF_MODEL={model_path}",
-        f"export LLAMA_DIR={model_path}",
-        "export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH",
-        "source ~/tt-vllm/tt_metal/setup-metal.sh",
-        "",
-        "echo 'Starting vLLM with scaled-down parameters (50% capacity)...'",
-        "echo 'Use this if recommended parameters cause out-of-memory errors.'",
-        "echo ''",
-        "",
-        "# Use the generated launcher script (self-contained, no external dependencies)",
-        f"python {launcher_script} \\",
-        f"    --model {model_path} \\",
-        "    --host 0.0.0.0 \\",
-        "    --port 8000 \\",
-        f"    --max-model-len {max_context // 2} \\",
-        f"    --max-num-seqs {max_num_seqs // 2} \\",
-        f"    --block-size {block_size}",
-        "EOFSCALED",
-        "",
-        f"chmod +x {start_script_path}.scaled_down",
-        "",
-        "echo ''",
-        "echo '================================'",
-        "echo 'Next Steps'",
-        "echo '================================'",
-        "echo ''",
-        "echo '1. Start vLLM server (recommended parameters):'",
-        f"echo '   bash {start_script_path}'",
-        "echo ''",
-        "echo '2. If server fails (OOM), try scaled-down parameters:'",
-        f"echo '   bash {start_script_path}.scaled_down'",
-        "echo ''",
-        "echo '3. Test server once running:'",
-        f"echo \"   curl http://localhost:8000/v1/chat/completions -H 'Content-Type: application/json' -d '{{\\\"model\\\": \\\"{spec.get('hf_model_repo', '')}\\\", \\\"messages\\\": [{{\\\"role\\\": \\\"user\\\", \\\"content\\\": \\\"Hello!\\\"}}], \\\"max_tokens\\\": 128}}'\"",
-        "echo ''",
-    ])
+    if tensor_parallel and tensor_parallel > 1:
+        vllm_flags.append(f"--tensor-parallel-size {tensor_parallel}")
 
-    return "\n".join(script_lines)
+    commands['run'] = f"""# Start vLLM server with {model_name} on {device_type}
+cd ~/tt-vllm && \\
+  source ~/tt-vllm-venv/bin/activate && \\
+  {env_vars} && \\
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \\
+  python ~/tt-scratchpad/start-vllm-server.py \\
+    {' \\\n    '.join(vllm_flags)}
+
+# Note: First model load takes 2-5 minutes
+# Server will be available at http://localhost:8000"""
+
+    # === TEST COMMAND ===
+    commands['test'] = f"""# Test vLLM server
+curl http://localhost:8000/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -d '{{
+    "model": "{hf_repo}",
+    "messages": [
+      {{"role": "user", "content": "Hello!"}}
+    ],
+    "max_tokens": 128
+  }}'"""
+
+    return commands
 
 
-def save_setup_script(script_content: str, model_name: str) -> str:
-    """Save setup script to file and make it executable."""
-    # Create setup scripts directory
-    scripts_dir = Path.home() / 'tt-scratchpad' / 'setup-scripts'
-    scripts_dir.mkdir(parents=True, exist_ok=True)
+def display_cli_commands(commands: Dict[str, str], spec: Dict):
+    """Display formatted CLI commands for user to copy-paste."""
+    print(f"\n{Colors.HEADER}{Colors.BOLD}{'='*70}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}Ready-to-Run Commands{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{'='*70}{Colors.ENDC}\n")
 
-    # Generate filename
-    safe_name = re.sub(r'[^a-zA-Z0-9-]', '_', model_name.lower())
-    script_path = scripts_dir / f"setup_{safe_name}.sh"
+    # Download command (if needed)
+    if 'download' in commands and 'already downloaded' not in commands['download']:
+        print(f"{Colors.BOLD}Step 1: Download Model{Colors.ENDC}")
+        print(f"{Colors.OKCYAN}{commands['download']}{Colors.ENDC}\n")
+        print(f"{Colors.BOLD}Step 2: Start vLLM Server{Colors.ENDC}")
+    else:
+        print(f"{Colors.OKGREEN}✓ Model already downloaded{Colors.ENDC}\n")
+        print(f"{Colors.BOLD}Step 1: Start vLLM Server{Colors.ENDC}")
 
-    # Write script
-    with open(script_path, 'w') as f:
-        f.write(script_content)
+    print(f"{Colors.OKCYAN}{commands['run']}{Colors.ENDC}\n")
 
-    # Make executable
-    os.chmod(script_path, 0o755)
+    print(f"{Colors.BOLD}Step {'3' if 'already downloaded' not in commands.get('download', '') else '2'}: Test Server{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}{commands['test']}{Colors.ENDC}\n")
 
-    return str(script_path)
+    # Show commits used
+    print(f"{Colors.WARNING}Configuration Details:{Colors.ENDC}")
+    print(f"  Model: {spec.get('model_name', 'Unknown')}")
+    print(f"  Device: {spec.get('device_type', 'Unknown')}")
+    print(f"  tt-metal commit: {spec.get('tt_metal_commit', 'main')}")
+    print(f"  vLLM commit: {spec.get('vllm_commit', 'dev')}")
+
+    device_model_spec = spec.get('device_model_spec', {})
+    print(f"  Max context: {device_model_spec.get('max_context', 'N/A'):,} tokens")
+    print(f"  Max sequences: {device_model_spec.get('max_num_seqs', 'N/A')}")
+
+    print(f"\n{Colors.OKGREEN}{'='*70}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}Copy-paste the commands above to get started!{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}{'='*70}{Colors.ENDC}\n")
 
 
 # ============================================================================
@@ -1391,43 +1133,29 @@ Examples:
         print_info("You can use this model right away")
         return 0
 
-    # Generate setup script
-    if args.setup or env_match['needs_setup']:
-        print_info("\nGenerating setup script...")
+    # Display CLI commands
+    print_info("\nGenerating CLI commands...")
 
-        if not metal_info or not vllm_info:
-            print_error("Cannot generate setup script: tt-metal or tt-vllm not found")
-            print_info("Please install these first:")
-            print_info("  tt-metal: git clone https://github.com/tenstorrent/tt-metal.git ~/tt-metal")
-            print_info("  tt-vllm: git clone --branch dev https://github.com/tenstorrent/vllm.git ~/tt-vllm")
-            return 1
+    # Get model download info
+    model_info = detect_model_download(selected)
 
-        script_content = generate_setup_script(selected, metal_info, vllm_info)
-        script_path = save_setup_script(script_content, selected.get('model_name', 'model'))
+    # Format commands
+    commands = format_cli_command(selected, model_info)
 
-        print_success(f"\n✓ Setup script saved to: {script_path}")
-        print_info("\nTo set up this environment:")
-        print(f"  bash {script_path}")
-        print_info("\nThis will:")
-        print("  • Checkout the correct tt-metal commit")
-        print("  • Rebuild tt-metal")
-        print("  • Checkout the correct vLLM commit")
-        print("  • Create/update Python venv")
-        print("  • Install all dependencies")
+    # Display formatted commands
+    display_cli_commands(commands, selected)
 
-        if not args.force:
-            print(f"\n{Colors.BOLD}Run setup now? (y/N):{Colors.ENDC} ", end='')
-            response = input().strip().lower()
-            if response == 'y':
-                print_info("\nExecuting setup script...")
-                result = subprocess.run(['bash', script_path])
-                if result.returncode == 0:
-                    print_success("\n✓ Setup completed successfully!")
-                else:
-                    print_error(f"\n✗ Setup failed with exit code {result.returncode}")
-                    return result.returncode
+    # Provide guidance
+    print_info("📋 Copy and paste the commands above to:")
+    print_info("  1. Download the model (if needed)")
+    print_info("  2. Start the vLLM server with correct configuration")
+    print_info("  3. Test that it's working")
+    print_info("")
+    print_info("💡 Note: You may need to checkout tt-metal and vLLM commits:")
+    print_info(f"  cd ~/tt-metal && git checkout {selected.get('tt_metal_commit', 'main')}")
+    print_info(f"  cd ~/tt-vllm && git checkout {selected.get('vllm_commit', 'dev')}")
 
-        return 0
+    return 0
 
 
 if __name__ == '__main__':
