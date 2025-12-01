@@ -1,134 +1,363 @@
-# Tenstorrent Cloud VS Code Extension
+# Tenstorrent Developer Extension
 
-A simple VS Code extension to help Tenstorrent instance users get started with a basic hello world setup.
+**Comprehensive walkthrough for building AI applications on Tenstorrent hardware** - from hardware detection to production deployment.
 
-## 🚀 Features
-
-- **Hello World Guide**: Interactive step-by-step guide to run your first Tenstorrent program
-- **Code Examples**: Complete Python code examples with tensor operations
-- **Terminal Integration**: Direct execution of Python code in VS Code terminal
-- **Auto-Launch**: Opens automatically when the extension loads
-
-## 📦 Installation
-
-### Development Setup
-1. Clone this repository
-2. Open in VS Code
-3. Press `F5` to run the extension in Extension Development Host
-4. Test the "Tenstorrent: Hello World" command
-
-### Production Installation
-1. Package the extension: `vsce package`
-2. Install the generated `.vsix` file in VS Code
-
-## 🎯 Quick Start
-
-1. **Open Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`)
-2. **Search for "Tenstorrent"** to see available commands
-3. **Run "Tenstorrent: Hello World"** to start with the interactive guide
-4. **Follow the step-by-step instructions** in the webview
-5. **Click "Run Hello World"** to execute the Python code
-
-## 🛠️ Commands
-
-| Command | Description |
-|---------|-------------|
-| `Tenstorrent: Hello World` | Interactive hello world guide with code examples |
-
-## 📁 Project Structure
-
-```
-tt-cloud-vscode-extension/
-├── README.md               # This file
-└── [Your extension files]  # Your custom implementation
-```
-
-## 🎨 How It Works
-
-### Hello World Guide
-- **Interactive Webview**: Beautiful step-by-step interface
-- **Code Examples**: Complete Python code with tensor operations
-- **Direct Execution**: Click button to run code in VS Code terminal
-- **Educational**: Learn basic Tenstorrent concepts
-
-### Key Features
-- **Simple Setup**: Just one command to remember
-- **Auto-Launch**: Opens automatically on extension load
-- **Code Integration**: Direct terminal execution
-- **Resource Links**: Quick access to Tenstorrent documentation
-
-## 🚀 Development
-
-### Prerequisites
-- Node.js (v16 or higher)
-- TypeScript
-- VS Code Extension API
-
-### Building
-```bash
-npm install
-npm run compile
-```
-
-### Testing
-```bash
-# Press F5 in VS Code to run in Extension Development Host
-# Or use the Command Palette to test commands
-```
-
-### Packaging
-```bash
-npm install -g vsce
-vsce package
-```
-
-## 📚 What's Included
-
-The extension provides:
-- **Basic Tensor Operations**: Learn fundamental tensor operations
-- **Matrix Operations**: Matrix multiplication and element-wise operations
-- **Code Examples**: Ready-to-run Python examples
-- **Best Practices**: Code organization and development patterns
-
-## 🎯 User Experience
-
-1. **Extension Loads**: When VS Code starts, the extension activates
-2. **Hello World Opens**: The interactive webview opens automatically
-3. **Step-by-Step Guide**: Follow the instructions to run your first program
-4. **Code Execution**: Click the button to run Python code in terminal
-5. **Learn and Explore**: Understand Tenstorrent basics through examples
-
-## 🔧 Configuration
-
-The extension is designed to work out of the box with minimal configuration:
-- No additional setup required
-- Works with any Python environment
-- Compatible with standard VS Code Python extensions
-
-## 📖 Learning Resources
-
-- [Tenstorrent Documentation](https://docs.tenstorrent.com)
-- [VS Code Extension API](https://code.visualstudio.com/api)
-- [Python Development in VS Code](https://code.visualstudio.com/docs/languages/python)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly with `F5`
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-- Check the [documentation](https://docs.tenstorrent.com)
-- Open an issue on GitHub
-- Join the Tenstorrent community
+<p align="center">
+  <img src="https://img.shields.io/badge/lessons-13-orange" alt="13 Lessons">
+  <img src="https://img.shields.io/badge/platform-Linux-blue" alt="Linux">
+  <img src="https://img.shields.io/badge/hardware-Wormhole%20%7C%20Blackhole-green" alt="Hardware">
+  <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="MIT License">
+</p>
 
 ---
 
-**Get started with Tenstorrent development today! 🎉**
+## 🎯 What is This?
+
+An interactive VSCode extension that guides you through **13 comprehensive lessons** to master Tenstorrent hardware and AI deployment. Learn by doing - from detecting hardware to deploying production LLM servers.
+
+**Perfect for:**
+- ✅ Developers new to Tenstorrent hardware
+- ✅ AI engineers deploying models on TT accelerators
+- ✅ Teams building production inference pipelines
+- ✅ Contributors to the Tenstorrent ecosystem
+
+---
+
+## 🚀 Quick Start
+
+### Installation
+
+1. **Clone this repository:**
+   ```bash
+   git clone https://github.com/tenstorrent/tt-vscode-extension.git
+   cd tt-vscode-extension
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Run in development mode:**
+   - Open in VSCode
+   - Press `F5` to launch Extension Development Host
+   - The welcome page opens automatically
+
+### Or Install from .vsix
+
+```bash
+npm run package
+code --install-extension tenstorrent-developer-extension-0.0.78.vsix
+```
+
+---
+
+## 📚 What You'll Learn
+
+### 🔧 **Fundamentals (Lessons 1-3)**
+Master the basics of Tenstorrent hardware and setup.
+
+- **Lesson 1: Hardware Detection** - Detect and verify TT hardware with `tt-smi`
+- **Lesson 2: Verify Installation** - Test your tt-metal setup
+- **Lesson 3: Download Models** - Get models from HuggingFace
+
+### 💻 **Application Development (Lessons 4-9)**
+Build real applications with increasing sophistication.
+
+- **Lesson 4: Interactive Chat** - CLI chat application with Generator API
+- **Lesson 5: API Server** - Flask HTTP server for model serving
+- **Lesson 6: vLLM Production** - Production-grade inference with OpenAI-compatible API
+- **Lesson 7: VSCode Chat** - `@tenstorrent` chat participant integration
+- **Lesson 8: Image Generation** - Stable Diffusion 3.5 Large on TT hardware
+- **Lesson 9: Coding Assistant** - AI coding assistant with prompt engineering
+
+### ⚙️ **Advanced Topics (Lessons 10-13)**
+Explore compilers, frameworks, and contribution opportunities.
+
+- **Lesson 10: TT-Forge** - MLIR-based compiler for PyTorch models
+- **Lesson 11: Bounty Program** - Contribute models and earn rewards
+- **Lesson 12: Exploring TT-Metalium** - TTNN tutorials and model zoo
+- **Lesson 13: TT-Metalium Cookbook** - 4 complete projects (Game of Life, Audio, Fractals, Filters)
+
+---
+
+## 🌟 Key Features
+
+### **Interactive Learning**
+- ✅ Click-to-run commands from lessons
+- ✅ Built-in terminal integration
+- ✅ Step-by-step progression with completion tracking
+- ✅ Visual feedback and validation
+
+### **Production-Ready Code**
+- ✅ Real templates you can customize
+- ✅ Best practices from the Tenstorrent team
+- ✅ Copy-paste ready examples
+- ✅ Scripts saved to `~/tt-scratchpad/`
+
+### **Hardware-Aware**
+- ✅ Auto-detects your device (N150, N300, T3K, P100, P150)
+- ✅ Provides hardware-specific guidance
+- ✅ Real-time device monitoring in statusbar
+- ✅ Configuration tuned for your device
+
+### **Multi-Framework Support**
+- ✅ **vLLM** - Production LLM serving
+- ✅ **TT-Forge** - PyTorch MLIR compiler
+- ✅ **TT-XLA** - JAX and PyTorch/XLA support
+- ✅ **TT-Metal** - Low-level kernel development
+
+---
+
+## 🎓 Learning Path
+
+### Beginner Path (First-time users)
+```
+1. Hardware Detection    (5 min) → Verify your setup
+2. Verify Installation   (5 min) → Test tt-metal works
+3. Download Model        (30 min) → Get Llama-3.1-8B
+6. vLLM Production       (20 min) → Production server
+7. VSCode Chat           (10 min) → Chat in VSCode
+```
+
+### Intermediate Path (Experienced developers)
+```
+1. Hardware Detection     (verify only)
+6. vLLM Production       (production serving)
+10. TT-Forge             (PyTorch compilation)
+13. TT-Metalium Cookbook (custom projects)
+```
+
+### Advanced Path (Contributors)
+```
+11. Bounty Program       (model bring-up)
+12. Exploring Metalium   (TTNN tutorials)
+13. Metalium Cookbook    (low-level projects)
+```
+
+**Total time to complete:** 4-6 hours (depending on download speeds and depth of exploration)
+
+---
+
+## 🛠️ Prerequisites
+
+### Hardware Requirements
+- **Tenstorrent accelerator:** N150, N300, T3K (Wormhole) or P100, P150 (Blackhole)
+- **RAM:** 32GB+ recommended (16GB minimum)
+- **Disk space:** 100GB+ free
+- **Network:** Fast connection (will download ~20-40GB models)
+
+### Software Requirements
+- **OS:** Linux (Ubuntu 20.04+, RHEL 8+, or compatible)
+- **Python:** 3.10+ (3.11 for TT-Forge)
+- **Node.js:** v16+ (for extension development)
+- **tt-metal:** Installed and working
+- **VSCode:** 1.80+
+
+### Quick Check
+```bash
+# Hardware detected?
+tt-smi
+
+# Python version OK?
+python3 --version
+
+# tt-metal working?
+python3 -c "import ttnn; print('✓ Ready')"
+```
+
+---
+
+## 📖 Documentation
+
+- **[FAQ.md](FAQ.md)** - Comprehensive FAQ with troubleshooting
+- **[CLAUDE.md](CLAUDE.md)** - Technical implementation details
+- **[DOCUMENTATION_REVIEW.md](DOCUMENTATION_REVIEW.md)** - Style guide and quality review
+- **Lesson files** - `content/lessons/*.md` (editable by technical writers)
+
+### External Resources
+- [Tenstorrent Documentation](https://docs.tenstorrent.com)
+- [tt-metal GitHub](https://github.com/tenstorrent/tt-metal)
+- [vLLM for TT](https://github.com/tenstorrent/vllm)
+- [TT-Forge](https://github.com/tenstorrent/tt-forge)
+- [Discord Community](https://discord.gg/tenstorrent)
+
+---
+
+## 🏗️ Architecture
+
+### Extension Structure
+
+```
+tt-vscode-extension/
+├── content/
+│   ├── lessons/          # 13 markdown lesson files
+│   ├── templates/        # Python script templates
+│   └── welcome/          # Welcome page HTML
+├── src/
+│   ├── extension.ts      # Main extension logic
+│   └── commands/         # Terminal command definitions
+├── package.json          # Extension manifest
+├── FAQ.md                # Comprehensive FAQ
+└── README.md             # This file
+```
+
+### Generated Files (User System)
+
+The extension creates files in your home directory:
+
+```
+~/tt-scratchpad/          # All generated scripts
+├── tt-chat-direct.py
+├── tt-api-server-direct.py
+├── tt-forge-classifier.py
+├── start-vllm-server.py
+└── ...
+
+~/models/                 # Downloaded models
+└── Llama-3.1-8B-Instruct/
+
+~/tt-vllm/               # vLLM repository
+~/tt-metal/              # TT-Metal repository
+```
+
+### Design Principles
+
+- **Content-first:** Lessons are markdown files - easy for technical writers to edit
+- **No custom UI:** Uses VSCode's native Walkthroughs API
+- **Terminal-integrated:** Commands run in persistent terminal
+- **Stateless commands:** Each command can run independently
+- **Hardware-aware:** Detects your device and adjusts instructions
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Here's how:
+
+### Report Issues
+- Use the [GitHub issue tracker](https://github.com/tenstorrent/tt-vscode-extension/issues)
+- Include hardware type, OS, and error messages
+- Check [FAQ.md](FAQ.md) first
+
+### Improve Documentation
+- Lessons are in `content/lessons/*.md`
+- Follow [Microsoft Writing Style Guide](https://learn.microsoft.com/en-us/style-guide/welcome/)
+- See [DOCUMENTATION_REVIEW.md](DOCUMENTATION_REVIEW.md) for standards
+
+### Add Features
+1. Fork the repository
+2. Create a feature branch
+3. Test thoroughly (`F5` in VSCode)
+4. Update documentation
+5. Submit a pull request
+
+### Join the Bounty Program
+- See **Lesson 11** for model bring-up opportunities
+- Contribute to the ecosystem
+- Earn rewards
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**"No hardware detected"**
+```bash
+# Try:
+tt-smi -r
+sudo tt-smi
+# See FAQ.md for full diagnostic steps
+```
+
+**"ImportError: undefined symbol"**
+```bash
+# Fix environment pollution:
+unset TT_METAL_HOME
+unset TT_METAL_VERSION
+# See Lesson 10 for details
+```
+
+**"vLLM won't start"**
+```bash
+# Check environment:
+echo $TT_METAL_HOME    # Should be ~/tt-metal
+echo $MESH_DEVICE      # Should match hardware
+# See FAQ.md for systematic debugging
+```
+
+**Need more help?**
+- Check [FAQ.md](FAQ.md) - covers 90% of issues
+- Join [Discord](https://discord.gg/tenstorrent)
+- Search [GitHub issues](https://github.com/tenstorrent/tt-metal/issues)
+
+---
+
+## 📊 What's New
+
+### Version 0.0.78 (Current)
+- ✨ Moved TT-Jukebox to standalone repository
+- 📝 Comprehensive FAQ added
+- 🔧 Fixed lesson numbering
+- 📚 Documentation review and improvements
+
+### Version 0.0.77
+- ✨ Added TT-XLA lesson (JAX support)
+- 🔧 Improved Forge lesson with environment variable fixes
+- 📝 Updated troubleshooting sections
+
+### Version 0.0.65-70
+- ✨ Two-terminal strategy implementation
+- ✨ Auto-configured UX (theme, terminal, extensions)
+- ✨ Statusbar device monitoring
+- 📚 Major documentation updates
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+## 💬 Community
+
+- **Discord:** https://discord.gg/tenstorrent (most active)
+- **GitHub:** https://github.com/tenstorrent
+- **Documentation:** https://docs.tenstorrent.com
+- **Twitter:** [@Tenstorrent](https://twitter.com/tenstorrent)
+
+---
+
+## 🙏 Acknowledgments
+
+Built by the Tenstorrent community with contributions from:
+- Tenstorrent engineering team
+- Open-source contributors
+- Community members providing feedback and testing
+
+**Special thanks to:**
+- All beta testers
+- Documentation contributors
+- Bug reporters
+
+---
+
+## 🎯 Get Started Now
+
+```bash
+# Clone and open in VSCode
+git clone https://github.com/tenstorrent/tt-vscode-extension.git
+cd tt-vscode-extension
+code .
+
+# Press F5 to launch
+# The welcome page opens automatically!
+```
+
+**Ready to build AI on Tenstorrent hardware? Let's go! 🚀**
+
+---
+
+**Questions?** Check [FAQ.md](FAQ.md) or join our [Discord](https://discord.gg/tenstorrent)!

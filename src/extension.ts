@@ -1958,200 +1958,6 @@ async function startCodingAssistant(): Promise<void> {
 }
 
 // ============================================================================
-// Lesson 10 - Environment Management with TT-Jukebox
-// ============================================================================
-
-/**
- * Command: tenstorrent.copyJukebox
- * Copies tt-jukebox.py script to ~/tt-scratchpad
- */
-async function copyJukebox(): Promise<void> {
-  const path = await import('path');
-  const fs = await import('fs');
-  const os = await import('os');
-
-  const extensionPath = extensionContext.extensionPath;
-  const templatePath = path.join(extensionPath, 'content', 'templates', 'tt-jukebox.py');
-
-  if (!fs.existsSync(templatePath)) {
-    vscode.window.showErrorMessage(
-      `Template not found at ${templatePath}. Please reinstall the extension.`
-    );
-    return;
-  }
-
-  const homeDir = os.homedir();
-  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
-
-  if (!fs.existsSync(scratchpadDir)) {
-    fs.mkdirSync(scratchpadDir, { recursive: true });
-  }
-
-  const destPath = path.join(scratchpadDir, 'tt-jukebox.py');
-
-  try {
-    fs.copyFileSync(templatePath, destPath);
-    fs.chmodSync(destPath, 0o755);
-
-    vscode.window.showInformationMessage(
-      `✅ Copied tt-jukebox.py to ${destPath}. Run it to explore compatible models!`
-    );
-  } catch (error) {
-    vscode.window.showErrorMessage(`Failed to copy tt-jukebox: ${error}`);
-  }
-}
-
-/**
- * Command: tenstorrent.listJukeboxModels
- * Lists all models compatible with detected hardware
- */
-function listJukeboxModels(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.LIST_JUKEBOX_MODELS.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '📜 Listing compatible models. Check terminal for results.'
-  );
-}
-
-/**
- * Command: tenstorrent.jukeboxFindChat
- * Finds models suitable for chat tasks
- */
-function jukeboxFindChat(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.JUKEBOX_FIND_CHAT.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '💬 Finding chat models. Check terminal for matches.'
-  );
-}
-
-/**
- * Command: tenstorrent.jukeboxSearchLlama
- * Fuzzy search for Llama model variants
- */
-function jukeboxSearchLlama(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.JUKEBOX_SEARCH_LLAMA.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '🔍 Searching for Llama models. Check terminal for results.'
-  );
-}
-
-/**
- * Command: tenstorrent.jukeboxSetupLlama
- * Generates setup script for Llama 3.1 8B environment
- */
-function jukeboxSetupLlama(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.JUKEBOX_SETUP_LLAMA.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '🛠️ Generating setup script. Setup script will be saved to ~/tt-scratchpad/setup-scripts/'
-  );
-}
-
-/**
- * Command: tenstorrent.runJukeboxSetup
- * Executes generated setup script to build environment
- */
-function runJukeboxSetup(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.RUN_JUKEBOX_SETUP.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '⚙️ Running setup script. This will take 10-15 minutes. Watch terminal for progress.'
-  );
-}
-
-/**
- * Command: tenstorrent.verifyJukeboxEnv
- * Verifies tt-metal and vLLM commits match specifications
- */
-function verifyJukeboxEnv(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.VERIFY_JUKEBOX_ENV.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '✅ Verifying environment. Check terminal for commit hashes and imports.'
-  );
-}
-
-/**
- * Command: tenstorrent.startJukeboxVllm
- * Starts vLLM server with configuration from model spec
- */
-function startJukeboxVllm(): void {
-  const terminal = getOrCreateTerminal('server');
-  const command = TERMINAL_COMMANDS.START_JUKEBOX_VLLM.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '🚀 Starting vLLM with spec-based configuration. First load takes 2-5 minutes.'
-  );
-}
-
-/**
- * Command: tenstorrent.testJukeboxOpenai
- * Tests vLLM server with OpenAI SDK
- */
-function testJukeboxOpenai(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.TEST_JUKEBOX_OPENAI.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '🧪 Testing with OpenAI SDK. Check terminal for response.'
-  );
-}
-
-/**
- * Command: tenstorrent.testJukeboxCurl
- * Tests vLLM server with curl HTTP request
- */
-function testJukeboxCurl(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.TEST_JUKEBOX_CURL.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '📡 Testing with curl. Check terminal for JSON response.'
-  );
-}
-
-/**
- * Command: tenstorrent.monitorJukeboxPv
- * Monitors streaming API response with pv (pipe viewer)
- */
-function monitorJukeboxPv(): void {
-  const terminal = getOrCreateTerminal('main');
-  const command = TERMINAL_COMMANDS.MONITOR_JUKEBOX_PV.template;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    '📊 Monitoring with pv. Watch terminal for streaming rate statistics.'
-  );
-}
-
-// ============================================================================
 // TT-Forge Commands (Lesson 11)
 // ============================================================================
 
@@ -2261,6 +2067,69 @@ function runForgeClassifier(): void {
   vscode.window.showInformationMessage(
     '🎨 Running image classifier. First compilation takes 2-5 min, then inference is fast!'
   );
+}
+
+// ============================================================================
+// Lesson 12 - TT-XLA JAX Integration Commands
+// ============================================================================
+
+/**
+ * Command: tenstorrent.installTtXla
+ * Installs TT-XLA PJRT plugin with JAX support
+ */
+function installTtXla(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.INSTALL_TT_XLA.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🚀 Installing TT-XLA PJRT plugin with JAX. This may take a few minutes...'
+  );
+}
+
+/**
+ * Command: tenstorrent.testTtXlaInstall
+ * Creates test script and runs it to verify TT-XLA installation
+ */
+function testTtXlaInstall(): void {
+  const terminal = getOrCreateTerminal('main');
+
+  // First create the test script
+  const createCommand = TERMINAL_COMMANDS.CREATE_TT_XLA_TEST.template;
+  runInTerminal(terminal, createCommand);
+
+  // Then run it
+  setTimeout(() => {
+    const testCommand = TERMINAL_COMMANDS.TEST_TT_XLA_INSTALL.template;
+    runInTerminal(terminal, testCommand);
+
+    vscode.window.showInformationMessage(
+      '🧪 Testing TT-XLA installation. You should see TtDevice in the output!'
+    );
+  }, 1000);
+}
+
+/**
+ * Command: tenstorrent.runTtXlaDemo
+ * Downloads and runs official GPT-2 demo with TT-XLA
+ */
+function runTtXlaDemo(): void {
+  const terminal = getOrCreateTerminal('main');
+
+  // First download the demo
+  const downloadCommand = TERMINAL_COMMANDS.DOWNLOAD_TT_XLA_DEMO.template;
+  runInTerminal(terminal, downloadCommand);
+
+  // Then run it after a short delay
+  setTimeout(() => {
+    const runCommand = TERMINAL_COMMANDS.RUN_TT_XLA_DEMO.template;
+    runInTerminal(terminal, runCommand);
+
+    vscode.window.showInformationMessage(
+      '🎯 Running GPT-2 demo on TT hardware via JAX. First run may take a few minutes!'
+    );
+  }, 2000);
 }
 
 // ============================================================================
@@ -2556,6 +2425,24 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
     undefined,
     context.subscriptions
   );
+}
+
+/**
+ * Command: tenstorrent.showFaq
+ *
+ * Opens the FAQ.md file in the editor for quick reference.
+ */
+async function showFaq(context: vscode.ExtensionContext): Promise<void> {
+  const path = await import('path');
+  const faqPath = path.join(context.extensionPath, 'FAQ.md');
+
+  try {
+    const doc = await vscode.workspace.openTextDocument(faqPath);
+    await vscode.window.showTextDocument(doc, { preview: false });
+    vscode.window.showInformationMessage('📖 FAQ opened - find answers to common questions!');
+  } catch (error) {
+    vscode.window.showErrorMessage('FAQ.md not found. Please check the extension installation.');
+  }
 }
 
 // ============================================================================
@@ -2996,6 +2883,7 @@ async function showCommandMenu(): Promise<void> {
     // Welcome & Getting Started
     { label: '🏠 Welcome & Getting Started', kind: vscode.QuickPickItemKind.Separator },
     { label: '$(home) Show Welcome Page', description: 'Overview and lesson cards', command: 'tenstorrent.showWelcome' },
+    { label: '$(question) Show FAQ', description: 'Frequently asked questions and troubleshooting', command: 'tenstorrent.showFaq' },
     { label: '$(book) Open Walkthrough', description: 'Step-by-step setup guide', command: 'tenstorrent.openWalkthrough' },
     { label: '$(refresh) Reset Walkthrough Progress', description: 'Start walkthrough from beginning', command: 'tenstorrent.resetProgress' },
 
@@ -3046,14 +2934,6 @@ async function showCommandMenu(): Promise<void> {
     { label: '🎨 Image Generation', kind: vscode.QuickPickItemKind.Separator },
     { label: '$(file-media) Generate Sample Image', description: 'SD 3.5 Large (1024x1024)', command: 'tenstorrent.generateRetroImage' },
     { label: '$(paintcan) Interactive Image Gen', description: 'Custom prompts with SD 3.5', command: 'tenstorrent.startInteractiveImageGen' },
-
-    // TT-Jukebox (Environment Management)
-    { label: '🎵 TT-Jukebox (Environment Manager)', kind: vscode.QuickPickItemKind.Separator },
-    { label: '$(copy) Copy Jukebox to Scratchpad', description: 'Deploy TT-Jukebox script', command: 'tenstorrent.copyJukebox' },
-    { label: '$(list-unordered) List Compatible Models', description: 'Show models for your hardware', command: 'tenstorrent.listJukeboxModels' },
-    { label: '$(search) Find Chat Models', description: 'Search for chat-capable models', command: 'tenstorrent.jukeboxFindChat' },
-    { label: '$(search) Search Llama Models', description: 'Find Llama model variants', command: 'tenstorrent.jukeboxSearchLlama' },
-    { label: '$(tools) Generate Setup Script', description: 'Create environment setup script', command: 'tenstorrent.jukeboxSetupLlama' },
 
     // TT-Forge (Image Classification)
     { label: '🔨 TT-Forge (MLIR Compiler)', kind: vscode.QuickPickItemKind.Separator },
@@ -3114,6 +2994,9 @@ export function activate(context: vscode.ExtensionContext): void {
     // Welcome page
     vscode.commands.registerCommand('tenstorrent.showWelcome', () => showWelcome(context)),
 
+    // FAQ
+    vscode.commands.registerCommand('tenstorrent.showFaq', () => showFaq(context)),
+
     // Walkthrough management commands
     vscode.commands.registerCommand('tenstorrent.openWalkthrough', openWalkthrough),
     vscode.commands.registerCommand('tenstorrent.resetProgress', resetProgress),
@@ -3169,19 +3052,6 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.createCodingAssistantScript', createCodingAssistantScript),
     vscode.commands.registerCommand('tenstorrent.startCodingAssistant', startCodingAssistant),
 
-    // Lesson 10 - Environment Management with TT-Jukebox
-    vscode.commands.registerCommand('tenstorrent.copyJukebox', copyJukebox),
-    vscode.commands.registerCommand('tenstorrent.listJukeboxModels', listJukeboxModels),
-    vscode.commands.registerCommand('tenstorrent.jukeboxFindChat', jukeboxFindChat),
-    vscode.commands.registerCommand('tenstorrent.jukeboxSearchLlama', jukeboxSearchLlama),
-    vscode.commands.registerCommand('tenstorrent.jukeboxSetupLlama', jukeboxSetupLlama),
-    vscode.commands.registerCommand('tenstorrent.runJukeboxSetup', runJukeboxSetup),
-    vscode.commands.registerCommand('tenstorrent.verifyJukeboxEnv', verifyJukeboxEnv),
-    vscode.commands.registerCommand('tenstorrent.startJukeboxVllm', startJukeboxVllm),
-    vscode.commands.registerCommand('tenstorrent.testJukeboxOpenai', testJukeboxOpenai),
-    vscode.commands.registerCommand('tenstorrent.testJukeboxCurl', testJukeboxCurl),
-    vscode.commands.registerCommand('tenstorrent.monitorJukeboxPv', monitorJukeboxPv),
-
     // Lesson 11 - Image Classification with TT-Forge
     vscode.commands.registerCommand('tenstorrent.buildForgeFromSource', buildForgeFromSource),
     vscode.commands.registerCommand('tenstorrent.installForge', installForge),
@@ -3189,7 +3059,12 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.createForgeClassifier', createForgeClassifier),
     vscode.commands.registerCommand('tenstorrent.runForgeClassifier', runForgeClassifier),
 
-    // Lesson 12 - Exploring TT-Metalium
+    // Lesson 12 - TT-XLA JAX Integration
+    vscode.commands.registerCommand('tenstorrent.installTtXla', installTtXla),
+    vscode.commands.registerCommand('tenstorrent.testTtXlaInstall', testTtXlaInstall),
+    vscode.commands.registerCommand('tenstorrent.runTtXlaDemo', runTtXlaDemo),
+
+    // Lesson 13 - Exploring TT-Metalium
     vscode.commands.registerCommand('tenstorrent.launchTtnnTutorials', launchTtnnTutorials),
     vscode.commands.registerCommand('tenstorrent.browseModelZoo', browseModelZoo),
     vscode.commands.registerCommand('tenstorrent.exploreProgrammingExamples', exploreProgrammingExamples),

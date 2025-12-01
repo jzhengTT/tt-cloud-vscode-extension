@@ -89,7 +89,7 @@ This model comes in **two formats** for different tools:
 
 **2. HuggingFace Format (in root directory):**
 - Files: `config.json`, `model.safetensors`, `tokenizer.json`
-- Used by: vLLM (Lessons 6-7), Jukebox (Lesson 10)
+- Used by: vLLM (Lessons 6-7), TT-Jukebox (standalone tool)
 - Path: `~/models/Llama-3.1-8B-Instruct/`
 
 **Why download both?** It ensures all lessons work without additional downloads later.

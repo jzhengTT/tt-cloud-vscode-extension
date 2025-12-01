@@ -73,7 +73,7 @@ Look for the `board_type` field to identify your hardware:
 - **p150** - Dual chip, newer architecture
   - Best for: Similar to N300 but with improvements
   - Context limit: 128K tokens
-  - Status: Use Lesson 10 (Jukebox) for validated configs
+  - Status: Check official documentation for validated configurations
 
 ### Quick Hardware Check
 
@@ -125,7 +125,7 @@ Device 3: Wormhole (n150)
 
 ## Troubleshooting: No Hardware Detected
 
-Don't worry if `tt-smi` doesn't detect your hardware immediately. This is common and usually easy to fix. Try these steps:
+Don't worry if `tt-smi` doesn't detect your hardware immediately. You can usually fix this easily. Try these steps:
 
 ### Check 1: Hardware Connection
 

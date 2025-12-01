@@ -1287,282 +1287,62 @@ Real production systems rely heavily on prompt engineering because:
 
 This lesson teaches a critical skill that applies to GPT, Claude, Gemini, and all future LLMs.
 
-## Lesson 10: Environment Management with TT-Jukebox
+## TT-Jukebox: Moved to Standalone Repository
 
-### The Version Mismatch Problem
+**Note:** TT-Jukebox has been extracted into its own open-source project!
 
-Each model in production has been tested with SPECIFIC commits of tt-metal and vLLM. Using the wrong versions leads to compilation failures, runtime errors, and crashes.
+**Repository Location:** `~/tt-jukebox/`
 
-### TT-Jukebox Solution
+TT-Jukebox is an intelligent environment manager for Tenstorrent hardware that:
+- Auto-detects your hardware (N150, N300, T3K, P100, etc.)
+- Fetches official model specifications from GitHub
+- Matches models to your hardware with intelligent filtering
+- Executes automated setup (checkouts, builds, downloads)
+- Shows transparent, copy-pasteable vLLM commands
 
-TT-Jukebox is an intelligent environment manager that:
-1. Detects your hardware automatically (tt-smi)
-2. Fetches official model specifications from GitHub
-3. Matches your task/model to compatible configurations
-4. **Checks if models are downloaded** (NEW in v0.0.32)
-5. Generates setup scripts with EXACT commit SHAs
-6. **Downloads models from HuggingFace if missing** (NEW in v0.0.32)
-7. Builds reproducible environments
-
-### Model Download Detection (v0.0.32)
-
-**Added Functions:**
-
-1. **detect_model_download()** - Checks if model exists:
-   - Location 1: `~/models/{model_name}/`
-   - Location 2: `~/.cache/huggingface/hub/models--{repo}/`
-   - Validates by checking for: `config.json`, `model.safetensors`, `pytorch_model.bin`
-
-2. **check_hf_token()** - Finds HuggingFace authentication:
-   - Checks `HF_TOKEN` environment variable
-   - Checks `~/.cache/huggingface/token` file
-   - Returns token or None
-
-3. **Modified generate_setup_script()** - Includes model download:
-   ```bash
-   # Check if HF_TOKEN is set
-   if [ -z "$HF_TOKEN" ]; then
-       if ! huggingface-cli whoami &>/dev/null; then
-           echo 'ERROR: Not logged into HuggingFace!'
-           exit 1
-       fi
-   fi
-
-   # Download model
-   huggingface-cli download {hf_repo} --local-dir {path}
-   ```
-
-4. **Modified display_model_spec()** - Shows download status:
-   ```
-   Model: Downloaded ✓
-     Path: ~/models/Llama-3.1-8B-Instruct
-
-   OR
-
-   Model: Not downloaded
-     Will download to: ~/models/Llama-3.1-8B-Instruct
-   ```
-
-### HuggingFace Authentication Options
-
-**Option 1: Environment variable (recommended)**
-```bash
-export HF_TOKEN=hf_...
-python3 tt-jukebox.py --model llama --setup
-```
-
-**Option 2: Command line argument**
-```bash
-python3 tt-jukebox.py --model llama --setup --hf-token hf_...
-```
-
-**Option 3: Use existing huggingface-cli login**
-```bash
-huggingface-cli login
-python3 tt-jukebox.py --model llama --setup
-```
-
-### Workflow
-
-1. Copy script: `tenstorrent.copyJukebox`
-2. List models: `python3 tt-jukebox.py --list`
-3. Find chat models: `python3 tt-jukebox.py chat`
-4. Search Llama: `python3 tt-jukebox.py --model llama`
-5. Generate setup: `python3 tt-jukebox.py --model llama-3.1-8b --setup`
-6. Execute setup: `bash ~/tt-scratchpad/setup-scripts/setup_llama_3_1_8b_instruct.sh`
-7. Verify: Check commits match, test imports
-8. Start vLLM: Use spec-based flags (max_model_len, max_num_seqs, block_size)
-9. Test: OpenAI SDK, curl, pv (pipe viewer)
-
-### Key Benefits
-
-- ✅ Eliminates version mismatch errors
-- ✅ Reproducible environments (share setup scripts)
-- ✅ Intelligent matching (task or model name)
-- ✅ Hardware-aware (only compatible models)
-- ✅ Automated setup (bash scripts do everything)
-- ✅ Production-ready configs (tested vLLM flags)
-- ✅ **Automatic model downloads** (NEW - no manual download needed)
-- ✅ **HF authentication support** (NEW - multiple auth methods)
-- ✅ **Intelligent experimental matching** (NEW v0.0.35 - try unvalidated models safely)
-
-### Experimental Model Matching (v0.0.35)
-
-**Problem:** Official model specs only include validated configurations. Users with newer hardware (like Blackhole P100) or wanting to try unvalidated models had limited options.
-
-**Solution:** Intelligent partial compatibility detection using `--show-experimental` flag.
-
-**How it works:**
-
-The `filter_by_hardware()` function now analyzes multiple factors to determine compatibility:
-
-1. **Exact Device Match** → Validated List (regardless of status)
-   - P100 models on P100 hardware
-   - Shows status badge: [EXPERIMENTAL], [FUNCTIONAL], or [COMPLETE]
-
-2. **Same Architecture Family** → Experimental List
-   - Architecture families:
-     - Wormhole: N150, N300, T3K, N150X4
-     - Blackhole: P100, P150, P150X4, P150X8
-   - Example: N150 model might work on N300 (both wormhole_b0)
-   - Example: P150 model might work on P100 (both blackhole)
-
-3. **Smaller Model on Larger Device** → Experimental List
-   - Parameter count ≤ 8B
-   - User device "larger" than spec device (crude heuristic by device numbers)
-   - Example: N150 (8B model) might work on T3K
-
-4. **Official Experimental Status** → Experimental List
-   - Models marked `status: "EXPERIMENTAL"` in JSON
-   - But device doesn't match exactly
-
-**Display Features:**
-
-- Compatibility reason shown for each experimental model
-- Status badges in both validated and experimental lists
-- Conservative parameters automatically applied (33% reduction)
-- Clear warnings about unvalidated status
-
-**Usage Examples:**
+### Quick Start
 
 ```bash
-# List validated models only (default)
+# Navigate to the repository
+cd ~/tt-jukebox
+
+# List compatible models
 python3 tt-jukebox.py --list
 
-# List validated + experimental models
-python3 tt-jukebox.py --list --show-experimental
+# Find chat models
+python3 tt-jukebox.py chat
 
-# Search for Llama models, include experimental
-python3 tt-jukebox.py --model llama --show-experimental
+# Search for specific model
+python3 tt-jukebox.py --model llama
 
-# Find chat models on P100 Blackhole
-python3 tt-jukebox.py chat --show-experimental
+# Get ready-to-run vLLM command
+python3 tt-jukebox.py --model llama-3.1-8b
+
+# Full automated setup
+python3 tt-jukebox.py --model llama-3.1-8b --setup --force
 ```
 
-**Output Example (P100 hardware):**
+### Documentation
 
-```
-✓ VALIDATED MODELS
+For complete documentation, see:
+- `~/tt-jukebox/README.md` - Full project documentation
+- `~/tt-jukebox/USAGE_EXAMPLES.md` - Detailed usage examples
+- `~/tt-jukebox/tt-jukebox.py` - Source code with inline documentation
 
-Llama Family:
-  • Llama-3.1-8B-Instruct [EXPERIMENTAL]
-    Context: 65536 tokens, Disk: 20 GB
+### Why a Separate Repository?
 
-⚠ EXPERIMENTAL MODELS (not validated)
+TT-Jukebox is now a standalone tool that can be:
+- ✅ Used independently of the VSCode extension
+- ✅ Version controlled separately
+- ✅ Shared across teams
+- ✅ Integrated into CI/CD pipelines
+- ✅ Contributed to by the community
 
-Llama Family:
-  • Llama-3.1-70B (validated for P150)
-    Reason: same architecture (blackhole)
-    Context: 131072 tokens, Disk: 140 GB
-```
-
-**Implementation Details:**
-
-File: `content/templates/tt-jukebox.py`
-
-- `filter_by_hardware()` (lines 323-401) - Enhanced compatibility logic
-- `display_model_spec()` (lines 545-599) - Shows compatibility reasons
-- `apply_conservative_params()` (lines 460-481) - 33% parameter reduction
-- `list_compatible_models()` (lines 953-1036) - Separate validated/experimental display
-
-**Architecture Detection:**
-
-Reads from model specs JSON:
-- `device_type`: N150, N300, P100, etc.
-- `env_vars.ARCH_NAME`: wormhole_b0, blackhole
-- `status`: COMPLETE, FUNCTIONAL, EXPERIMENTAL
-- `param_count`: Model size in billions
-
-**Conservative Parameters:**
-
-Experimental models automatically get reduced parameters to minimize OOM:
-- `max_context`: 67% of original (e.g., 65536 → 43,008)
-- `max_num_seqs`: 67% of original (e.g., 16 → 10)
-- Applied in `apply_conservative_params()`
-- Marked with `_is_experimental: true` flag
-
-**Benefits for Blackhole P100:**
-
-- Official P100 models show in validated list (with EXPERIMENTAL badge)
-- Other Blackhole models (P150, P150X4) show as experimental
-- Conservative params reduce risk of OOM on unvalidated configs
-- Clear compatibility reasons help users make informed decisions
-
-### Model Specs Caching (v0.0.35)
-
-**Problem:** Fetching model specs from GitHub on every run is slow and wasteful.
-
-**Solution:** Cache model specs locally for 1 hour.
-
-**Implementation:**
-
-Cache location: `~/tt-scratchpad/cache/`
-- `model_specs.json` - Cached specifications
-- `model_specs_timestamp.txt` - Unix timestamp of cache creation
-
-**Behavior:**
-
-1. **First run:** Fetches from GitHub, saves to cache
-   ```
-   ℹ Fetching model specifications from tt-inference-server...
-   ✓ Fetched 247 model specifications
-   ℹ Cached to ~/tt-scratchpad/cache/model_specs.json
-   ```
-
-2. **Subsequent runs (< 1 hour):** Uses cache
-   ```
-   ℹ Using cached model specifications (15 minutes old)
-   ✓ Loaded 247 model specifications from cache
-   ```
-
-3. **After 1 hour:** Automatically refreshes from GitHub
-
-4. **Manual refresh:** Use `--refresh-cache` flag
-   ```bash
-   python3 tt-jukebox.py --list --refresh-cache
-   ```
-
-**Benefits:**
-
-- ✅ Faster startup (no network delay)
-- ✅ Works offline (if cache exists)
-- ✅ Reduces GitHub API load
-- ✅ Still stays current (1 hour TTL)
-
-**Code:**
-
-File: `content/templates/tt-jukebox.py`
-- `fetch_model_specs(force_refresh=False)` (lines 287-375)
-- Creates `~/tt-scratchpad/cache/` directory automatically
-- Checks timestamp, falls back to fetch if stale
-- Saves both JSON and timestamp on successful fetch
-
-### Bug Fixes (v0.0.35)
-
-**Fixed: NoneType comparison error in experimental filtering**
-
-**Problem:** Some model specs have `param_count: null` in JSON, causing `'<=' not supported between instances of 'NoneType' and 'int'` error when using `--show-experimental`.
-
-**Fix:** Added None check before comparison:
-```python
-param_count = spec.get('param_count')
-if param_count is None:
-    param_count = 999  # Unknown size, assume large
-```
-
-**Task Aliases Added:**
-- `video` → maps to `generate_video` (searches for video models)
-- `image` → maps to `generate_image` (searches for image models)
-
-**Usage:**
-```bash
-# Now works without error
-python3 tt-jukebox.py video --show-experimental
-
-# Shorter aliases
-python3 tt-jukebox.py video
-python3 tt-jukebox.py image
-```
+The project includes:
+- Full source code
+- Comprehensive README
+- Usage examples for all hardware types
+- MIT License for open-source use
 
 ## Lesson 11: Image Classification with TT-Forge (2025-11-14)
 
@@ -1768,4 +1548,176 @@ output = compiled_model(input_tensor)
 - TT-Forge-Models (169 validated): https://github.com/tenstorrent/tt-forge-models
 - Environment variable issue: https://github.com/tenstorrent/tt-forge/issues/529
 - Discord: https://discord.gg/tenstorrent
+
+## Lesson 12: JAX Inference with TT-XLA (2025-11-27)
+
+**Status:** Implemented (v0.0.77) - Production-ready alternative to TT-Forge
+
+### Overview
+
+TT-XLA is Tenstorrent's production-ready XLA-based compiler that provides JAX and PyTorch/XLA support with multi-chip capabilities. Unlike TT-Forge (experimental, single-chip), TT-XLA is mature and supports N300/T3K/Galaxy systems.
+
+**Key advantages:**
+- ✅ **Simple installation:** Wheel-based via pip (no building)
+- ✅ **Python 3.10+ compatible:** Works with standard Python versions
+- ✅ **No tt-metal rebuild:** Works with existing installation
+- ✅ **Multi-chip ready:** Tensor parallelism (TP) and data parallelism (DP)
+- ✅ **Production-tested:** Most mature compiler in the stack
+
+### User Problem Solved
+
+**Context:** User's cloud environment constraints:
+- tt-metal locked at SHA 9b67e09
+- Python 3.10.12 (cannot change)
+- TT-Forge requires Python 3.11+ and complex build
+- User reported: "I still can't get the forge lesson to work. Let's try another tact."
+
+**Solution:** TT-XLA installation via PJRT plugin:
+```bash
+python3 -m venv tt-xla-venv
+source tt-xla-venv/bin/activate
+pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+pip install jax flax transformers
+```
+
+### Architecture
+
+**PJRT (Portable JAX Runtime):**
+- Google's standard interface for hardware backends
+- Used by TPUs, GPUs, now Tenstorrent
+- Enables automatic device selection
+- No custom integration code needed
+
+**Stack:**
+```
+Your Code (JAX)
+    ↓
+TT-XLA PJRT Plugin (pjrt-plugin-tt wheel)
+    ↓
+TT-MLIR Compiler (bundled in wheel)
+    ↓
+TT-Metal (existing ~/tt-metal)
+    ↓
+Hardware (N150/N300/T3K/Galaxy)
+```
+
+**Why this works without rebuilding tt-metal:**
+The `pjrt-plugin-tt` wheel includes:
+1. TT-MLIR compiler (bundled)
+2. PJRT interface (connects JAX to hardware)
+3. Runtime compatibility layer (interfaces with tt-metal)
+
+### Implementation
+
+**Files created:**
+
+1. **`content/lessons/12-tt-xla-jax.md`** - Complete lesson with:
+   - Installation instructions
+   - JAX test script
+   - Official GPT-2 demo
+   - Multi-chip configuration
+   - Comparison table: TT-XLA vs TT-Forge vs TT-Metal
+   - Troubleshooting section
+
+2. **`TT_XLA_INSTALL_GUIDE.md`** - Standalone reference guide
+
+**Files modified:**
+
+1. **`src/commands/terminalCommands.ts`** - Added 5 commands:
+   - `INSTALL_TT_XLA` - Creates venv and installs PJRT plugin
+   - `CREATE_TT_XLA_TEST` - Creates JAX test script
+   - `TEST_TT_XLA_INSTALL` - Runs test to verify TtDevice
+   - `DOWNLOAD_TT_XLA_DEMO` - Downloads GPT-2 demo
+   - `RUN_TT_XLA_DEMO` - Runs GPT-2 inference
+
+2. **`src/extension.ts`** - Added 3 command handlers:
+   - `installTtXla()` - Installs TT-XLA PJRT plugin
+   - `testTtXlaInstall()` - Creates and runs test script
+   - `runTtXlaDemo()` - Downloads and runs GPT-2 demo
+
+3. **`package.json`** - Version 0.0.76 → 0.0.77
+   - Added 3 commands to contributes.commands
+   - Added walkthrough step between Forge and Bounty Program
+   - Completion event: `onCommand:tenstorrent.testTtXlaInstall`
+
+### Lesson Structure
+
+**Step 1: Install TT-XLA**
+- One pip command installs PJRT plugin
+- Works with Python 3.10+
+- No compilation required
+
+**Step 2: Test Installation**
+- Creates JAX test script at `~/tt-scratchpad/test-tt-xla.py`
+- Verifies TtDevice detection
+- Simple dot product example
+
+**Step 3: Run Official GPT-2 Demo**
+- Downloads from tt-forge repository
+- Uses Flax (JAX neural network library)
+- Runs inference on TT hardware
+
+**Step 4: Multi-Chip Configuration**
+- N300 (2 chips): `jax.config.update('jax_tt_mesh', '1x2')`
+- T3K (8 chips): `jax.config.update('jax_tt_mesh', '1x8')`
+- Galaxy (32 chips): `jax.config.update('jax_tt_mesh', '8x4')`
+
+**Step 5: Next Steps**
+- Image classification with JAX/Flax
+- More demos from tt-forge repository
+- PyTorch/XLA support (still maturing)
+
+### Comparison: TT-XLA vs TT-Forge vs TT-Metal
+
+| Feature | TT-XLA | TT-Forge | TT-Metal |
+|---------|--------|----------|----------|
+| **Maturity** | Production | Beta/Experimental | Stable |
+| **Installation** | Wheel (easy) | Build from source | Already installed |
+| **Python version** | 3.10+ | 3.11+ | Any |
+| **Multi-chip** | ✅ Yes (TP/DP) | ❌ Single-chip | ✅ Yes |
+| **Frameworks** | JAX, PyTorch/XLA | PyTorch, ONNX | Direct API |
+| **Use case** | Production inference | Experimental models | Low-level kernels |
+
+### Key Benefits
+
+**For constrained cloud environments:**
+- No Python version change required
+- No tt-metal rebuild needed
+- Simple one-command installation
+- Production-ready maturity
+
+**For general users:**
+- Learn JAX framework (increasingly popular)
+- Production-grade inference
+- Multi-chip scaling path
+- PJRT standard interface (portable knowledge)
+
+### Resources
+
+**Official Documentation:**
+- TT-XLA Docs: https://docs.tenstorrent.com/tt-xla/
+- TT-XLA Repo: https://github.com/tenstorrent/tt-xla
+- TT-Forge Demos: https://github.com/tenstorrent/tt-forge/tree/main/demos/tt-xla
+- PJRT Overview: https://opensource.googleblog.com/2023/05/pjrt-simplifying-ml-hardware-and-framework-integration.html
+
+**JAX Resources:**
+- JAX Documentation: https://jax.readthedocs.io/
+- Flax (Neural Networks): https://flax.readthedocs.io/
+- JAX Tutorials: https://jax.readthedocs.io/en/latest/notebooks/quickstart.html
+
+### Walkthrough Hierarchy
+
+Current lesson progression:
+- Lesson 10: Environment Management with TT-Jukebox
+- Lesson 11: Image Classification with TT-Forge (experimental)
+- **Lesson 12: JAX Inference with TT-XLA** (production) ← NEW
+- Bounty Program: Model Bring-Up
+- Exploring TT-Metalium
+- TT-Metalium Cookbook
+
+This completes the compiler stack coverage:
+- **Low-level:** TT-Metal (Lessons 1-10)
+- **Experimental:** TT-Forge (Lesson 11)
+- **Production:** TT-XLA (Lesson 12) ← NEW
+- **Specialized:** vLLM for LLMs (Lessons 6-7)
 

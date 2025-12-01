@@ -1,80 +1,83 @@
-# Lesson 11: Image Classification with TT-XLA
+# Lesson 11: Image Classification with TT-Forge
 
 ## Welcome to the High-Level Compiler! 🎨
 
-You've been working with **TT-Metal** (low-level kernels) and **vLLM** (production LLM serving). Now meet **TT-XLA**: Tenstorrent's **XLA-based compiler** that brings PyTorch and JAX models to TT hardware with production-grade multi-chip support.
+You've been working with **TT-Metal** (low-level kernels) and **vLLM** (production LLM serving). Now meet **TT-Forge**: Tenstorrent's **MLIR-based compiler** that aims to bring PyTorch models to TT hardware with less manual kernel programming.
 
 **The Goal:**
 ```python
+import forge
 import torch
-import torch_xla
-import torch_xla.core.xla_model as xm
+import torchvision
 
 # PyTorch model
 model = torchvision.models.mobilenet_v2(pretrained=True)
+model.eval()
 
-# Move to XLA device (TT hardware)
-device = xm.xla_device()
-model = model.to(device)
-input_tensor = input_tensor.to(device)
+# Compile for TT hardware
+sample_input = torch.randn(1, 3, 224, 224)
+compiled_model = forge.compile(model, sample_inputs=[sample_input])
 
 # Run on TT accelerators
-output = model(input_tensor)
+output = compiled_model(input_tensor)
 ```
 
-**Why TT-XLA?**
-- ✅ **Production-ready:** Most mature compiler for TT hardware
-- ✅ **Multi-chip support:** Tensor parallelism across N150/N300/T3K/Galaxy
-- ✅ **PyTorch + JAX:** Support for both major frameworks
-- ✅ **XLA ecosystem:** Leverage Google's battle-tested compiler infrastructure
+**Why TT-Forge?**
+- ✅ **Higher-level API:** Simpler than manual TT-Metal programming
+- ✅ **PyTorch integration:** Works with torchvision models
+- ✅ **Automatic optimization:** Graph-level transformations
+- ⚠️ **Experimental status:** Under active development, limited model support
 
 ---
 
-## What is TT-XLA?
+## What is TT-Forge?
 
-**TT-XLA** is Tenstorrent's **XLA (Accelerated Linear Algebra)** backend that connects PyTorch and JAX to TT hardware:
+**TT-Forge** is Tenstorrent's **MLIR-based compiler** that attempts to automatically convert PyTorch models to TT hardware:
 
 ```
 ┌─────────────────────────────────────────┐
-│         PyTorch / JAX Models            │  ← Your code
+│         PyTorch Models                  │  ← Your code
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│        XLA Compiler (Google)            │  ← Graph optimization
-│     (Fusion, layout, lowering)          │
+│        Forge Frontend                   │  ← Graph capture
+│     (Trace PyTorch operations)          │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│         TT-XLA PJRT Plugin              │  ← TT-specific backend
-│   (Tenstorrent's XLA implementation)    │
+│         MLIR Compiler                   │  ← Optimization passes
+│   (Fusion, layout, operator lowering)   │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│              TT-METAL                   │  ← Kernel execution
-│        (What you learned so far)        │
+│              TTNN                       │  ← TT Neural Net ops
+│        (TT-Metal operations)            │
 └──────────────────┬──────────────────────┘
                    │
 ┌──────────────────▼──────────────────────┐
-│         N150 / N300 / T3K / Nebula      │  ← Hardware
+│         N150 / N300 / T3K               │  ← Hardware (single-chip)
 └─────────────────────────────────────────┘
 ```
 
 **Key Benefits:**
-- ✅ **Production-ready:** Most mature TT compiler stack
-- ✅ **Multi-chip support:** Tensor parallelism (TP), data parallelism (DP)
-- ✅ **Battle-tested:** Based on Google's XLA (used in TPUs, GPUs)
-- ✅ **PyTorch + JAX:** Support for two major frameworks
-- ✅ **Performance:** Graph-level optimizations + TT hardware acceleration
+- ✅ **Simpler than TT-Metal:** Automatic graph optimization
+- ✅ **PyTorch native:** Use familiar torchvision models
+- ✅ **Validated models:** 169 tested examples in tt-forge-models
+
+**Limitations:**
+- ⚠️ **Experimental:** Many models fail to compile
+- ⚠️ **Single-chip only:** No multi-chip support yet
+- ⚠️ **Limited operators:** Not all PyTorch ops supported
 
 **Compiler Stack Comparison:**
 
 | Compiler | Maturity | Multi-chip | Frameworks | Use Case |
 |----------|----------|------------|------------|----------|
-| **TT-XLA** | Production | ✅ Yes (TP/DP) | PyTorch, JAX | **Recommended for production** |
-| TT-Forge-FE | Beta | ❌ Single-chip | ONNX, TF | Experimental |
+| TT-XLA | Production | ✅ Yes (TP/DP) | PyTorch, JAX | Production multi-chip |
+| **TT-Forge** | **Beta** | ❌ Single-chip | PyTorch, ONNX | **This lesson - experimental** |
 | TT-Metal | Stable | ✅ Yes | Direct API | Low-level control |
 
-**Current Status:** TT-XLA is the **recommended path** for bringing PyTorch/JAX models to TT hardware. Supports Nebula boards (N150/N300/T3K); Galaxy support coming soon.
+**Current Status (December 2025):** TT-Forge is experimental. Start with validated models from tt-forge-models. For production workloads, use TT-Metal directly or wait for TT-XLA maturity.
 
 ---
 

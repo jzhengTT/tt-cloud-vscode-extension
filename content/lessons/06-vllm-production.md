@@ -205,7 +205,7 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 --block-size 64
 ```
 
-**Note:** P100 support may be experimental. See "Alternative: Use Jukebox" below for validated configurations.
+**Note:** P100 support may be experimental. See "Alternative: Use TT-Jukebox" below for validated configurations.
 
 ---
 
@@ -231,7 +231,7 @@ tt-smi -s
 - `"n300"` → Use **Wormhole N300** configuration above
 - `"t3k"` → Use **Wormhole T3K** configuration above
 - `"p100"` → Use **Blackhole P100** configuration above
-- `"p150"` → Use Lesson 10 (Jukebox) for validated config
+- `"p150"` → Use **TT-Jukebox** (see below) for validated config
 
 **Quick extract:**
 ```bash
@@ -974,7 +974,7 @@ pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 
 **Struggling with version mismatches or hardware compatibility?**
 
-TT-Jukebox (Lesson 10) automates everything in this lesson:
+TT-Jukebox is a standalone tool that automates everything in this lesson:
 - ✅ Detects your hardware automatically
 - ✅ Finds compatible models for your device
 - ✅ Sets correct tt-metal and vLLM commits
@@ -984,12 +984,12 @@ TT-Jukebox (Lesson 10) automates everything in this lesson:
 
 **Quick start with Jukebox:**
 ```bash
-# Copy Jukebox script
-mkdir -p ~/tt-scratchpad
-# (Extension provides this in templates/)
+# Clone TT-Jukebox (standalone repository)
+git clone https://github.com/tenstorrent/tt-jukebox.git ~/tt-jukebox
+cd ~/tt-jukebox
 
 # Find chat models for your hardware
-python3 ~/tt-scratchpad/tt-jukebox.py chat
+python3 tt-jukebox.py chat
 
 # Select a model → generates setup script → run it → done!
 ```
@@ -1008,7 +1008,7 @@ python3 ~/tt-scratchpad/tt-jukebox.py chat
 - Working on a team (share setup scripts)
 - Trying experimental hardware (P100, P150)
 
-See [Lesson 10: TT-Jukebox](#) for the complete guide.
+See the [TT-Jukebox repository](https://github.com/tenstorrent/tt-jukebox) for the complete guide.
 
 ---
 
