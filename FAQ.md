@@ -1,6 +1,6 @@
 # Tenstorrent Developer Extension - FAQ
 
-**Frequently Asked Questions** - Your quick reference for common questions, troubleshooting, and tips from all 13 lessons.
+**Frequently Asked Questions** - Your quick reference for common questions, troubleshooting, and tips from all 14 lessons.
 
 ---
 

@@ -13,7 +13,7 @@
 
 ## 🎯 What is This?
 
-An interactive VSCode extension that guides you through **13 comprehensive lessons** to master Tenstorrent hardware and AI deployment. Learn by doing - from detecting hardware to deploying production LLM servers.
+An interactive VSCode extension that guides you through **14 comprehensive lessons** to master Tenstorrent hardware and AI deployment. Learn by doing - from detecting hardware to deploying production LLM servers.
 
 **Perfect for:**
 - ✅ Developers new to Tenstorrent hardware
@@ -71,13 +71,14 @@ Build real applications with increasing sophistication.
 - **Lesson 8: Image Generation** - Stable Diffusion 3.5 Large on TT hardware
 - **Lesson 9: Coding Assistant** - AI coding assistant with prompt engineering
 
-### ⚙️ **Advanced Topics (Lessons 10-13)**
+### ⚙️ **Advanced Topics (Lessons 10-14)**
 Explore compilers, frameworks, and contribution opportunities.
 
 - **Lesson 10: TT-Forge** - MLIR-based compiler for PyTorch models
-- **Lesson 11: Bounty Program** - Contribute models and earn rewards
-- **Lesson 12: Exploring TT-Metalium** - TTNN tutorials and model zoo
-- **Lesson 13: TT-Metalium Cookbook** - 4 complete projects (Game of Life, Audio, Fractals, Filters)
+- **Lesson 11: TT-XLA** - Production-ready JAX compiler with PJRT integration
+- **Lesson 12: Bounty Program** - Contribute models and earn rewards
+- **Lesson 13: Exploring TT-Metalium** - TTNN tutorials and model zoo
+- **Lesson 14: TT-Metalium Cookbook** - 4 complete projects (Game of Life, Audio, Fractals, Filters)
 
 ---
 
@@ -125,14 +126,15 @@ Explore compilers, frameworks, and contribution opportunities.
 1. Hardware Detection     (verify only)
 6. vLLM Production       (production serving)
 10. TT-Forge             (PyTorch compilation)
-13. TT-Metalium Cookbook (custom projects)
+14. TT-Metalium Cookbook (custom projects)
 ```
 
 ### Advanced Path (Contributors)
 ```
-11. Bounty Program       (model bring-up)
-12. Exploring Metalium   (TTNN tutorials)
-13. Metalium Cookbook    (low-level projects)
+11. TT-XLA               (JAX production compiler)
+12. Bounty Program       (model bring-up)
+13. Exploring Metalium   (TTNN tutorials)
+14. Metalium Cookbook    (low-level projects)
 ```
 
 **Total time to complete:** 4-6 hours (depending on download speeds and depth of exploration)
@@ -253,7 +255,7 @@ We welcome contributions! Here's how:
 5. Submit a pull request
 
 ### Join the Bounty Program
-- See **Lesson 11** for model bring-up opportunities
+- See **Lesson 12** for model bring-up opportunities
 - Contribute to the ecosystem
 - Earn rewards
 
@@ -296,7 +298,14 @@ echo $MESH_DEVICE      # Should match hardware
 
 ## 📊 What's New
 
-### Version 0.0.78 (Current)
+### Version 0.0.79 (Current)
+- 📖 Added FAQ command - accessible from welcome page, command menu, and Command Palette
+- ✅ Fixed all Jukebox references (now standalone tool)
+- 🎯 Made TT-XLA lesson (Lesson 11) visible on welcome page
+- 📝 Updated lesson numbering throughout (now 14 lessons total)
+- ✍️ Improved writing style (active voice, dated statements)
+
+### Version 0.0.78
 - ✨ Moved TT-Jukebox to standalone repository
 - 📝 Comprehensive FAQ added
 - 🔧 Fixed lesson numbering
