@@ -250,6 +250,7 @@ cd ~/tt-metal && \
   git checkout main && \
   git pull origin main && \
   git submodule update --init --recursive && \
+  ./install_dependencies.sh && \
   ./build_metal.sh
 ```
 
@@ -258,14 +259,18 @@ cd ~/tt-metal && \
 **What this does:**
 - Updates tt-metal to latest main branch
 - Updates all submodules (including SFPI libraries)
+- **Installs/updates system dependencies** (libraries, drivers, build tools)
 - Rebuilds tt-metal with latest changes
-- Takes ~5-10 minutes depending on hardware
+- Takes ~5-15 minutes depending on hardware and system state
 
 **When to do this:**
 - First time setting up vLLM
 - After updating tt-metal with `git pull`
 - If you see "sfpi not found" errors
 - If you see "InputRegistry" or other API compatibility errors
+- After system updates or fresh installations
+
+**Why install_dependencies.sh?** tt-metal requires specific system libraries, kernel modules, and build tools. This script ensures all dependencies are installed before building. Skipping this step can cause build failures or runtime errors.
 
 **Why rebuild?** tt-metal includes compiled components (like SFPI) that must be built after code updates. The `build_metal.sh` script handles all necessary compilation steps.
 
@@ -875,15 +880,21 @@ These errors indicate tt-metal needs to be updated and rebuilt. Solution:
 ```bash
 # Update and rebuild tt-metal (Step 0)
 cd ~/tt-metal
+./build_metal.sh --clean       # Clean old build artifacts first
 git checkout main
 git pull origin main
 git submodule update --init --recursive
-./build_metal.sh
+./install_dependencies.sh      # Install/update system dependencies
+./build_metal.sh               # Build tt-metal
 
 # Then upgrade ttnn in vLLM venv
 source ~/tt-vllm-venv/bin/activate
 pip install --upgrade ttnn
 ```
+
+**Why `--clean`?** Removes all cached build artifacts to prevent conflicts between old and new versions. This forces a complete rebuild from scratch.
+
+**Why install_dependencies.sh?** Ensures all system libraries, kernel modules, and build tools are installed before building. Prevents build failures and runtime errors.
 
 **Why rebuild?** tt-metal includes compiled components (SFPI libraries, kernels) that must be built after code updates. The vLLM dev branch expects the latest tt-metal APIs.
 

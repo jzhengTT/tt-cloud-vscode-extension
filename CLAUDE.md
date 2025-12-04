@@ -12,6 +12,96 @@ This is a VS Code extension for Tenstorrent hardware setup and development. The 
 4. **Template Scripts** - Production-ready Python scripts for inference and API servers
 5. **Auto-configured UX** - Automatically sets Solarized Dark theme and opens terminal on first activation
 
+## Critical Best Practice: install_dependencies.sh
+
+**⚠️ Always run `install_dependencies.sh` when installing or updating tt-metal.**
+
+```bash
+cd ~/tt-metal
+./install_dependencies.sh  # Install system dependencies
+./build_metal.sh           # Then build tt-metal
+```
+
+**Why this matters:**
+- Installs required system libraries (build tools, kernel modules, device drivers)
+- Prevents common build failures due to missing dependencies
+- Only takes 2-5 minutes but saves hours of debugging
+- Should be run after system updates or fresh installations
+
+**When to run it:**
+- First time installing tt-metal
+- After `git pull` on tt-metal (before rebuilding)
+- After system updates
+- When encountering build errors
+- When setting up vLLM or other tt-metal-dependent projects
+
+## Advanced Build Options
+
+### Essential Troubleshooting Flag
+
+**`--clean` - Remove all build artifacts**
+```bash
+./build_metal.sh --clean
+```
+- Removes all cached builds and intermediate files
+- Forces complete rebuild from scratch
+- **Critical for troubleshooting build issues**
+- Run this before rebuilding if you encounter strange errors
+
+### Development Optimization Flags
+
+**`--enable-ccache` - Speed up rebuilds**
+```bash
+./build_metal.sh --enable-ccache
+```
+- Caches compilation results
+- Makes subsequent builds **much faster** (often 10x or more)
+- Essential for active development and iteration
+- Recommended for users working on Lesson 11 (Forge) or custom kernel development
+
+**Build type flags:**
+```bash
+./build_metal.sh --release         # Production build (default, optimized)
+./build_metal.sh --development     # Debug + optimizations (RelWithDebInfo)
+./build_metal.sh --debug           # Debug symbols, no optimizations
+```
+- `--release`: Best performance, minimal debug info (default)
+- `--development`: Balanced - some debug info with optimizations
+- `--debug`: Full debug symbols, easier debugging, slower execution
+
+### Educational/Example Flags
+
+**`--build-programming-examples` - Build tt-metal examples**
+```bash
+./build_metal.sh --build-programming-examples
+```
+- Builds the programming examples from tt-metal repository
+- Useful for "Exploring TT-Metalium" lesson
+- Provides hands-on code examples for learning
+
+### Combining Flags
+
+You can combine multiple flags:
+```bash
+# Fast development builds with examples
+./build_metal.sh --enable-ccache --development --build-programming-examples
+
+# Clean rebuild with ccache
+./build_metal.sh --clean
+./build_metal.sh --enable-ccache
+```
+
+### When to Use Each Flag
+
+| Flag | When to Use |
+|------|-------------|
+| `--clean` | Troubleshooting build errors, after major updates |
+| `--enable-ccache` | Active development, frequent rebuilds |
+| `--release` | Production deployment, benchmarking |
+| `--development` | Debugging while keeping reasonable performance |
+| `--debug` | Deep debugging of tt-metal itself |
+| `--build-programming-examples` | Learning tt-metal programming patterns |
+
 ## Build and Development Commands
 
 ```bash
@@ -925,7 +1015,7 @@ The lesson teaches:
 - Initially tried pinning to tt-metal v0.62.0-rc9 (August 2025)
 - Found that vLLM dev requires latest tt-metal APIs
 - **Solution:** Use latest on both repos (simpler, better tested)
-- **Critical:** Must rebuild tt-metal after git pull with `./build_metal.sh`
+- **Critical:** Must run `./install_dependencies.sh` then `./build_metal.sh` after git pull
 
 **Model Configuration:**
 - Model: Llama-3.1-8B-Instruct
@@ -1720,4 +1810,10 @@ This completes the compiler stack coverage:
 - **Experimental:** TT-Forge (Lesson 11)
 - **Production:** TT-XLA (Lesson 12) ← NEW
 - **Specialized:** vLLM for LLMs (Lessons 6-7)
+
+---
+
+## User-Facing Documentation
+
+**For user-facing FAQs and troubleshooting**, see `FAQ.md` in the project root. That file is deployed with the extension and contains comprehensive user guidance.
 

@@ -107,6 +107,34 @@ Low-level examples show how to write custom kernels in TT-Metalium.
 | **Matrix Multiply (Multi Core)** | Parallel execution across cores | `tt_metal/programming_examples/matmul/matmul_multi_core/` |
 | **Custom SFPU Ops** | Writing custom math functions | Tech reports and examples |
 
+### Building Programming Examples
+
+By default, tt-metal doesn't build the programming examples. To build them:
+
+```bash
+cd ~/tt-metal
+./build_metal.sh --build-programming-examples
+```
+
+**What this does:**
+- Compiles all programming examples into executables
+- Makes them directly runnable (no need for pytest wrappers)
+- Enables IDE integration and debugging
+- Takes an additional 5-10 minutes during build
+
+**When to build examples:**
+- Learning low-level TT-Metalium programming
+- Studying kernel implementations
+- Modifying examples for your own projects
+- Debugging device-level issues
+
+**Running built examples:**
+```bash
+# Example: Run the hello world compute kernel
+cd ~/tt-metal/tt_metal/programming_examples/hello_world_compute_kernel
+./hello_world_compute_kernel
+```
+
 ---
 
 ## Part 2: Understanding the Architecture

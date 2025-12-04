@@ -1403,12 +1403,12 @@ async function updateTTMetal(): Promise<void> {
 
   const terminal = getOrCreateTerminal('main');
 
-  const command = `cd ${ttMetalPath} && git checkout main && git pull origin main && git submodule update --init --recursive && ./build_metal.sh`;
+  const command = `cd ${ttMetalPath} && git checkout main && git pull origin main && git submodule update --init --recursive && ./install_dependencies.sh && ./build_metal.sh`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '🔧 Updating and rebuilding TT-Metal. This takes 5-10 minutes. Watch terminal for progress.'
+    '🔧 Updating and rebuilding TT-Metal (including dependencies). This takes 5-15 minutes. Watch terminal for progress.'
   );
 }
 
@@ -2430,19 +2430,133 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
 /**
  * Command: tenstorrent.showFaq
  *
- * Opens the FAQ.md file in the editor for quick reference.
+ * Opens the FAQ in a rendered webview with search functionality.
  */
 async function showFaq(context: vscode.ExtensionContext): Promise<void> {
+  const panel = vscode.window.createWebviewPanel(
+    'tenstorrentFaq',
+    'Tenstorrent FAQ',
+    { viewColumn: vscode.ViewColumn.One, preserveFocus: false },
+    {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'welcome')]
+    }
+  );
+
+  const fs = await import('fs');
   const path = await import('path');
-  const faqPath = path.join(context.extensionPath, 'FAQ.md');
 
   try {
-    const doc = await vscode.workspace.openTextDocument(faqPath);
-    await vscode.window.showTextDocument(doc, { preview: false });
-    vscode.window.showInformationMessage('📖 FAQ opened - find answers to common questions!');
+    // Read FAQ markdown
+    const faqPath = path.join(context.extensionPath, 'FAQ.md');
+    const faqMarkdown = fs.readFileSync(faqPath, 'utf8');
+
+    // Read template
+    const templatePath = path.join(context.extensionPath, 'content', 'welcome', 'faq-template.html');
+    let template = fs.readFileSync(templatePath, 'utf8');
+
+    // Convert markdown to HTML (simple conversion)
+    const faqHtml = convertMarkdownToHtml(faqMarkdown);
+
+    // Inject FAQ content into template
+    panel.webview.html = template.replace('{{FAQ_CONTENT}}', faqHtml);
   } catch (error) {
-    vscode.window.showErrorMessage('FAQ.md not found. Please check the extension installation.');
+    panel.webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: var(--vscode-font-family); padding: 20px; color: var(--vscode-foreground); }
+          h1 { color: #FF6B35; }
+        </style>
+      </head>
+      <body>
+        <h1>Error Loading FAQ</h1>
+        <p>FAQ content could not be loaded. Please check the extension installation.</p>
+        <p>Error: ${error}</p>
+      </body>
+      </html>
+    `;
   }
+}
+
+/**
+ * Simple markdown to HTML converter for FAQ content
+ */
+function convertMarkdownToHtml(markdown: string): string {
+  let html = markdown;
+
+  // Escape HTML characters first
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // Code blocks (```bash ... ```)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_match, lang, code) => {
+    return `<pre><code class="language-${lang}">${code.trim()}</code></pre>`;
+  });
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3 id="$1">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 id="$1">$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Bold and italic
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+  // Unordered lists
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+  // Tables (basic support)
+  const tableRegex = /\|(.+)\|\n\|[-:\s|]+\|\n((?:\|.+\|\n?)+)/g;
+  html = html.replace(tableRegex, (_match, header, rows) => {
+    const headerCells = header.split('|').filter((s: string) => s.trim()).map((h: string) => `<th>${h.trim()}</th>`).join('');
+    const rowsHtml = rows.trim().split('\n').map((row: string) => {
+      const cells = row.split('|').filter((s: string) => s.trim()).map((c: string) => `<td>${c.trim()}</td>`).join('');
+      return `<tr>${cells}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${headerCells}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
+  });
+
+  // Paragraphs (lines separated by blank lines)
+  html = html.split('\n\n').map(para => {
+    para = para.trim();
+    // Don't wrap if already wrapped in a tag
+    if (para.match(/^<(h[1-6]|ul|ol|pre|table|div)/)) {
+      return para;
+    }
+    // Split into lines but keep list items together
+    if (para.includes('<li>')) {
+      return para;
+    }
+    return para ? `<p>${para.replace(/\n/g, '<br>')}</p>` : '';
+  }).join('\n');
+
+  // Q: and A: formatting for FAQ blocks
+  html = html.replace(/<h3>Q: (.+?)<\/h3>\s*<p><strong>A:<\/strong>(.+?)<\/p>/gs,
+    '<div class="qa-block"><h3>Q: $1</h3><p><strong>A:</strong>$2</p></div>');
+
+  // Sections (wrap each h2 and its content)
+  const sections = html.split(/(?=<h2)/g);
+  html = sections.map(section => {
+    if (section.trim().startsWith('<h2')) {
+      return `<div class="faq-section">${section}</div>`;
+    }
+    return section;
+  }).join('');
+
+  // Checkmarks and cross marks
+  html = html.replace(/✅/g, '<span class="checkmark">✅</span>');
+  html = html.replace(/❌/g, '<span class="crossmark">❌</span>');
+  html = html.replace(/⚠️/g, '<span class="warning">⚠️</span>');
+
+  return html;
 }
 
 // ============================================================================
