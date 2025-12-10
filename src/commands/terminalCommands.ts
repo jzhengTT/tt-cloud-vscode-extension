@@ -67,7 +67,49 @@ export interface CommandTemplate {
  * All terminal commands used in the walkthrough
  */
 export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
-  // Hardware Detection
+  // ========================================
+  // Lesson 0: Modern Setup with tt-installer 2.0
+  // ========================================
+
+  QUICK_INSTALL: {
+    id: 'quick-install',
+    name: 'Quick Install with tt-installer',
+    template: '/bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"',
+    description: 'One-command installation of the full Tenstorrent stack (interactive prompts)',
+  },
+
+  DOWNLOAD_INSTALLER: {
+    id: 'download-installer',
+    name: 'Download tt-installer Script',
+    template: 'cd ~ && curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh -O && chmod +x install.sh',
+    description: 'Downloads the tt-installer script for inspection and customization',
+  },
+
+  RUN_INTERACTIVE_INSTALL: {
+    id: 'run-interactive-install',
+    name: 'Run Interactive Installation',
+    template: 'cd ~ && ./install.sh',
+    description: 'Runs tt-installer with interactive prompts for customization',
+  },
+
+  RUN_NON_INTERACTIVE_INSTALL: {
+    id: 'run-non-interactive-install',
+    name: 'Run Non-Interactive Installation',
+    template: 'cd ~ && ./install.sh --mode-non-interactive --python-choice=new-venv --install-metalium-models-container=off --reboot-option=never',
+    description: 'Runs tt-installer in automated mode with recommended defaults',
+  },
+
+  TEST_METALIUM_CONTAINER: {
+    id: 'test-metalium-container',
+    name: 'Test tt-metalium Container',
+    template: 'tt-metalium "python3 -c \'import ttnn; print(f\\"TTNN version: {ttnn.__version__}\\"); print(\\"✅ tt-metalium container working!\\")\'"',
+    description: 'Verifies tt-metalium container is installed and TTNN is accessible',
+  },
+
+  // ========================================
+  // Lesson 1: Hardware Detection
+  // ========================================
+
   TT_SMI: {
     id: 'tt-smi',
     name: 'Hardware Detection',
@@ -75,7 +117,10 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     description: 'Scans for connected Tenstorrent devices and displays their status',
   },
 
-  // Verify Installation
+  // ========================================
+  // Lesson 2: Verify Installation
+  // ========================================
+
   VERIFY_INSTALLATION: {
     id: 'verify-installation',
     name: 'Verify TT-Metal Installation',
@@ -207,6 +252,77 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
       'echo "Testing Tenstorrent query..." && curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "Tell me about Tenstorrent hardware"}\' && echo "\n\nTesting haiku..." && curl -X POST http://localhost:8080/chat -H "Content-Type: application/json" -d \'{"prompt": "Write a haiku about AI"}\'',
     description: 'Tests the API server with multiple sequential curl requests',
   },
+
+  // ========================================
+  // Lesson 6: Production Inference with tt-inference-server
+  // ========================================
+
+  VERIFY_INFERENCE_SERVER_PREREQS: {
+    id: 'verify-inference-server-prereqs',
+    name: 'Verify tt-inference-server Prerequisites',
+    template: 'echo "=== Checking Prerequisites ===" && which docker && ls ~/.local/lib/tt-inference-server/run.py && tt-smi && echo "=== ✓ All prerequisites OK ==="',
+    description: 'Verifies Docker is installed, tt-inference-server run.py exists, and hardware is detected',
+  },
+
+  START_TT_INFERENCE_SERVER: {
+    id: 'start-tt-inference-server',
+    name: 'Start tt-inference-server (Basic)',
+    template: 'cd ~/.local/lib/tt-inference-server && python3 run.py --model Llama-3.1-8B-Instruct --device n150 --workflow server --docker-server',
+    description: 'Starts vLLM server via tt-inference-server for Llama 3.1 8B on N150',
+  },
+
+  START_TT_INFERENCE_SERVER_N150: {
+    id: 'start-tt-inference-server-n150',
+    name: 'Start tt-inference-server (N150 Config)',
+    template: 'cd ~/.local/lib/tt-inference-server && python3 run.py --model Llama-3.1-8B-Instruct --device n150 --workflow server --docker-server',
+    description: 'Starts vLLM server via tt-inference-server optimized for N150 hardware',
+  },
+
+  START_TT_INFERENCE_SERVER_N300: {
+    id: 'start-tt-inference-server-n300',
+    name: 'Start tt-inference-server (N300 Config)',
+    template: 'cd ~/.local/lib/tt-inference-server && python3 run.py --model Llama-3.1-8B-Instruct --device n300 --workflow server --docker-server',
+    description: 'Starts vLLM server via tt-inference-server optimized for N300 dual-chip hardware',
+  },
+
+  TEST_TT_INFERENCE_SERVER_SIMPLE: {
+    id: 'test-tt-inference-server-simple',
+    name: 'Test tt-inference-server (Simple)',
+    template: 'curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/json" -d \'{"model": "Llama-3.1-8B-Instruct", "prompt": "Explain what a Tenstorrent AI accelerator is in one sentence.", "max_tokens": 50, "temperature": 0.7}\'',
+    description: 'Tests the vLLM server started by tt-inference-server with OpenAI-compatible API',
+  },
+
+  TEST_TT_INFERENCE_SERVER_STREAMING: {
+    id: 'test-tt-inference-server-streaming',
+    name: 'Test tt-inference-server (Streaming)',
+    template: 'curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/json" -d \'{"model": "Llama-3.1-8B-Instruct", "prompt": "Write a haiku about AI acceleration:", "max_tokens": 100, "stream": true}\'',
+    description: 'Tests streaming responses from vLLM server (Server-Sent Events)',
+  },
+
+  TEST_TT_INFERENCE_SERVER_SAMPLING: {
+    id: 'test-tt-inference-server-sampling',
+    name: 'Test tt-inference-server (Sampling)',
+    template: 'echo "=== High Temperature (Creative) ===" && curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/json" -d \'{"model": "Llama-3.1-8B-Instruct", "prompt": "Once upon a time", "max_tokens": 50, "temperature": 1.2, "top_p": 0.95}\' && echo "\n\n=== Low Temperature (Deterministic) ===" && curl -X POST http://localhost:8000/v1/completions -H "Content-Type: application/json" -d \'{"model": "Llama-3.1-8B-Instruct", "prompt": "The capital of France is", "max_tokens": 10, "temperature": 0.1}\'',
+    description: 'Tests different sampling parameters with the OpenAI-compatible API',
+  },
+
+  CREATE_TT_INFERENCE_SERVER_CLIENT: {
+    id: 'create-tt-inference-server-client',
+    name: 'Create Python Client for tt-inference-server',
+    template: 'cat > ~/tt-scratchpad/tt-inference-client.py << \'EOF\'\nfrom openai import OpenAI\n\n# Point to the vLLM server started by tt-inference-server\nclient = OpenAI(\n    base_url="http://localhost:8000/v1",\n    api_key="dummy"  # Not used, but required by SDK\n)\n\ndef query_inference_server(prompt, max_tokens=100, temperature=0.7):\n    """Query vLLM server using OpenAI SDK"""\n    try:\n        response = client.completions.create(\n            model="Llama-3.1-8B-Instruct",\n            prompt=prompt,\n            max_tokens=max_tokens,\n            temperature=temperature\n        )\n        \n        generated_text = response.choices[0].text\n        print(f"Generated text: {generated_text}")\n        print(f"Tokens: {response.usage.total_tokens}")\n        return response\n    except Exception as e:\n        print(f"Error: {e}")\n        return None\n\nif __name__ == "__main__":\n    query_inference_server(\n        "Explain quantum computing to a 5-year-old:",\n        max_tokens=100,\n        temperature=0.8\n    )\nEOF\nchmod +x ~/tt-scratchpad/tt-inference-client.py && echo "✓ Created ~/tt-scratchpad/tt-inference-client.py (uses OpenAI SDK)"',
+    description: 'Creates a Python client using OpenAI SDK to connect to the vLLM server',
+  },
+
+  CREATE_TT_INFERENCE_SERVER_CONFIG: {
+    id: 'create-tt-inference-server-config',
+    name: 'Create tt-inference-server Config File',
+    template: 'echo "⚠️  Note: tt-inference-server does not use config files. Use command-line arguments instead:" && echo "Example: python3 run.py --model Llama-3.1-8B-Instruct --device n150 --workflow server --docker-server"',
+    description: 'Shows that tt-inference-server uses command-line arguments, not config files',
+  },
+
+  // ========================================
+  // Lesson 8: Image Generation (Stable Diffusion 3.5 Large)
+  // ========================================
 
   // Image Generation (Lesson 8) - Stable Diffusion 3.5 Large
   GENERATE_RETRO_IMAGE: {

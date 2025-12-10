@@ -213,6 +213,24 @@
     </div>
 
     <div class="section">
+        <h2>🛠️ Setup Information (Optional)</h2>
+        <p><strong>Already using Tenstorrent Cloud, Quietbox, or a preinstalled system?</strong> Your environment is ready - skip to the Learning Path below!</p>
+        <p>If you need to set up a fresh system, use tt-installer 2.0 for one-command installation:</p>
+
+        <div class="directory-info" style="margin: 15px 0; padding: 15px; background-color: rgba(255, 107, 53, 0.1); border-left: 4px solid var(--tt-orange);">
+            <p style="margin: 0 0 10px 0;"><strong>Quick Install:</strong></p>
+            <code style="font-size: 12px;">/bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"</code>
+            <p style="margin: 10px 0 0 0; font-size: 13px;">
+                📖 <a href="#" onclick="executeCommand('tenstorrent.runQuickInstall'); return false;">Run Quick Install</a> |
+                📥 <a href="#" onclick="executeCommand('tenstorrent.downloadInstaller'); return false;">Download Script</a> |
+                📚 <a href="https://github.com/tenstorrent/tt-installer" style="color: var(--tt-orange);">Full Documentation</a>
+            </p>
+        </div>
+
+        <p style="font-size: 13px; color: #cccccc;">tt-installer sets up drivers, firmware, tt-smi, HugePages, and tt-metalium containers in 5-15 minutes.</p>
+    </div>
+
+    <div class="section">
         <h2>📚 Learning Path</h2>
         <p>Follow these walkthroughs in order to go from hardware setup to production deployment:</p>
 
@@ -242,51 +260,60 @@
                 <p>Create a production-ready Flask API with the model loaded in memory.</p>
             </li>
 
+            <li class="walkthrough-item" onclick="openWalkthrough('tt-inference-server')">
+                <h3><span class="icon">🖥️</span>6. Production Inference with tt-inference-server</h3>
+                <p>Use Tenstorrent's official inference server for production deployments. Simple CLI, HTTP API, hardware-aware configuration, and official support!</p>
+            </li>
+
             <li class="walkthrough-item" onclick="openWalkthrough('vllm-production')">
-                <h3><span class="icon">🏭</span>6. Production Inference with vLLM</h3>
+                <h3><span class="icon">🏭</span>7. Production Inference with vLLM</h3>
                 <p>Deploy with vLLM - OpenAI-compatible APIs, continuous batching, and enterprise features.</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('vscode-chat')">
-                <h3><span class="icon">🤖</span>7. VSCode Chat Integration</h3>
+                <h3><span class="icon">🤖</span>8. VSCode Chat Integration</h3>
                 <p>Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent hardware.</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('image-generation')">
-                <h3><span class="icon">🎨</span>8. Image Generation with SD 3.5 Large</h3>
+                <h3><span class="icon">🎨</span>9. Image Generation with SD 3.5 Large</h3>
                 <p>Generate high-resolution 1024x1024 images on your Tenstorrent hardware using Stable Diffusion 3.5 Large - native TT acceleration!</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('coding-assistant')">
-                <h3><span class="icon">👨‍💻</span>9. Coding Assistant with Prompt Engineering</h3>
+                <h3><span class="icon">👨‍💻</span>10. Coding Assistant with Prompt Engineering</h3>
                 <p>Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn how to shape model behavior through system prompts!</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('forge-image-classification')">
-                <h3><span class="icon">🔨</span>10. Image Classification with TT-Forge</h3>
+                <h3><span class="icon">🔨</span>11. Image Classification with TT-Forge</h3>
                 <p>Explore TT-Forge - Tenstorrent's MLIR-based compiler! Start with validated models like MobileNetV2 for image classification. Learn forge.compile() and the path to high-level model deployment.</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('tt-xla-jax')">
-                <h3><span class="icon">⚡</span>11. JAX Inference with TT-XLA</h3>
+                <h3><span class="icon">⚡</span>12. JAX Inference with TT-XLA</h3>
                 <p>Master TT-XLA - Tenstorrent's production-ready XLA compiler! Simple wheel installation, JAX integration via PJRT, and multi-chip support. Works with Python 3.10+, no rebuilding required!</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('bounty-program')">
-                <h3><span class="icon">🤝</span>12. Bounty Program: Model Bring-Up</h3>
+                <h3><span class="icon">🤝</span>13. Bounty Program: Model Bring-Up</h3>
                 <p>Learn how to contribute to the Tenstorrent Bounty Program by bringing up new models. Master TT-Metal while becoming part of the open-source ecosystem!</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('explore-metalium')">
-                <h3><span class="icon">🔍</span>13. Exploring TT-Metalium</h3>
+                <h3><span class="icon">🔍</span>14. Exploring TT-Metalium</h3>
                 <p>Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the model zoo, and dive into programming examples.</p>
             </li>
 
             <li class="walkthrough-item" onclick="openWalkthrough('metalium-cookbook')">
-                <h3><span class="icon">📕</span>14. TT-Metalium Cookbook</h3>
+                <h3><span class="icon">📕</span>15. TT-Metalium Cookbook</h3>
                 <p>Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Game of Life, Audio Processing, Mandelbrot Fractals, and Image Filters.</p>
             </li>
         </ul>
+        <p style="margin-top: 20px; padding: 15px; background-color: rgba(255, 107, 53, 0.08); border-radius: 4px; font-size: 13px; color: #cccccc;">
+            💡 <strong>Note:</strong> These lessons assume you have a working Tenstorrent environment. If you need to set up from scratch, see the "Setup Information" section above.
+        </p>
+    </div>
     </div>
 
     <div class="section">

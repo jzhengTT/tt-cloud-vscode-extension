@@ -656,6 +656,99 @@ async function promptRecommendedExtensions(): Promise<void> {
 // Command Handlers
 // ============================================================================
 
+// ============================================================================
+// LESSON 0: Modern Setup with tt-installer 2.0
+// ============================================================================
+
+/**
+ * Command: tenstorrent.runQuickInstall
+ *
+ * Runs the one-command tt-installer quickstart.
+ * Downloads and executes the latest installer with interactive prompts.
+ */
+function runQuickInstall(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.QUICK_INSTALL.template;
+
+  vscode.window.showWarningMessage(
+    '⚠️ This will download and run the tt-installer script. Review the script at https://github.com/tenstorrent/tt-installer before continuing.'
+  );
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🚀 Running tt-installer. Follow the prompts in the terminal. Installation may take 5-15 minutes.'
+  );
+}
+
+/**
+ * Command: tenstorrent.downloadInstaller
+ *
+ * Downloads the tt-installer script for inspection.
+ */
+function downloadInstaller(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.DOWNLOAD_INSTALLER.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📥 Downloaded install.sh to your home directory. Review it with: less ~/install.sh'
+  );
+}
+
+/**
+ * Command: tenstorrent.runInteractiveInstall
+ *
+ * Runs tt-installer with interactive prompts for customization.
+ */
+function runInteractiveInstall(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.RUN_INTERACTIVE_INSTALL.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '⚙️ Running interactive installation. Follow the prompts in the terminal.'
+  );
+}
+
+/**
+ * Command: tenstorrent.runNonInteractiveInstall
+ *
+ * Runs tt-installer in non-interactive mode with recommended defaults.
+ */
+function runNonInteractiveInstall(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.RUN_NON_INTERACTIVE_INSTALL.template;
+
+  vscode.window.showInformationMessage(
+    '🤖 Running non-interactive installation with recommended defaults. Check the terminal for progress.'
+  );
+
+  runInTerminal(terminal, command);
+}
+
+/**
+ * Command: tenstorrent.testMetaliumContainer
+ *
+ * Tests that the tt-metalium container is installed and working.
+ */
+function testMetaliumContainer(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.TEST_METALIUM_CONTAINER.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🧪 Testing tt-metalium container. Check the terminal for TTNN version output.'
+  );
+}
+
+// ============================================================================
+// LESSON 1: Hardware Detection
+// ============================================================================
+
 /**
  * Command: tenstorrent.runHardwareDetection
  *
@@ -1388,6 +1481,149 @@ function testApiMultipleDirect(): void {
     'Running multiple API tests. Watch the terminal for fast responses!'
   );
 }
+
+// ============================================================================
+// LESSON 6: Production Inference with tt-inference-server
+// ============================================================================
+
+/**
+ * Command: tenstorrent.verifyInferenceServerPrereqs
+ * Verifies tt-inference-server is installed, model is downloaded, and hardware is detected
+ */
+function verifyInferenceServerPrereqs(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.VERIFY_INFERENCE_SERVER_PREREQS.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🔍 Checking tt-inference-server prerequisites. Watch the terminal for results.'
+  );
+}
+
+/**
+ * Command: tenstorrent.startTtInferenceServer
+ * Starts vLLM server via tt-inference-server with basic configuration
+ */
+function startTtInferenceServer(): void {
+  const terminal = getOrCreateTerminal('server');
+  const command = TERMINAL_COMMANDS.START_TT_INFERENCE_SERVER.template;
+
+  vscode.window.showInformationMessage(
+    '🚀 Starting vLLM server via tt-inference-server. This may take 5-15 minutes on first run (downloads Docker image + model).'
+  );
+
+  runInTerminal(terminal, command);
+}
+
+/**
+ * Command: tenstorrent.startTtInferenceServerN150
+ * Starts vLLM server via tt-inference-server optimized for N150 hardware
+ */
+function startTtInferenceServerN150(): void {
+  const terminal = getOrCreateTerminal('server');
+  const command = TERMINAL_COMMANDS.START_TT_INFERENCE_SERVER_N150.template;
+
+  vscode.window.showInformationMessage(
+    '⚙️ Starting vLLM server for N150 via tt-inference-server.'
+  );
+
+  runInTerminal(terminal, command);
+}
+
+/**
+ * Command: tenstorrent.startTtInferenceServerN300
+ * Starts vLLM server via tt-inference-server optimized for N300 dual-chip hardware
+ */
+function startTtInferenceServerN300(): void {
+  const terminal = getOrCreateTerminal('server');
+  const command = TERMINAL_COMMANDS.START_TT_INFERENCE_SERVER_N300.template;
+
+  vscode.window.showInformationMessage(
+    '⚙️ Starting vLLM server for N300 via tt-inference-server.'
+  );
+
+  runInTerminal(terminal, command);
+}
+
+/**
+ * Command: tenstorrent.testTtInferenceServerSimple
+ * Tests the vLLM server started by tt-inference-server with OpenAI-compatible API
+ */
+function testTtInferenceServerSimple(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.TEST_TT_INFERENCE_SERVER_SIMPLE.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🧪 Testing vLLM server (OpenAI-compatible API). Check the terminal for the response.'
+  );
+}
+
+/**
+ * Command: tenstorrent.testTtInferenceServerStreaming
+ * Tests streaming responses from vLLM server
+ */
+function testTtInferenceServerStreaming(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.TEST_TT_INFERENCE_SERVER_STREAMING.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🌊 Testing streaming mode (Server-Sent Events). Watch tokens arrive progressively in the terminal.'
+  );
+}
+
+/**
+ * Command: tenstorrent.testTtInferenceServerSampling
+ * Tests different sampling parameters with OpenAI-compatible API
+ */
+function testTtInferenceServerSampling(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.TEST_TT_INFERENCE_SERVER_SAMPLING.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '🎲 Testing different sampling parameters. Compare high vs low temperature in the terminal.'
+  );
+}
+
+/**
+ * Command: tenstorrent.createTtInferenceServerClient
+ * Creates a Python client using OpenAI SDK to connect to the vLLM server
+ */
+function createTtInferenceServerClient(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.CREATE_TT_INFERENCE_SERVER_CLIENT.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    '📝 Created ~/tt-scratchpad/tt-inference-client.py (uses OpenAI SDK). Run with: python3 ~/tt-scratchpad/tt-inference-client.py'
+  );
+}
+
+/**
+ * Command: tenstorrent.createTtInferenceServerConfig
+ * Shows that tt-inference-server uses command-line arguments, not config files
+ */
+function createTtInferenceServerConfig(): void {
+  const terminal = getOrCreateTerminal('main');
+  const command = TERMINAL_COMMANDS.CREATE_TT_INFERENCE_SERVER_CONFIG.template;
+
+  runInTerminal(terminal, command);
+
+  vscode.window.showInformationMessage(
+    'ℹ️ tt-inference-server uses command-line arguments, not config files. Check the terminal for example usage.'
+  );
+}
+
+// ============================================================================
+// LESSON 7: Production Inference with vLLM (previously Lesson 6)
+// ============================================================================
 
 // vLLM Commands
 
@@ -3116,8 +3352,21 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.resetProgress', resetProgress),
 
     // Walkthrough step commands
+
+    // Lesson 0 - Modern Setup with tt-installer 2.0
+    vscode.commands.registerCommand('tenstorrent.runQuickInstall', runQuickInstall),
+    vscode.commands.registerCommand('tenstorrent.downloadInstaller', downloadInstaller),
+    vscode.commands.registerCommand('tenstorrent.runInteractiveInstall', runInteractiveInstall),
+    vscode.commands.registerCommand('tenstorrent.runNonInteractiveInstall', runNonInteractiveInstall),
+    vscode.commands.registerCommand('tenstorrent.testMetaliumContainer', testMetaliumContainer),
+
+    // Lesson 1 - Hardware Detection
     vscode.commands.registerCommand('tenstorrent.runHardwareDetection', runHardwareDetection),
+
+    // Lesson 2 - Verify Installation
     vscode.commands.registerCommand('tenstorrent.verifyInstallation', verifyInstallation),
+
+    // Lesson 3 - Download Model
     vscode.commands.registerCommand('tenstorrent.setHuggingFaceToken', setHuggingFaceToken),
     vscode.commands.registerCommand('tenstorrent.loginHuggingFace', loginHuggingFace),
     vscode.commands.registerCommand('tenstorrent.downloadModel', downloadModel),
@@ -3143,7 +3392,18 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testApiBasicDirect', testApiBasicDirect),
     vscode.commands.registerCommand('tenstorrent.testApiMultipleDirect', testApiMultipleDirect),
 
-    // Lesson 6 - vLLM
+    // Lesson 6 - tt-inference-server
+    vscode.commands.registerCommand('tenstorrent.verifyInferenceServerPrereqs', verifyInferenceServerPrereqs),
+    vscode.commands.registerCommand('tenstorrent.startTtInferenceServer', startTtInferenceServer),
+    vscode.commands.registerCommand('tenstorrent.startTtInferenceServerN150', startTtInferenceServerN150),
+    vscode.commands.registerCommand('tenstorrent.startTtInferenceServerN300', startTtInferenceServerN300),
+    vscode.commands.registerCommand('tenstorrent.testTtInferenceServerSimple', testTtInferenceServerSimple),
+    vscode.commands.registerCommand('tenstorrent.testTtInferenceServerStreaming', testTtInferenceServerStreaming),
+    vscode.commands.registerCommand('tenstorrent.testTtInferenceServerSampling', testTtInferenceServerSampling),
+    vscode.commands.registerCommand('tenstorrent.createTtInferenceServerClient', createTtInferenceServerClient),
+    vscode.commands.registerCommand('tenstorrent.createTtInferenceServerConfig', createTtInferenceServerConfig),
+
+    // Lesson 7 - vLLM (previously Lesson 6)
     vscode.commands.registerCommand('tenstorrent.updateTTMetal', updateTTMetal),
     vscode.commands.registerCommand('tenstorrent.cloneVllm', cloneVllm),
     vscode.commands.registerCommand('tenstorrent.installVllm', installVllm),
@@ -3152,16 +3412,16 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
 
-    // Lesson 7 - VSCode Chat Integration
+    // Lesson 8 - VSCode Chat Integration (previously Lesson 7)
     vscode.commands.registerCommand('tenstorrent.startVllmForChat', startVllmForChat),
     vscode.commands.registerCommand('tenstorrent.enableChatParticipant', enableChatParticipant),
     vscode.commands.registerCommand('tenstorrent.testChat', testChat),
 
-    // Lesson 8 - Image Generation with SD 3.5 Large
+    // Lesson 9 - Image Generation with SD 3.5 Large (previously Lesson 8)
     vscode.commands.registerCommand('tenstorrent.generateRetroImage', generateRetroImage),
     vscode.commands.registerCommand('tenstorrent.startInteractiveImageGen', startInteractiveImageGen),
 
-    // Lesson 9 - Coding Assistant with Prompt Engineering
+    // Lesson 10 - Coding Assistant with Prompt Engineering (previously Lesson 9)
     vscode.commands.registerCommand('tenstorrent.verifyCodingModel', verifyCodingModel),
     vscode.commands.registerCommand('tenstorrent.createCodingAssistantScript', createCodingAssistantScript),
     vscode.commands.registerCommand('tenstorrent.startCodingAssistant', startCodingAssistant),

@@ -12,9 +12,170 @@ This is a VS Code extension for Tenstorrent hardware setup and development. The 
 4. **Template Scripts** - Production-ready Python scripts for inference and API servers
 5. **Auto-configured UX** - Automatically sets Solarized Dark theme and opens terminal on first activation
 
-## Critical Best Practice: install_dependencies.sh
+## Setup Guide: tt-installer 2.0 (Optional/Informational)
 
-**⚠️ Always run `install_dependencies.sh` when installing or updating tt-metal.**
+**Status:** Implemented (v0.0.81) - Informational guide, not a required walkthrough step
+
+### Overview
+
+tt-installer 2.0 is Tenstorrent's official one-command installation tool. **Note:** Many users (Tenstorrent Cloud, Quietbox with preinstalled images, managed systems) already have this setup complete and can skip directly to the Learning Path.
+
+For users who need to set up from scratch, tt-installer:
+
+- ✅ **One command setup** - Complete stack installation in 5-15 minutes
+- ✅ **Container-based** - tt-metalium runs in Podman containers (no complex builds)
+- ✅ **Full automation** - Kernel drivers, HugePages, firmware, tt-smi, tools
+- ✅ **Production-ready** - Tested across Ubuntu, Debian, Fedora
+- ✅ **Two container options:**
+  - Standard (1GB) - TTNN library for inference
+  - Model Demos (10GB) - Full tt-metal with demos and examples
+
+### Quick Start
+
+```bash
+# One-command installation (interactive)
+/bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
+
+# Or download and customize
+curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh -O
+chmod +x install.sh
+./install.sh
+```
+
+### What Gets Installed
+
+1. **System packages** - Build tools, dependencies
+2. **Python environment** - Virtual environment (default: `~/.tenstorrent-venv`)
+3. **Kernel-Mode Driver (KMD)** - Tenstorrent hardware driver
+4. **tt-flash** - Firmware updater (auto-updates device firmware)
+5. **HugePages** - Kernel memory configuration
+6. **tt-smi** - System management interface
+7. **Podman** - Container runtime
+8. **tt-metalium containers** - Standard (1GB) and/or Model Demos (10GB)
+9. **tt-inference-server** - Production inference serving
+10. **SFPI** - Scalar floating point interface
+
+### Using tt-metalium Containers
+
+```bash
+# Interactive shell
+tt-metalium
+
+# Run commands directly
+tt-metalium "python3 -c 'import ttnn; print(ttnn.__version__)'"
+
+# Run demos (if Model Demos container installed)
+tt-metalium-models
+cd tt-metal/models/demos
+pytest wormhole/llama31_8b/demo/demo.py
+```
+
+**Key benefit:** Your home directory is mounted inside containers - all your files are accessible!
+
+### Non-Interactive Installation
+
+For automated deployments or cloud environments:
+
+```bash
+./install.sh --mode-non-interactive \
+  --python-choice=new-venv \
+  --install-metalium-models-container=off \
+  --reboot-option=never
+```
+
+### Container Mode
+
+When running inside a container (e.g., Docker):
+
+```bash
+./install.sh --mode-container
+```
+
+This automatically skips KMD, HugePages, Podman installation (must live on host).
+
+### Comparison: tt-installer vs Manual Setup
+
+| Feature | tt-installer 2.0 | Manual Setup (Old Lessons 1-2) |
+|---------|------------------|--------------------------------|
+| **Time** | 5-15 minutes | 1-2 hours |
+| **Complexity** | One command | 15+ manual steps |
+| **Kernel driver** | ✅ Automatic | ❌ Manual DKMS configuration |
+| **Firmware** | ✅ Auto-updated | ❌ Manual tt-flash usage |
+| **HugePages** | ✅ Auto-configured | ❌ Manual sysctl.conf editing |
+| **tt-metalium** | ✅ Container (1GB) | ❌ Build from source (20+ min) |
+| **Updates** | ✅ Re-run installer | ❌ Rebuild everything |
+| **Production** | ✅ Ready | ❌ Requires hardening |
+
+### Who Should Use tt-installer?
+
+**Use tt-installer if you have:**
+- ✅ Fresh Ubuntu/Debian/Fedora system without Tenstorrent software
+- ✅ Personal workstation or server you're setting up yourself
+- ✅ Development environment that needs tt-metalium containers
+- ✅ System where you have sudo access and want one-command setup
+
+**Skip tt-installer if you have:**
+- ⏭️ **Tenstorrent Cloud environment** (pre-configured)
+- ⏭️ **Quietbox with preinstalled image** (drivers/tools already installed)
+- ⏭️ **Managed system** (sysadmin already set up)
+- ⏭️ **Container environment** (host already configured)
+
+### When to Use Manual Setup Instead
+
+Use manual setup only if:
+
+- You need bleeding-edge unreleased features (build from main)
+- You're developing tt-metal itself (need source access)
+- Your OS is unsupported by tt-installer
+- You need custom compiler flags or build options
+
+### Implementation Details
+
+**Files created:**
+- `content/lessons/00-tt-installer.md` - Comprehensive lesson (600+ lines)
+- Commands in `src/commands/terminalCommands.ts`:
+  - `QUICK_INSTALL` - One-command installation
+  - `DOWNLOAD_INSTALLER` - Download script for inspection
+  - `RUN_INTERACTIVE_INSTALL` - Interactive mode with prompts
+  - `RUN_NON_INTERACTIVE_INSTALL` - Automated mode
+  - `TEST_METALIUM_CONTAINER` - Verify tt-metalium works
+
+**Command handlers in `src/extension.ts`:**
+- `runQuickInstall()` - Runs quick install (with warning)
+- `downloadInstaller()` - Downloads install.sh to ~/
+- `runInteractiveInstall()` - Runs with prompts
+- `runNonInteractiveInstall()` - Runs with defaults
+- `testMetaliumContainer()` - Tests TTNN import
+
+**Positioning in Extension:**
+- **Not a walkthrough step** - Informational guide only
+- Referenced in Lesson 1 (Hardware Detection) for users who need setup
+- Displayed in Welcome page under "Setup Information (Optional)"
+- Commands available via Command Palette for users who need them
+- Cloud/Quietbox users can skip directly to Learning Path
+
+**Resources:**
+- GitHub: https://github.com/tenstorrent/tt-installer
+- Wiki: https://github.com/tenstorrent/tt-installer/wiki
+- Included in extension: `vendor/tt-installer/` (for reference)
+
+### Support
+
+**Supported Operating Systems:**
+- Ubuntu 24.04 LTS ✅ (Recommended)
+- Ubuntu 22.04 LTS ✅ (Recommended, most tested)
+- Ubuntu 20.04 LTS ⚠️ (Deprecated, Metalium cannot be installed)
+- Debian 12.10.0 ✅
+- Fedora 41-42 ✅
+- Other DEB/RPM distros ⚠️ (May work, unsupported)
+
+**Recommended:** Ubuntu 22.04.5 LTS for best compatibility.
+
+## Critical Best Practice: install_dependencies.sh (Manual Setup)
+
+**⚠️ Always run `install_dependencies.sh` when manually installing or updating tt-metal.**
+
+**Note:** If you used tt-installer 2.0, this is already done for you!
 
 ```bash
 cd ~/tt-metal
