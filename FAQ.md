@@ -7,6 +7,7 @@
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Remote Development & SSH](#remote-development--ssh)
 - [Hardware & Detection](#hardware--detection)
 - [Installation & Setup](#installation--setup)
 - [Models & Downloads](#models--downloads)
@@ -60,6 +61,216 @@
 - Want to experiment with PyTorch? → **TT-Forge** (Lesson 10)
 - Need JAX support? → **TT-XLA** (Lesson 12)
 - Building custom kernels? → **tt-metal** (Lessons 1-3, 13)
+
+---
+
+## Remote Development & SSH
+
+### Q: Can I use this extension from my Mac/Windows laptop to access remote Tenstorrent hardware?
+
+**A:** **Yes!** Use VSCode's **Remote-SSH extension** - the industry-standard solution for remote development.
+
+**This is the recommended approach for:**
+- Developing on macOS/Windows while hardware is on Linux
+- Working from laptop with hardware in datacenter/cloud
+- Team development with shared hardware resources
+
+**Why Remote-SSH is perfect for this:**
+- ✅ **Zero extension changes needed** - Everything "just works"
+- ✅ **Transparent experience** - Feels like local development
+- ✅ **All features work** - Terminal commands, file operations, debugging
+- ✅ **Battle-tested** - Used by millions of developers daily
+
+### Q: How do I set up Remote-SSH for Tenstorrent development?
+
+**A:** Quick setup guide:
+
+**Step 1: Install Remote-SSH extension**
+1. Open VSCode on your local machine (Mac/Windows)
+2. Open Extensions panel (`Cmd+Shift+X` or `Ctrl+Shift+X`)
+3. Search for "Remote - SSH"
+4. Install the official Microsoft extension
+
+**Step 2: Configure SSH connection**
+
+Add your Tenstorrent machine to SSH config:
+
+```bash
+# On your local machine, edit ~/.ssh/config
+# (Cmd+Shift+P → "Remote-SSH: Open Configuration File")
+
+Host tenstorrent-dev
+  HostName 192.168.1.100        # Your hardware machine IP
+  User ubuntu                   # Your username
+  IdentityFile ~/.ssh/id_rsa    # Your SSH key
+  ForwardAgent yes              # Optional: Forward SSH agent
+```
+
+**Step 3: Connect to remote machine**
+1. `Cmd+Shift+P` (or `Ctrl+Shift+P`) → "Remote-SSH: Connect to Host"
+2. Select "tenstorrent-dev"
+3. New VSCode window opens connected to remote machine
+
+**Step 4: Install Tenstorrent extension on remote**
+1. In the remote VSCode window, go to Extensions
+2. Search for "Tenstorrent Developer Extension"
+3. Click "Install in SSH: tenstorrent-dev"
+
+**Step 5: Start using lessons!**
+- All terminal commands run on remote machine
+- All file operations work on remote filesystem
+- Hardware detection works automatically
+- Models download to remote machine
+
+### Q: Do the lessons work through Remote-SSH?
+
+**A:** **Yes, perfectly!** Remote-SSH makes everything transparent:
+
+**What works automatically:**
+- ✅ All terminal commands run on remote machine
+- ✅ File operations (`Read`, `Write`, `Edit`) work on remote filesystem
+- ✅ Hardware detection (`tt-smi`) works
+- ✅ Model downloads go to remote machine
+- ✅ Inference runs on remote hardware
+- ✅ Port forwarding automatic (access servers on localhost)
+
+**Example workflow:**
+1. Connect via Remote-SSH from your Mac
+2. Open Tenstorrent walkthrough (works like local)
+3. Run Lesson 1 "Hardware Detection" → `tt-smi` runs on remote
+4. Download model → Saves to remote `~/models/`
+5. Start vLLM server → Runs on remote, port auto-forwarded
+6. Test from local browser → `http://localhost:8000` works!
+
+**No code changes needed** - The extension doesn't know or care that you're remote!
+
+### Q: What about SSH without Remote-SSH extension?
+
+**A:** **Not recommended.** Manual SSH has major problems:
+
+❌ **File operations break** - Extension reads/writes local filesystem, not remote
+❌ **Path mismatches** - `~/models/` on Mac ≠ `~/models/` on remote
+❌ **Complex escaping** - Terminal commands get mangled through SSH
+❌ **No port forwarding** - Can't access servers on `localhost`
+❌ **Poor UX** - Feels disconnected, hard to debug
+
+**Example of problems:**
+
+If you manually SSH in terminal:
+```bash
+# This command in lesson creates file on your MAC, not remote!
+cat > ~/tt-scratchpad/script.py << 'EOF'
+...
+EOF
+
+# Then this fails because file is on wrong machine
+ssh user@remote python3 ~/tt-scratchpad/script.py
+```
+
+**With Remote-SSH:** Both operations happen on remote automatically.
+
+### Q: Can multiple people share the same remote hardware?
+
+**A:** Yes, but with considerations:
+
+**Shared hardware works best with:**
+- ✅ **Resource coordination** - Don't run multiple large models simultaneously
+- ✅ **User directories** - Each user has own `~/models/`, `~/tt-scratchpad/`
+- ✅ **Port management** - Use different ports (8000, 8001, 8002...)
+- ✅ **Communication** - Team chat to coordinate who's using hardware
+
+**Limitations:**
+- ⚠️ Only one model can load on device at a time
+- ⚠️ Large models need device reset between users
+- ⚠️ `/dev/shm` shared memory might need cleanup
+
+**Best practice for teams:**
+```bash
+# User 1
+vllm ... --port 8001
+
+# User 2
+vllm ... --port 8002
+
+# Each user accesses their own server
+curl http://localhost:8001/...  # User 1
+curl http://localhost:8002/...  # User 2
+```
+
+### Q: What about Tenstorrent Cloud? Does Remote-SSH work?
+
+**A:** **Yes!** Tenstorrent Cloud instances are perfect for Remote-SSH:
+
+**Typical setup:**
+1. Get Tenstorrent Cloud instance (pre-configured with hardware)
+2. Receive SSH credentials
+3. Add to `~/.ssh/config` on your laptop
+4. Connect via Remote-SSH
+5. Start developing!
+
+**Cloud benefits:**
+- ✅ Pre-installed tt-metal and drivers
+- ✅ Pre-configured environment
+- ✅ No hardware setup needed
+- ✅ Access from anywhere
+
+**Example cloud SSH config:**
+```bash
+Host tt-cloud
+  HostName cloud.instance.tenstorrent.com
+  User your-username
+  IdentityFile ~/.ssh/tt-cloud-key
+  ForwardAgent yes
+```
+
+### Q: Are there performance considerations with Remote-SSH?
+
+**A:** Remote-SSH is **very efficient**:
+
+**Fast operations (no noticeable latency):**
+- Terminal commands (SSH is fast)
+- File editing (only changes sync)
+- Running inference (happens on remote)
+- Model downloads (direct from HuggingFace to remote)
+
+**What uses bandwidth:**
+- File tree indexing (one-time)
+- Large file transfers (if you copy files between machines)
+- Extension updates (rare)
+
+**Best practices:**
+- ✅ Use wired connection or good WiFi
+- ✅ Keep large models on remote (don't transfer)
+- ✅ Use compression in SSH config: `Compression yes`
+
+**Real-world experience:**
+- **Feels instant** on good connection (10+ Mbps)
+- **Usable** on moderate connection (1-5 Mbps)
+- **Not recommended** on very slow connections (<1 Mbps)
+
+### Q: How do I disconnect from remote machine?
+
+**A:** Several options:
+
+**Graceful disconnect:**
+- Close the remote VSCode window
+- Connection closes, remote processes continue running
+
+**From command palette:**
+- `Cmd+Shift+P` → "Remote-SSH: Close Remote Connection"
+
+**Important:** vLLM servers keep running after disconnect!
+```bash
+# Before disconnecting, you may want to:
+docker ps                    # Note container IDs
+docker stop <container-id>   # Stop servers
+
+# Or leave them running and reconnect later
+```
+
+**Reconnecting:**
+- Just repeat: "Remote-SSH: Connect to Host" → Select your host
+- Everything exactly as you left it
 
 ---
 
@@ -771,6 +982,6 @@ sudo rm -rf /dev/shm/tt_*
 ---
 
 **Last updated:** December 2025
-**Extension version:** 0.0.78
+**Extension version:** 0.0.83
 
 **Found an error in this FAQ?** Please report it on GitHub or Discord!
