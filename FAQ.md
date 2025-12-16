@@ -276,6 +276,64 @@ docker stop <container-id>   # Stop servers
 
 ## Hardware & Detection
 
+### Q: Can I try Tenstorrent development without hardware?
+
+**A:** **Yes!** Use **ttsim** - Tenstorrent's full-system simulator.
+
+**What is ttsim:**
+- Virtual Wormhole or Blackhole device that runs on any Linux/x86_64 system
+- No physical hardware needed
+- Slower than silicon but fast enough for learning and experimentation
+- Perfect for exploring before purchasing hardware
+
+**Quick Start:**
+
+```bash
+# Download simulator (replace vX.Y with latest version)
+mkdir -p ~/sim
+cd ~/sim
+wget https://github.com/tenstorrent/ttsim/releases/latest/download/libttsim_wh.so
+
+# Copy SOC descriptor
+cp $TT_METAL_HOME/tt_metal/soc_descriptors/wormhole_b0_80_arch.yaml ~/sim/soc_descriptor.yaml
+
+# Set environment variable
+export TT_METAL_SIMULATOR=~/sim/libttsim_wh.so
+
+# Run in slow dispatch mode (required for simulator)
+export TT_METAL_SLOW_DISPATCH_MODE=1
+
+# Test it works
+cd $TT_METAL_HOME
+./build/programming_examples/metal_example_add_2_integers_in_riscv
+```
+
+**What you CAN do with ttsim:**
+- ✅ Learn TT-Metal programming model
+- ✅ Run programming examples and tests
+- ✅ Develop and debug kernels
+- ✅ Test TTNN operations
+- ✅ Explore Tenstorrent architecture
+
+**What you CAN'T do (too slow):**
+- ❌ Run full model inference (vLLM, large models)
+- ❌ Production workloads
+- ❌ Performance benchmarking
+- ❌ Real-time applications
+
+**Which lessons work with ttsim:**
+- **Lesson 1:** Hardware detection (partial - `ttnn` works, `tt-smi` won't)
+- **Lesson 2:** Verify installation (yes - programming examples)
+- **Lesson 13:** TT-Metalium programming (yes - perfect for learning)
+- **Lessons 3-9:** Model inference (no - too slow for practical use)
+- **Lessons 10-12:** Compilers (limited - depends on workload)
+
+**Resources:**
+- GitHub: https://github.com/tenstorrent/ttsim
+- Releases: https://github.com/tenstorrent/ttsim/releases/latest
+
+**Tip:** Use ttsim for learning and kernel development, then move to real hardware for model inference and production workloads.
+
 ### Q: Which hardware do I have?
 
 **A:** Run this command:
@@ -960,6 +1018,49 @@ python3 --version
 
 ---
 
+## Advanced Learning Resources
+
+### Q: Where can I learn about low-level RISC-V programming on Tenstorrent hardware?
+
+**A:** Check out **Lesson 13: RISC-V Programming on Tensix Cores** in the walkthrough!
+
+Each Tensix core contains **five RISC-V processors** (RV32IM ISA):
+- **BRISC (RISCV_0)** - Primary data movement
+- **NCRISC (RISCV_1)** - Network operations
+- **TRISC0/1/2** - Compute pipeline (unpack, math, pack)
+
+With 176 Tensix cores on Wormhole, that's **880 RISC-V cores** you can program directly!
+
+**What the lesson includes:**
+- ✅ Hands-on example: Add two integers in RISC-V assembly
+- ✅ Build and run tt-metal programming examples
+- ✅ Explore kernel source code
+- ✅ Comprehensive exploration guide (60+ pages)
+
+**Topics covered in the full guide:**
+- RISC-V architecture and memory maps
+- NoC (Network-on-Chip) programming
+- Multi-core parallel programming
+- Writing pure assembly kernels
+- DMA optimization techniques
+- Comparison with other RISC-V platforms
+
+**Access the lesson:**
+- From Welcome page → Lesson 13
+- Or run command: `Tenstorrent: Run RISC-V Addition Example`
+
+**View the full guide:**
+- `RISC-V_EXPLORATION.md` in extension directory
+- Or run command: `Tenstorrent: Open RISC-V Exploration Guide`
+
+**Perfect for:**
+- Developers who want to understand the hardware at the lowest level
+- Embedded systems programmers exploring RISC-V at scale
+- Computer architecture enthusiasts
+- Anyone optimizing kernel performance
+
+---
+
 ## Still Have Questions?
 
 **Check:**
@@ -982,6 +1083,6 @@ sudo rm -rf /dev/shm/tt_*
 ---
 
 **Last updated:** December 2025
-**Extension version:** 0.0.83
+**Extension version:** 0.0.84
 
 **Found an error in this FAQ?** Please report it on GitHub or Discord!

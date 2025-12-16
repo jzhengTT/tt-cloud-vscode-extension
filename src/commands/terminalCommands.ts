@@ -459,6 +459,24 @@ export const TERMINAL_COMMANDS: Record<string, CommandTemplate> = {
     template: 'cd ~/tt-scratchpad && source ~/tt-xla-venv/bin/activate && python3 gpt_demo.py',
     description: 'Runs GPT-2 inference demo using JAX on TT hardware',
   },
+
+  // ========================================
+  // Lesson 13: RISC-V Programming on Tensix Cores
+  // ========================================
+
+  BUILD_PROGRAMMING_EXAMPLES: {
+    id: 'build-programming-examples',
+    name: 'Build Programming Examples',
+    template: 'cd ~/tt-metal && ./build_metal.sh --build-programming-examples',
+    description: 'Builds tt-metal with programming examples including RISC-V demonstrations',
+  },
+
+  RUN_RISCV_EXAMPLE: {
+    id: 'run-riscv-example',
+    name: 'Run RISC-V Addition Example',
+    template: 'cd ~/tt-metal && export TT_METAL_DPRINT_CORES=0,0 && ./build/programming_examples/add_2_integers_in_riscv',
+    description: 'Runs the RISC-V addition example on BRISC processor',
+  },
 };
 
 /**

@@ -2369,6 +2369,80 @@ function runTtXlaDemo(): void {
 }
 
 // ============================================================================
+// RISC-V Programming Commands (Lesson 13)
+// ============================================================================
+
+/**
+ * Command: tenstorrent.buildProgrammingExamples
+ * Builds tt-metal with programming examples including RISC-V demonstrations
+ */
+function buildProgrammingExamples(): void {
+  const terminal = getOrCreateTerminal('main');
+
+  const buildCommand = TERMINAL_COMMANDS.BUILD_PROGRAMMING_EXAMPLES.template;
+  runInTerminal(terminal, buildCommand);
+
+  vscode.window.showInformationMessage(
+    '🔨 Building tt-metal with programming examples. This will take 5-10 minutes...'
+  );
+}
+
+/**
+ * Command: tenstorrent.runRiscvExample
+ * Runs the RISC-V addition example on BRISC processor
+ */
+function runRiscvExample(): void {
+  const terminal = getOrCreateTerminal('main');
+
+  const runCommand = TERMINAL_COMMANDS.RUN_RISCV_EXAMPLE.template;
+  runInTerminal(terminal, runCommand);
+
+  vscode.window.showInformationMessage(
+    '🚀 Running RISC-V addition example on BRISC processor. Watch for "Success: Result is 21"!'
+  );
+}
+
+/**
+ * Command: tenstorrent.openRiscvKernel
+ * Opens the RISC-V kernel source code in VS Code
+ */
+async function openRiscvKernel(): Promise<void> {
+  const kernelPath = `${process.env.HOME}/tt-metal/tt_metal/programming_examples/add_2_integers_in_riscv/kernels/reader_writer_add_in_riscv.cpp`;
+
+  try {
+    const doc = await vscode.workspace.openTextDocument(kernelPath);
+    await vscode.window.showTextDocument(doc);
+    vscode.window.showInformationMessage(
+      '📖 Opened RISC-V kernel source. Look for the addition at line 41!'
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `❌ Could not open kernel file: ${kernelPath}. Make sure tt-metal is cloned to ~/tt-metal`
+    );
+  }
+}
+
+/**
+ * Command: tenstorrent.openRiscvGuide
+ * Opens the comprehensive RISC-V exploration guide
+ */
+async function openRiscvGuide(): Promise<void> {
+  const guidePath = `${process.env.HOME}/code/tt-vscode-ext-clean/RISC-V_EXPLORATION.md`;
+
+  try {
+    const doc = await vscode.workspace.openTextDocument(guidePath);
+    await vscode.window.showTextDocument(doc);
+    vscode.window.showInformationMessage(
+      '📘 Opened RISC-V Exploration Guide. Dive deep into 880 RISC-V cores!'
+    );
+  } catch (error) {
+    vscode.window.showErrorMessage(
+      `❌ Could not open guide: ${guidePath}`
+    );
+  }
+}
+
+// ============================================================================
 // Bounty Program Commands
 // ============================================================================
 
@@ -3438,7 +3512,13 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.testTtXlaInstall', testTtXlaInstall),
     vscode.commands.registerCommand('tenstorrent.runTtXlaDemo', runTtXlaDemo),
 
-    // Lesson 13 - Exploring TT-Metalium
+    // Lesson 13 - RISC-V Programming on Tensix Cores
+    vscode.commands.registerCommand('tenstorrent.buildProgrammingExamples', buildProgrammingExamples),
+    vscode.commands.registerCommand('tenstorrent.runRiscvExample', runRiscvExample),
+    vscode.commands.registerCommand('tenstorrent.openRiscvKernel', openRiscvKernel),
+    vscode.commands.registerCommand('tenstorrent.openRiscvGuide', openRiscvGuide),
+
+    // Lesson 14 - Exploring TT-Metalium
     vscode.commands.registerCommand('tenstorrent.launchTtnnTutorials', launchTtnnTutorials),
     vscode.commands.registerCommand('tenstorrent.browseModelZoo', browseModelZoo),
     vscode.commands.registerCommand('tenstorrent.exploreProgrammingExamples', exploreProgrammingExamples),

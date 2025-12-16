@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.83",
+  "version": "0.0.84",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -371,6 +371,26 @@
         "category": "Tenstorrent"
       },
       {
+        "command": "tenstorrent.buildProgrammingExamples",
+        "title": "Build Programming Examples",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.runRiscvExample",
+        "title": "Run RISC-V Addition Example",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.openRiscvKernel",
+        "title": "Open RISC-V Kernel Source",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.openRiscvGuide",
+        "title": "Open RISC-V Exploration Guide",
+        "category": "Tenstorrent"
+      },
+      {
         "command": "tenstorrent.browseOpenBounties",
         "title": "Browse Open Bounties on GitHub",
         "category": "Tenstorrent"
@@ -537,6 +557,17 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.testTtXlaInstall"
+            ]
+          },
+          {
+            "id": "riscv-programming",
+            "title": "RISC-V Programming on Tensix Cores",
+            "description": "Explore 880 RISC-V processors on a single chip! Program the five RISC-V cores (BRISC, NCRISC, TRISC0/1/2) inside each Tensix. Learn bare-metal programming, NoC communication, and parallel computing at scale. Includes comprehensive exploration guide.",
+            "media": {
+              "markdown": "content/lessons/13-riscv-programming.md"
+            },
+            "completionEvents": [
+              "onCommand:tenstorrent.runRiscvExample"
             ]
           },
           {
