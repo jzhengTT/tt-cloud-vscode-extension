@@ -233,6 +233,64 @@ The extension creates files in your home directory:
 
 ---
 
+## 🧪 Testing
+
+The extension includes automated tests for template validation and quality assurance.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run only template validation tests
+npm run test:templates
+
+# Watch mode (re-run on changes)
+npm run test:watch
+```
+
+### What Gets Tested
+
+✅ **Template Validation** (Quick - runs in seconds)
+- Python syntax validation for all script templates
+- Import statement verification
+- Code structure validation
+- Python 3 compatibility checks
+
+✅ **File Structure**
+- All templates exist and are non-empty
+- Documentation/comments present
+- Proper file structure
+
+### Test Files
+
+```
+test/
+├── .mocharc.json          # Mocha configuration
+└── lesson-tests/
+    └── templates.test.ts  # Template validation suite
+```
+
+### CI/CD Integration
+
+Tests run automatically on:
+- Pull requests
+- Commits to main branch
+- Pre-publish builds
+
+### Testing with ttsim (Hardware Simulation)
+
+For testing without physical hardware, see [TESTING_WITH_TTSIM.md](TESTING_WITH_TTSIM.md):
+- How to set up ttsim simulator
+- Testing basic TTNN operations
+- Testing programming examples
+- CI/CD integration strategies
+
+**Note:** Template validation tests run on any platform (no hardware required). Full integration tests with ttsim require Linux/x86_64.
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! Here's how:

@@ -613,12 +613,20 @@
     "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/welcome dist/content/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
-    "compile": "tsc -p ./"
+    "compile": "tsc -p ./",
+    "test": "mocha",
+    "test:templates": "mocha test/lesson-tests/templates.test.ts",
+    "test:watch": "mocha --watch"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^24.6.2",
     "@types/vscode": "^1.93.0",
     "@vscode/vsce": "^3.6.2",
+    "chai": "^6.2.1",
+    "mocha": "^11.7.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
   }
 }
