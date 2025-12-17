@@ -11,6 +11,13 @@ Welcome to the TT-Metalium Cookbook! In this lesson, you'll build **four complet
 
 Each project is a **complete, working application** with full source code, visual output, and extension ideas.
 
+**🎯 Building Blocks for Real Models:**
+These projects teach fundamental techniques used in production models:
+- **Game of Life** → Convolution (YOLO v10-v12, SegFormer)
+- **Audio Processor** → Spectrograms (Whisper speech recognition)
+- **Mandelbrot** → Parallel pixel processing (Stable Diffusion 3.5)
+- **Image Filters** → 2D convolutions (ResNet50, MobileNetV2, ViT)
+
 ---
 
 ## Quick Start
@@ -2308,5 +2315,20 @@ Congratulations! You've completed the TT-Metalium Cookbook. You now have:
 - **GitHub**: [github.com/tenstorrent/tt-metal](https://github.com/tenstorrent/tt-metal)
 - **Documentation**: [docs.tenstorrent.com](https://docs.tenstorrent.com)
 - **Bounty Program**: [github.com/tenstorrent/tt-metal/issues?label=bounty](https://github.com/tenstorrent/tt-metal/issues?q=is%3Aissue+state%3Aopen+label%3Abounty)
+
+**🚀 Explore Production Models Next:**
+
+Now that you've mastered the fundamentals, explore how these techniques scale to production:
+
+- **Convolution** → Check out `models/demos/yolov12x/` for state-of-the-art object detection
+- **Transformers** → Study `models/demos/gemma3/` for multimodal (text + image) AI
+- **Semantic Segmentation** → Explore `models/demos/segformer/` for pixel-level image understanding
+- **Vision** → Dive into `models/demos/mobilenetv2/` for efficient mobile-scale inference
+- **Audio** → See `models/demos/whisper/` for production speech recognition
+
+**📚 Deep Dive:**
+- **METALIUM_GUIDE.md** (`~/tt-metal/METALIUM_GUIDE.md`) - Architecture deep-dive
+- **Tech Reports** (`~/tt-metal/tech_reports/`) - Flash Attention, optimizations, research papers
+- **2025 Tutorials** (`~/tt-metal/ttnn/tutorials/2025_dx_rework/`) - Latest TTNN examples
 
 Happy coding! 🚀

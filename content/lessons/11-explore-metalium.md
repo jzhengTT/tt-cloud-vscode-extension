@@ -20,31 +20,43 @@ TTNN comes with interactive Jupyter notebooks that teach core concepts hands-on.
 
 [📓 Open TTNN Tutorials](command:tenstorrent.launchTtnnTutorials)
 
-**Recommended Tutorial Sequence:**
+**Recommended Tutorial Sequence (2025 Refreshed!):**
 
-1. **Tutorial 001**: Tensor basics and addition
+1. **ttnn_add_tensors.ipynb**: Tensor basics and addition
    - Creating tensors on device
    - `ROW_MAJOR_LAYOUT` vs `TILE_LAYOUT`
    - Data types (bfloat16, float32, bfp8)
    - Basic operations
 
-2. **Tutorial 004**: Tracing and visualization
-   - Operation graphs
-   - Debugging workflows
-   - Performance analysis
+2. **ttnn_basic_operations.ipynb**: Core TTNN operations
+   - Element-wise operations
+   - Reductions (sum, mean, max)
+   - Broadcasting and reshaping
 
-3. **ttnn_mlp_inference_mnist**: Complete inference pipeline
+3. **ttnn_basic_conv.ipynb**: Convolution fundamentals
+   - 2D convolution on TT hardware
+   - Padding, stride, kernel configuration
+   - Performance characteristics
+
+4. **ttnn_mlp_inference_mnist.ipynb**: Complete inference pipeline
    - Load pre-trained model
    - Preprocess data
    - Run inference on TT hardware
    - Evaluate accuracy
 
-4. **ttnn_multihead_attention**: Transformer building blocks
+5. **ttnn_multihead_attention.ipynb**: Transformer building blocks
    - Attention mechanism
    - Key/Query/Value projections
    - Scaled dot-product attention
 
-**Try This:** Open Tutorial 001 and modify the tensor shapes. What happens when you use sizes not divisible by 32? Why?
+6. **ttnn_simplecnn_inference.ipynb**: End-to-end CNN example
+   - Simple CNN architecture
+   - Image classification
+   - Real-world inference patterns
+
+**Location:** `~/tt-metal/ttnn/tutorials/2025_dx_rework/`
+
+**Try This:** Open `ttnn_add_tensors.ipynb` and modify the tensor shapes. What happens when you use sizes not divisible by 32? Why?
 
 ---
 
@@ -56,24 +68,54 @@ Tenstorrent has implementations of dozens of popular models, from production LLM
 
 **Categories:**
 
-**Production Models** (`models/demos/`)
-- **Llama 3.1 8B** - Text generation, chat
+**🚀 NEW Production Models** (`models/demos/`)
+- **DeepSeek-V3** 🆕 - State-of-the-art reasoning model (Galaxy, 32 chips)
+- **Gemma3 (27B)** 🆕 - Multimodal (text + image), 128K context (N150/N300/T3K)
+- **Qwen 2.5 VL** 🆕 - Vision-Language model with VL understanding
+- **SigLIP** 🆕 - Vision model for image-text matching
+- **SegFormer** 🆕 - Semantic segmentation
+- **YOLO v10/v11/v12** 🆕 - Latest object detection (v12 just released!)
+- **Llama 3.1 8B** - Text generation, chat (Wormhole)
+- **Llama 3 70B** - Large-scale inference (Galaxy)
 - **Whisper** - Audio transcription
-- **ResNet50** - Image classification
-- **BERT** - Natural language understanding
-- **Stable Diffusion 3.5** - Image generation
+- **ResNet50, MobileNetV2** - Image classification
+- **BERT, DistilBERT** - Natural language understanding
+- **Stable Diffusion 3.5 Large** - High-resolution image generation (1024x1024)
+- **ViT, DeiT** - Vision transformers
+- **Falcon7B** - Open-source LLM
+- **Mamba** - State-space models
 
-**Experimental Models** (`models/experimental/`)
-- **BlazePose** - Real-time pose estimation
+**🧪 Experimental Models** (`models/experimental/`)
+- **Grok** 🆕 - xAI's reasoning model (experimental port)
+- **Gemma3 4B** 🆕 - Smaller Gemma variant
 - **nanoGPT** - Train your own GPT from scratch
-- **YOLOv4-v12** - Object detection (multiple versions!)
-- **VGG, MobileNet, EfficientNet** - Vision architectures
+- **BlazePose** - Real-time pose estimation
+- **YOLO v4-v9** - Object detection (multiple versions)
+- **EfficientNet, VGG, DeiT** - Vision architectures
 
 **Tip:** Each model has:
 - `demo/` - Runnable examples
 - `tt/` - TT hardware implementation
 - `tests/` - Unit tests and benchmarks
 - `README.md` - Setup instructions
+
+**📂 Hardware-Specific Organization:**
+
+Models are now organized by target hardware for easier discovery:
+- `models/demos/wormhole/` - N150/N300 optimized models
+- `models/demos/t3000/` - T3K (8-chip) configurations
+- `models/demos/tg/` - Galaxy (32-chip) large-scale models
+- `models/demos/grayskull/` - Grayskull (older architecture)
+- `models/demos/blackhole/` - Blackhole (P100) newest architecture
+
+**🎯 Inspiration Points - What's Possible:**
+
+1. **Multimodal AI** - Gemma3 and Qwen2.5 VL show you can process text + images together
+2. **128K Context** - Gemma3 demonstrates ultra-long context windows (entire books!)
+3. **Galaxy-Scale** - DeepSeek-V3 and Llama 70B show 32-chip parallel inference
+4. **Real-Time Vision** - YOLO v12 (just released!) for cutting-edge object detection
+5. **Training on Device** - nanoGPT shows you can train models, not just run inference
+6. **State-Space Models** - Mamba represents next-gen architectures beyond transformers
 
 ---
 
@@ -451,10 +493,16 @@ Each project includes full source code, extensions, and VS Code integration!
 ## Resources
 
 - **Official Documentation**: [docs.tenstorrent.com](https://docs.tenstorrent.com)
-- **METALIUM_GUIDE.md**: `~/tt-metal/METALIUM_GUIDE.md`
+- **METALIUM_GUIDE.md**: `~/tt-metal/METALIUM_GUIDE.md` ⭐ **START HERE** - Comprehensive architecture deep-dive
+- **2025 TTNN Tutorials**: `~/tt-metal/ttnn/tutorials/2025_dx_rework/` 🆕
 - **Programming Examples**: `~/tt-metal/tt_metal/programming_examples/`
 - **Model Demos**: `~/tt-metal/models/demos/`
 - **Discord Community**: [discord.gg/tvhGzHQwaj](https://discord.gg/tvhGzHQwaj)
+
+**📖 Key Reading:**
+- **METALIUM_GUIDE.md** - Tensix architecture, 3-kernel model, circular buffers, tile computing
+- **TTNN README**: `~/tt-metal/ttnn/README.md` - High-level Python API guide
+- **Tech Reports**: `~/tt-metal/tech_reports/` - Flash Attention, optimizations, architecture papers
 
 ---
 
