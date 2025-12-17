@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.84",
+  "version": "0.0.85",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -263,6 +263,26 @@
       {
         "command": "tenstorrent.startVllmServer",
         "title": "Start vLLM Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerN150",
+        "title": "Start vLLM Server (N150)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerN300",
+        "title": "Start vLLM Server (N300)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerT3K",
+        "title": "Start vLLM Server (T3K)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerP100",
+        "title": "Start vLLM Server (P100)",
         "category": "Tenstorrent"
       },
       {

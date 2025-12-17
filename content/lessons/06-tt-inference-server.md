@@ -110,7 +110,17 @@ tt-inference-server \
 
 Let's start a vLLM server for Llama 3.1 8B on your hardware.
 
-**For N150 (single chip):**
+**Quick Check:** Not sure which hardware you have?
+
+[🔍 Detect Hardware](command:tenstorrent.runHardwareDetection)
+
+---
+
+**Choose your hardware configuration:**
+
+<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b></summary>
+
 ```bash
 cd ~/tt-inference-server  # or wherever it's installed
 python3 run.py \
@@ -120,14 +130,59 @@ python3 run.py \
   --docker-server
 ```
 
-**For N300 (dual chip):**
+**Configuration:** Optimized for single-chip development and testing
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
+
 ```bash
+cd ~/tt-inference-server
 python3 run.py \
   --model Llama-3.1-8B-Instruct \
   --device n300 \
   --workflow server \
   --docker-server
 ```
+
+**Configuration:** Tensor parallelism across 2 chips for higher throughput
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
+
+```bash
+cd ~/tt-inference-server
+python3 run.py \
+  --model Llama-3.1-8B-Instruct \
+  --device t3k \
+  --workflow server \
+  --docker-server
+```
+
+**Configuration:** Production-scale deployment across 8 chips
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 Galaxy (32 Chips)</b></summary>
+
+```bash
+cd ~/tt-inference-server
+python3 run.py \
+  --model Llama-3.1-8B-Instruct \
+  --device galaxy \
+  --workflow server \
+  --docker-server
+```
+
+**Configuration:** Data center scale with 32-chip mesh
+
+</details>
+
+---
 
 **Expected output:**
 ```

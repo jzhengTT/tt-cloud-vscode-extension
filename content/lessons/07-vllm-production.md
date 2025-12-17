@@ -101,18 +101,26 @@ python3 --version  # Need 3.10+
 
 ## Hardware Configuration
 
-vLLM supports multiple Tenstorrent hardware types. **Choose your hardware below:**
+**Quick Check:** Not sure which hardware you have? Run this command to detect your device:
 
-### Wormhole N150 (Single Chip)
+[🔍 Detect Hardware](command:tenstorrent.runHardwareDetection)
 
-**Best for:** Development, prototyping, single-user deployments
+Look for the "Board Type" field in the output (e.g., n150, n300, t3k, p100).
 
-**Model:** Llama-3.1-8B-Instruct
-- Context limit: 64K tokens
-- No tensor parallelism needed
-- Simple configuration
+---
 
-**Environment:**
+**Choose your hardware configuration below:**
+
+<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b> - Most common for development</summary>
+
+**Specifications:**
+- Chips: 1
+- Model: Llama-3.1-8B-Instruct
+- Context Length: 64K tokens
+- Best for: Development, single-user deployments, learning
+
+**Environment Variables:**
 ```bash
 export MESH_DEVICE=N150
 export TT_METAL_HOME=~/tt-metal
@@ -121,23 +129,24 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 
 **vLLM Flags (use in Step 4):**
 ```bash
---max-model-len 65536    # 64K limit for N150
+--max-model-len 65536    # 64K context
 --max-num-seqs 16        # Concurrent sequences
 --block-size 64          # KV cache block size
 ```
 
----
+</details>
 
-### Wormhole N300 (Dual Chip)
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
 
-**Best for:** Higher throughput, longer context
+**Specifications:**
+- Chips: 2
+- Models: Llama-3.1-8B-Instruct OR Qwen-2.5-7B-Coder
+- Context Length: 128K tokens
+- Tensor Parallelism: TP=2 (uses both chips)
+- Best for: Higher throughput, production deployments
 
-**Models:** Llama-3.1-8B-Instruct OR Qwen-2.5-7B-Coder
-- Context limit: 128K tokens
-- Tensor parallelism: TP=2 (uses both chips)
-- Better batching performance
-
-**Environment:**
+**Environment Variables:**
 ```bash
 export MESH_DEVICE=N300
 export TT_METAL_HOME=~/tt-metal
@@ -146,24 +155,25 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 
 **vLLM Flags (use in Step 4):**
 ```bash
---max-model-len 131072   # 128K context for N300
+--max-model-len 131072   # 128K context
 --max-num-seqs 32        # More concurrent sequences
 --block-size 64
 --tensor-parallel-size 2 # Use both chips
 ```
 
----
+</details>
 
-### Wormhole T3K (8 Chips)
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
 
-**Best for:** Large models (70B), multi-user production
+**Specifications:**
+- Chips: 8
+- Model: Llama-3.1-70B-Instruct (requires 70B model download)
+- Context Length: 128K+ tokens
+- Tensor Parallelism: TP=8 (uses all chips)
+- Best for: Large models (70B+), multi-user production
 
-**Model:** Llama-3.1-70B-Instruct
-- Context limit: 128K tokens
-- Tensor parallelism: TP=8 (uses all 8 chips)
-- Production-scale serving
-
-**Environment:**
+**Environment Variables:**
 ```bash
 export MESH_DEVICE=T3K
 export TT_METAL_HOME=~/tt-metal
@@ -179,21 +189,23 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 --tensor-parallel-size 8
 ```
 
----
+**Note:** T3K supports larger models like Llama-3.1-70B. Download the 70B model separately if you want to use it.
 
-### Blackhole P100 (Single Chip)
+</details>
 
-**Best for:** Newer hardware, similar to N150
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 P100 (Blackhole - Single Chip)</b></summary>
 
-**Model:** Llama-3.1-8B-Instruct
-- Context limit: 64K tokens
-- Similar configuration to N150
-- May have experimental optimizations
+**Specifications:**
+- Chips: 1 (newer Blackhole architecture)
+- Model: Llama-3.1-8B-Instruct
+- Context Length: 64K tokens
+- Best for: Development with latest hardware
 
-**Environment:**
+**Environment Variables:**
 ```bash
 export MESH_DEVICE=P100
-export TT_METAL_ARCH_NAME=blackhole  # Required for device type inference
+export TT_METAL_ARCH_NAME=blackhole  # ⚠️ Required for Blackhole
 export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 ```
@@ -205,41 +217,15 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 --block-size 64
 ```
 
+**⚠️ Critical:** Blackhole hardware (P100) requires `TT_METAL_ARCH_NAME=blackhole` environment variable. Without this, device detection will fail.
+
 **Note:** P100 support may be experimental. See "Alternative: Use TT-Jukebox" below for validated configurations.
+
+</details>
 
 ---
 
-### Don't Know Your Hardware?
-
-Run this command to identify your hardware:
-```bash
-tt-smi -s
-```
-
-**Example output (JSON format):**
-```json
-{
-  "board_info": {
-    "board_type": "n150",
-    "coords": "0,0"
-  }
-}
-```
-
-**Look for the `board_type` field:**
-- `"n150"` → Use **Wormhole N150** configuration above
-- `"n300"` → Use **Wormhole N300** configuration above
-- `"t3k"` → Use **Wormhole T3K** configuration above
-- `"p100"` → Use **Blackhole P100** configuration above
-- `"p150"` → Use **TT-Jukebox** (see below) for validated config
-
-**Quick extract:**
-```bash
-tt-smi -s | grep -o '"board_type": "[^"]*"'
-# Output: "board_type": "n150"
-```
-
-**Still unsure?** Start with the N150 configuration - it works on most hardware, just with potentially suboptimal settings.
+**💡 Tip:** If you're unsure, start with N150 configuration - it works on most hardware, just with potentially different performance characteristics.
 
 ## Step 0: Update and Build TT-Metal (If Needed)
 
@@ -404,7 +390,10 @@ Now start vLLM as an HTTP server with OpenAI-compatible endpoints.
 
 **⚠️ Important:** Use the configuration for your hardware from the [Hardware Configuration](#hardware-configuration) section above.
 
-### Example: Wormhole N150
+**Choose your hardware below to see the exact command:**
+
+<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b></summary>
 
 ```bash
 cd ~/tt-vllm && \
@@ -422,9 +411,12 @@ cd ~/tt-vllm && \
     --block-size 64
 ```
 
-[🚀 Start vLLM Server (N150)](command:tenstorrent.startVllmServer)
+[🚀 Start vLLM Server (N150)](command:tenstorrent.startVllmServerN150)
 
-### Example: Wormhole N300
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
 
 ```bash
 cd ~/tt-vllm && \
@@ -443,7 +435,61 @@ cd ~/tt-vllm && \
     --tensor-parallel-size 2
 ```
 
-**For other hardware types (T3K, P100):** See the [Hardware Configuration](#hardware-configuration) section for your specific flags.
+[🚀 Start vLLM Server (N300)](command:tenstorrent.startVllmServerN300)
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=T3K && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-70B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 64 \
+    --block-size 64 \
+    --tensor-parallel-size 8
+```
+
+[🚀 Start vLLM Server (T3K)](command:tenstorrent.startVllmServerT3K)
+
+**Note:** This uses the 70B model. Make sure you've downloaded it first.
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 P100 (Blackhole - Single Chip)</b></summary>
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=P100 && \
+  export TT_METAL_ARCH_NAME=blackhole && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 65536 \
+    --max-num-seqs 16 \
+    --block-size 64
+```
+
+[🚀 Start vLLM Server (P100)](command:tenstorrent.startVllmServerP100)
+
+**⚠️ Remember:** P100 requires `TT_METAL_ARCH_NAME=blackhole` environment variable.
+
+</details>
 
 ---
 

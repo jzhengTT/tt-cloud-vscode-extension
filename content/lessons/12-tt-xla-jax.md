@@ -206,30 +206,88 @@ Prediction: "Paris"
 
 ---
 
-## Step 4: Multi-Chip Configuration (N300/T3K/Galaxy)
+## Step 4: Multi-Chip Configuration
 
-**If you have multi-chip hardware:**
+**Quick Check:** Want to know your hardware type?
 
-TT-XLA supports tensor parallelism and data parallelism across multiple chips:
+[🔍 Detect Hardware](command:tenstorrent.runHardwareDetection)
+
+---
+
+**Configure JAX for your hardware:**
+
+<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b></summary>
+
+```python
+import jax
+
+# Single chip - default configuration
+jax.config.update('jax_platform_name', 'tt')
+# No mesh config needed for single chip
+```
+
+**Best for:** Development, learning JAX on TT hardware
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
 
 ```python
 import jax
 
 # Configure for N300 (2 chips)
 jax.config.update('jax_platform_name', 'tt')
-jax.config.update('jax_tt_mesh', '1x2')  # 2 chips
-
-# Configure for T3K (8 chips)
-jax.config.update('jax_tt_mesh', '1x8')  # 8 chips
-
-# Configure for Galaxy (32 chips)
-jax.config.update('jax_tt_mesh', '8x4')  # 8x4 mesh
+jax.config.update('jax_tt_mesh', '1x2')  # 2 chips in tensor parallelism
 ```
 
 **Benefits:**
-- Automatically distributes computation across chips
-- Tensor parallelism for large models (split layers)
-- Data parallelism for batch processing (split batches)
+- Tensor parallelism for larger models (layers split across chips)
+- Data parallelism for batch processing (batches split across chips)
+- ~2x speedup for compatible workloads
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
+
+```python
+import jax
+
+# Configure for T3K (8 chips)
+jax.config.update('jax_platform_name', 'tt')
+jax.config.update('jax_tt_mesh', '1x8')  # 8 chips in tensor parallelism
+```
+
+**Benefits:**
+- Support for large models (70B+)
+- High throughput for production workloads
+- Flexible parallelism strategies
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 Galaxy (32 Chips)</b></summary>
+
+```python
+import jax
+
+# Configure for Galaxy (32 chips)
+jax.config.update('jax_platform_name', 'tt')
+jax.config.update('jax_tt_mesh', '8x4')  # 8x4 mesh (32 chips total)
+```
+
+**Benefits:**
+- Massive parallelism for largest models
+- Production-scale inference and training
+- Optimal for data center deployments
+
+</details>
+
+---
+
+**💡 Tip:** Start with single-chip (N150) to learn JAX fundamentals, then scale to multi-chip for production workloads.
 
 ---
 

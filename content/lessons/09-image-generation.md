@@ -74,13 +74,11 @@ Stable Diffusion 3.5 Large runs on Tenstorrent hardware with native TT-NN accele
 
 ### Check Your Hardware
 
-```bash
-tt-smi -s | grep -o '"board_type": "[^"]*"'
-```
+**Quick Check:** Not sure which hardware you have?
 
-**Output:** `"board_type": "n150"` (or n300, t3k, p100)
+[🔍 Detect Hardware](command:tenstorrent.runHardwareDetection)
 
-**Note:** If you have P100 (Blackhole), performance should be similar to N150. Report any issues to help validate the configuration!
+Look for the "Board Type" field in the output (e.g., n150, n300, t3k, p100).
 
 ---
 
@@ -125,28 +123,73 @@ huggingface-cli login
 
 The model will be automatically downloaded the first time you run it.
 
-## Step 3: Set Environment for N150
+## Step 3: Configure for Your Hardware
 
-Set the mesh device environment variable:
+Set the appropriate mesh device environment variable for your hardware:
+
+<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b> - Most common</summary>
 
 ```bash
 export MESH_DEVICE=N150
 ```
 
+**Performance:** ~12-15 seconds per 1024x1024 image
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
+
+```bash
+export MESH_DEVICE=N300
+```
+
+**Performance:** ~8-10 seconds per 1024x1024 image (faster with 2 chips!)
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
+
+```bash
+export MESH_DEVICE=T3K
+```
+
+**Performance:** ~5-8 seconds per 1024x1024 image (production speed!)
+
+</details>
+
+<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
+<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 P100 (Blackhole - Single Chip)</b></summary>
+
+```bash
+export MESH_DEVICE=P100
+export TT_METAL_ARCH_NAME=blackhole  # Required for Blackhole
+```
+
+**Performance:** ~12-15 seconds per 1024x1024 image (similar to N150)
+
+**⚠️ Note:** P100 support is experimental. Please report any issues!
+
+</details>
+
+---
+
 **What this does:**
-- Tells tt-metal to configure for single-chip N150
-- Optimizes model parallelization for 1x1 mesh
-- Enables VAE CPU fallback for memory efficiency
+- Tells tt-metal to configure for your specific hardware
+- Optimizes model parallelization for your chip count
+- Enables appropriate memory management
 
 ## Step 4: Generate Your First Image
 
-Run the Stable Diffusion 3.5 demo with a sample prompt:
+Run the Stable Diffusion 3.5 demo with a sample prompt (using the MESH_DEVICE you set in Step 3):
 
 ```bash
 mkdir -p ~/tt-scratchpad
 cd ~/tt-scratchpad
 export PYTHONPATH=~/tt-metal:$PYTHONPATH
-export MESH_DEVICE=N150
+# Use the MESH_DEVICE you set in Step 3 (N150, N300, T3K, or P100)
 
 # Run with default prompt
 pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
@@ -158,7 +201,7 @@ pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
 
 ```
 Loading Stable Diffusion 3.5 Large from stabilityai...
-Initializing MMDiT transformer on N150 (1x1 mesh)...
+Initializing MMDiT transformer on your hardware...
 ✓ Model loaded on TT hardware
 
 Generating 1024x1024 image (28 inference steps)...
@@ -166,20 +209,20 @@ Step 1/28... 2/28... 5/28... 10/28... 15/28... 20/28... 25/28... 28/28
 Decoding with VAE...
 
 ✓ Image saved to: sd35_1024_1024.png
-Generation time: 12.2 seconds
+Generation time: [varies by hardware - see Step 3 performance notes]
 ```
 
 The generated image will be saved to `~/tt-scratchpad/sd35_1024_1024.png`.
 
 ## Step 5: Interactive Mode - Try Your Own Prompts
 
-Run in interactive mode to generate multiple images with custom prompts:
+Run in interactive mode to generate multiple images with custom prompts (using your MESH_DEVICE from Step 3):
 
 ```bash
 mkdir -p ~/tt-scratchpad
 cd ~/tt-scratchpad
 export PYTHONPATH=~/tt-metal:$PYTHONPATH
-export MESH_DEVICE=N150
+# Use the MESH_DEVICE you set in Step 3
 
 # Run interactive mode
 pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py

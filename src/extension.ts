@@ -1740,6 +1740,126 @@ async function startVllmServer(): Promise<void> {
 }
 
 /**
+ * Command: tenstorrent.startVllmServerN150
+ * Starts vLLM server specifically configured for N150 hardware.
+ */
+async function startVllmServerN150(): Promise<void> {
+  await startVllmServerForHardware('N150', {
+    maxModelLen: 65536,
+    maxNumSeqs: 16,
+    blockSize: 64,
+    tensorParallelSize: undefined,
+    archName: undefined,
+  });
+}
+
+/**
+ * Command: tenstorrent.startVllmServerN300
+ * Starts vLLM server specifically configured for N300 hardware.
+ */
+async function startVllmServerN300(): Promise<void> {
+  await startVllmServerForHardware('N300', {
+    maxModelLen: 131072,
+    maxNumSeqs: 32,
+    blockSize: 64,
+    tensorParallelSize: 2,
+    archName: undefined,
+  });
+}
+
+/**
+ * Command: tenstorrent.startVllmServerT3K
+ * Starts vLLM server specifically configured for T3K hardware.
+ */
+async function startVllmServerT3K(): Promise<void> {
+  await startVllmServerForHardware('T3K', {
+    maxModelLen: 131072,
+    maxNumSeqs: 64,
+    blockSize: 64,
+    tensorParallelSize: 8,
+    archName: undefined,
+  });
+}
+
+/**
+ * Command: tenstorrent.startVllmServerP100
+ * Starts vLLM server specifically configured for P100 (Blackhole) hardware.
+ */
+async function startVllmServerP100(): Promise<void> {
+  await startVllmServerForHardware('P100', {
+    maxModelLen: 65536,
+    maxNumSeqs: 16,
+    blockSize: 64,
+    tensorParallelSize: undefined,
+    archName: 'blackhole',
+  });
+}
+
+/**
+ * Helper function to start vLLM server with hardware-specific configuration.
+ */
+async function startVllmServerForHardware(
+  hardware: string,
+  config: {
+    maxModelLen: number;
+    maxNumSeqs: number;
+    blockSize: number;
+    tensorParallelSize?: number;
+    archName?: string;
+  }
+): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  // Create starter script if it doesn't exist
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+  const starterPath = path.join(scratchpadDir, 'start-vllm-server.py');
+
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(starterPath)) {
+    const extensionPath = extensionContext.extensionPath;
+    const templatePath = path.join(extensionPath, 'content', 'templates', 'start-vllm-server.py');
+
+    if (fs.existsSync(templatePath)) {
+      fs.copyFileSync(templatePath, starterPath);
+      fs.chmodSync(starterPath, 0o755);
+    }
+  }
+
+  const modelPath = await getModelBasePath();
+  const terminal = getOrCreateTerminal('server');
+
+  // Build environment variables
+  let envVars = `export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=${hardware} && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH`;
+  if (config.archName) {
+    envVars += ` && export TT_METAL_ARCH_NAME=${config.archName}`;
+  }
+
+  // Build vLLM flags
+  let vllmFlags = `--model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len ${config.maxModelLen} --max-num-seqs ${config.maxNumSeqs} --block-size ${config.blockSize}`;
+  if (config.tensorParallelSize) {
+    vllmFlags += ` --tensor-parallel-size ${config.tensorParallelSize}`;
+  }
+
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && ${envVars} && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py ${vllmFlags}`;
+
+  runInTerminal(terminal, command);
+
+  const contextInfo = config.tensorParallelSize
+    ? `${hardware} with ${config.maxModelLen / 1024}K context, TP=${config.tensorParallelSize}`
+    : `${hardware} with ${config.maxModelLen / 1024}K context`;
+
+  vscode.window.showInformationMessage(
+    `🚀 Starting vLLM server on ${contextInfo}. First load takes 2-5 minutes...`
+  );
+}
+
+/**
  * Command: tenstorrent.testVllmOpenai
  * Tests vLLM with OpenAI SDK
  */
@@ -3483,6 +3603,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.installVllm', installVllm),
     vscode.commands.registerCommand('tenstorrent.runVllmOffline', runVllmOffline),
     vscode.commands.registerCommand('tenstorrent.startVllmServer', startVllmServer),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerN150', startVllmServerN150),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerN300', startVllmServerN300),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerT3K', startVllmServerT3K),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerP100', startVllmServerP100),
     vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
 
