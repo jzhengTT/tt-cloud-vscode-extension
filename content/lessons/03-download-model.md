@@ -240,10 +240,10 @@ You'll see:
 ## Congratulations!
 
 You've successfully:
-✅ Detected your Tenstorrent hardware
-✅ Verified your tt-metal installation
-✅ Downloaded a production-ready LLM
-✅ **Run inference on Tenstorrent hardware!**
+- ✅ Detected your Tenstorrent hardware
+- ✅ Verified your tt-metal installation
+- ✅ Downloaded a production-ready LLM
+- ✅ **Run inference on Tenstorrent hardware!**
 
 You're now ready to explore more advanced use cases, optimize performance, and integrate Tenstorrent into your AI workflows.
 

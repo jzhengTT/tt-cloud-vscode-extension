@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.85",
+  "version": "0.0.86",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -456,7 +456,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.runHardwareDetection"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "validated",
+              "validatedOn": ["n150", "n300", "t3k", "p100"]
+            }
           },
           {
             "id": "verify-installation",
@@ -467,7 +472,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.verifyInstallation"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "validated",
+              "validatedOn": ["n150"]
+            }
           },
           {
             "id": "download-model",
@@ -478,7 +488,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.runInference"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "validated",
+              "validatedOn": ["n150"]
+            }
           },
           {
             "id": "interactive-chat",
@@ -489,7 +504,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.startChatSessionDirect"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "validated",
+              "validatedOn": ["n150"]
+            }
           },
           {
             "id": "api-server",
@@ -500,7 +520,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.testApiBasicDirect"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "validated",
+              "validatedOn": ["n150"]
+            }
           },
           {
             "id": "tt-inference-server",
@@ -511,7 +536,13 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.testTtInferenceServerSimple"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100"],
+              "status": "blocked",
+              "validatedOn": [],
+              "blockReason": "Requires tt-vllm validation"
+            }
           },
           {
             "id": "vllm-production",
@@ -522,7 +553,13 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.startVllmServer"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100"],
+              "status": "blocked",
+              "validatedOn": [],
+              "blockReason": "Requires tt-vllm validation"
+            }
           },
           {
             "id": "vscode-chat",
@@ -533,7 +570,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.testChat"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           },
           {
             "id": "image-generation",
@@ -544,7 +586,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.generateRetroImage"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100"],
+              "status": "validated",
+              "validatedOn": ["n150"]
+            }
           },
           {
             "id": "coding-assistant",
@@ -555,7 +602,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.startCodingAssistant"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           },
           {
             "id": "forge-image-classification",
@@ -566,7 +618,13 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.runForgeClassifier"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150"],
+              "status": "blocked",
+              "validatedOn": [],
+              "blockReason": "TT-Forge experimental - requires validation"
+            }
           },
           {
             "id": "tt-xla-jax",
@@ -577,7 +635,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.testTtXlaInstall"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           },
           {
             "id": "riscv-programming",
@@ -588,7 +651,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.runRiscvExample"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           },
           {
             "id": "bounty-program",
@@ -599,7 +667,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.browseOpenBounties"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           },
           {
             "id": "explore-metalium",
@@ -610,7 +683,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.launchTtnnTutorials"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           },
           {
             "id": "metalium-cookbook",
@@ -621,7 +699,12 @@
             },
             "completionEvents": [
               "onCommand:tenstorrent.createCookbookProjects"
-            ]
+            ],
+            "metadata": {
+              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+              "status": "draft",
+              "validatedOn": []
+            }
           }
         ]
       }

@@ -16,11 +16,11 @@ With 176 Tensix cores on Wormhole, that's **880 RISC-V cores** you can program d
 
 Unlike typical embedded RISC-V boards (SiFive, ESP32-C3) with 1-5 cores, Tenstorrent hardware offers:
 
-✅ **Massive parallelism** - Hundreds of RISC-V cores working together
-✅ **Near-memory compute** - 1.5MB L1 SRAM per Tensix core
-✅ **High-bandwidth interconnect** - Network-on-Chip (NoC) mesh at 100+ GB/s aggregate
-✅ **Bare-metal programming** - No OS, no hidden behavior, direct hardware access
-✅ **Explicit communication** - Learn distributed systems with real hardware
+- ✅ **Massive parallelism** - Hundreds of RISC-V cores working together
+- ✅ **Near-memory compute** - 1.5MB L1 SRAM per Tensix core
+- ✅ **High-bandwidth interconnect** - Network-on-Chip (NoC) mesh at 100+ GB/s aggregate
+- ✅ **Bare-metal programming** - No OS, no hidden behavior, direct hardware access
+- ✅ **Explicit communication** - Learn distributed systems with real hardware
 
 This lesson walks you through running a simple RISC-V program on Tensix cores, then provides resources for deeper exploration.
 
@@ -366,11 +366,11 @@ Then compile and run via the tt-metal C++ API!
 
 Understanding RISC-V programming on Tenstorrent hardware gives you:
 
-✅ **Low-level optimization skills** - Understand exactly what the hardware is doing
-✅ **Parallel computing experience** - Learn to coordinate hundreds of processors
-✅ **Architecture knowledge** - Near-memory compute, NoC, distributed systems
-✅ **Debugging superpowers** - Trace execution at the instruction level
-✅ **Competitive advantage** - Few developers understand this level of the stack
+- ✅ **Low-level optimization skills** - Understand exactly what the hardware is doing
+- ✅ **Parallel computing experience** - Learn to coordinate hundreds of processors
+- ✅ **Architecture knowledge** - Near-memory compute, NoC, distributed systems
+- ✅ **Debugging superpowers** - Trace execution at the instruction level
+- ✅ **Competitive advantage** - Few developers understand this level of the stack
 
 **From simple addition to complex AI workloads, it all runs on RISC-V instructions - hundreds of thousands of them, executing in parallel across the chip.**
 

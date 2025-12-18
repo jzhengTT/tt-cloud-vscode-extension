@@ -557,11 +557,11 @@ python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8081
 
 ## What You Learned
 
-✅ How to build HTTP APIs with the Generator API
-✅ Model initialization vs. request handling
-✅ Flask server patterns for AI inference
-✅ API design with proper JSON responses
-✅ Performance monitoring and optimization
+- ✅ How to build HTTP APIs with the Generator API
+- ✅ Model initialization vs. request handling
+- ✅ Flask server patterns for AI inference
+- ✅ API design with proper JSON responses
+- ✅ Performance monitoring and optimization
 
 **Key takeaway:** Production AI APIs load the model once and handle many requests efficiently. This is the foundation for building scalable AI services.
 

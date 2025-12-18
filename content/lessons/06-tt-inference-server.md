@@ -720,13 +720,13 @@ tail -f ~/tt-inference-server/workflow_logs/run_logs/run_*.log
 
 ## What You Learned
 
-✅ What tt-inference-server is (workflow automation tool for vLLM)
-✅ How to start a vLLM server with validated configuration
-✅ Understanding --model (name), --device (lowercase), --workflow
-✅ Testing with OpenAI-compatible API
-✅ Managing Docker containers
-✅ Using different workflows (server, benchmarks, evals, release)
-✅ Understanding MODEL_SPECS and validated configurations
+- ✅ What tt-inference-server is (workflow automation tool for vLLM)
+- ✅ How to start a vLLM server with validated configuration
+- ✅ Understanding --model (name), --device (lowercase), --workflow
+- ✅ Testing with OpenAI-compatible API
+- ✅ Managing Docker containers
+- ✅ Using different workflows (server, benchmarks, evals, release)
+- ✅ Understanding MODEL_SPECS and validated configurations
 
 **Key insight:** tt-inference-server is NOT a standalone server - it's a smart wrapper that deploys vLLM with Tenstorrent-validated configurations. This saves you from manual Docker image selection, model configuration, and hardware optimization.
 

@@ -250,11 +250,11 @@ dmesg | grep -i tenstorrent
 
 ## What You Learned
 
-✅ How to detect Tenstorrent hardware with `tt-smi`
-✅ Understanding different hardware types (N150, N300, T3K, P100, P150)
-✅ Using `tt-smi -s` for structured JSON output
-✅ Identifying your specific hardware for later lessons
-✅ Troubleshooting hardware detection issues
+- ✅ How to detect Tenstorrent hardware with `tt-smi`
+- ✅ Understanding different hardware types (N150, N300, T3K, P100, P150)
+- ✅ Using `tt-smi -s` for structured JSON output
+- ✅ Identifying your specific hardware for later lessons
+- ✅ Troubleshooting hardware detection issues
 
 **Next step:** Now that you know your hardware, verify your tt-metal installation works correctly.
 

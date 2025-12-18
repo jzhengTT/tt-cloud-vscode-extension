@@ -2284,10 +2284,10 @@ Combine multiple exposures.
 
 Congratulations! You've completed the TT-Metalium Cookbook. You now have:
 
-✅ **4 complete, working projects**
-✅ **Deep understanding of TTNN operations**
-✅ **Experience with parallel tile computing**
-✅ **Foundation for production applications**
+- ✅ **4 complete, working projects**
+- ✅ **Deep understanding of TTNN operations**
+- ✅ **Experience with parallel tile computing**
+- ✅ **Foundation for production applications**
 
 ## What's Next?
 

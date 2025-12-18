@@ -11,6 +11,7 @@ VSCode extension for Tenstorrent hardware development:
 3. **Chat Integration** - @tenstorrent participant via vLLM
 4. **Templates** - Production-ready Python scripts
 5. **Auto-config** - Solarized Dark + terminal on activation
+6. **Lesson Metadata** - Hardware compatibility and validation tracking (see LESSON_METADATA.md)
 
 ## Styled Hardware Configs (v0.0.85+)
 
@@ -111,6 +112,38 @@ git pull origin main
 
 **Note:** `vendor/` is in `.gitignore` - these reference repos are NOT committed to the extension's git repository. They're local-only for development. Each developer/AI should clone what they need.
 
+## Lesson Metadata System (v0.0.86+)
+
+**Every lesson now has metadata for hardware compatibility and validation tracking.**
+
+See `LESSON_METADATA.md` for complete documentation.
+
+**Quick reference:**
+```json
+"metadata": {
+  "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
+  "status": "validated" | "draft" | "blocked",
+  "validatedOn": ["n150", "n300"],
+  "blockReason": "Optional reason if blocked",
+  "minTTMetalVersion": "v0.51.0"
+}
+```
+
+**Hardware values:** `n150`, `n300`, `t3k`, `p100`, `p150`, `galaxy`, `simulator`
+
+**Status values:**
+- `validated` - Tested and ready for production release
+- `draft` - In development, hide in production builds
+- `blocked` - Known issue, show with warning
+
+**Use cases:**
+1. **Release gating** - Filter lessons by status before packaging
+2. **Hardware filtering** - Show only relevant lessons for detected hardware
+3. **Quality tracking** - Know which configs have been tested
+4. **Development workflow** - Clear status for each lesson
+
+**All 16 lessons have metadata as of v0.0.86.**
+
 ## Architecture
 
 **Content-First Design:** Content in markdown, code handles execution only.
@@ -119,6 +152,7 @@ git pull origin main
 - Steps auto-complete via `completionEvents`
 - Markdown rendered natively by VSCode
 - Command links as buttons (on own line)
+- Each step now includes `metadata` field (v0.0.86+)
 
 **Terminal Management (v0.0.66+):**
 - **2 terminals only:** `main` (setup/testing) and `server` (long-running)
@@ -236,6 +270,13 @@ git pull origin main
 - API examples and patterns
 
 ## Recent Changes
+
+**v0.0.86** - Lesson metadata system + install_dependencies.sh fixes
+- Added metadata to all 16 walkthrough steps (hardware support, validation status)
+- Created LESSON_METADATA.md with complete documentation
+- Added `sudo` prefix to all `install_dependencies.sh` commands
+- Fixed emoji-based lists to use proper markdown syntax (9 lessons)
+- Infrastructure for release gating and hardware filtering
 
 **v0.0.85** - CSS-styled hardware configurations
 - Added styled `<details>` sections to Lessons 6, 7, 9, 12

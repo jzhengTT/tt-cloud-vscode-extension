@@ -388,11 +388,11 @@ tt-smi -r
 
 ## What You Learned
 
-✅ How to set up Stable Diffusion on Tenstorrent hardware
-✅ Text-to-image generation with custom prompts
-✅ Understanding diffusion model parameters
-✅ Prompt engineering for better results
-✅ Batch generation and optimization
+- ✅ How to set up Stable Diffusion on Tenstorrent hardware
+- ✅ Text-to-image generation with custom prompts
+- ✅ Understanding diffusion model parameters
+- ✅ Prompt engineering for better results
+- ✅ Batch generation and optimization
 
 **Key takeaway:** You can generate high-quality images locally on your Tenstorrent hardware, with full control over the generation process and complete privacy.
 

@@ -352,11 +352,11 @@ export MESH_DEVICE=N150  # or N300, T3K, etc.
 
 ## What You Learned
 
-✅ How to use the Generator API directly
-✅ Model loading vs. inference phases
-✅ Prefill (process prompt) vs. decode (generate tokens)
-✅ Token sampling and stopping conditions
-✅ How to build custom chat applications
+- ✅ How to use the Generator API directly
+- ✅ Model loading vs. inference phases
+- ✅ Prefill (process prompt) vs. decode (generate tokens)
+- ✅ Token sampling and stopping conditions
+- ✅ How to build custom chat applications
 
 **Key takeaway:** Real AI applications load the model once and reuse it. This is the foundation for everything from chat apps to API servers.
 

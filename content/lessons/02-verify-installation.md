@@ -16,7 +16,7 @@ This step runs a simple test program that:
 If you haven't already run this command, do it now:
 
 ```bash
-cd ~/tt-metal && ./install_dependencies.sh
+cd ~/tt-metal && sudo ./install_dependencies.sh
 ```
 
 **What this script does:**
@@ -63,7 +63,7 @@ If the verification fails, try these steps:
 ```bash
 cd ~/tt-metal
 ./build_metal.sh --clean      # Remove all build artifacts
-./install_dependencies.sh     # Ensure dependencies are current
+sudo ./install_dependencies.sh     # Ensure dependencies are current
 ./build_metal.sh              # Rebuild from scratch
 ```
 

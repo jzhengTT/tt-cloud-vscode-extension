@@ -236,7 +236,7 @@ cd ~/tt-metal && \
   git checkout main && \
   git pull origin main && \
   git submodule update --init --recursive && \
-  ./install_dependencies.sh && \
+  sudo ./install_dependencies.sh && \
   ./build_metal.sh
 ```
 
@@ -930,7 +930,7 @@ cd ~/tt-metal
 git checkout main
 git pull origin main
 git submodule update --init --recursive
-./install_dependencies.sh      # Install/update system dependencies
+sudo ./install_dependencies.sh      # Install/update system dependencies
 ./build_metal.sh               # Build tt-metal
 
 # Then upgrade ttnn in vLLM venv
@@ -1071,12 +1071,12 @@ See the [TT-Jukebox repository](https://github.com/tenstorrent/tt-jukebox) for t
 
 ## What You Learned
 
-✅ How to install and configure vLLM for Tenstorrent
-✅ OpenAI-compatible API usage
-✅ Continuous batching for efficient serving
-✅ Streaming responses
-✅ Production deployment patterns
-✅ Performance monitoring and tuning
+- ✅ How to install and configure vLLM for Tenstorrent
+- ✅ OpenAI-compatible API usage
+- ✅ Continuous batching for efficient serving
+- ✅ Streaming responses
+- ✅ Production deployment patterns
+- ✅ Performance monitoring and tuning
 
 **Key takeaway:** vLLM bridges the gap between custom code and production deployment, giving you enterprise features while maintaining compatibility with standard APIs.
 
