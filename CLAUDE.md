@@ -200,12 +200,19 @@ See `LESSON_METADATA.md` for complete documentation.
 ```
 
 **vLLM commands (Lesson 7):**
-- Hardware-specific: `startVllmServerN150/N300/T3K/P100()`
-- Helper: `startVllmServerForHardware(hardware, config)`
+- Hardware-specific Llama: `startVllmServerN150/N300/T3K/P100()`
+- Hardware-specific Qwen: `startVllmServerN150Qwen/N300Qwen/T3KQwen/P100Qwen()` (v0.0.89+)
+- Helper: `startVllmServerForHardware(hardware, config)` - accepts optional `modelPath` parameter
 - All use `'server'` terminal type
 
+**Model Support (v0.0.89+):**
+- **Llama-3.1-8B-Instruct** - General-purpose chat (gated, requires HF token)
+- **Qwen3-8B** - Multilingual (29 languages), coding, math (no HF token needed!)
+- Both models: Same 8B size, work on all hardware (N150/N300/T3K/P100)
+- Commands available for both models on all hardware configurations
+
 **Model Registry:** `MODEL_REGISTRY` in `src/extension.ts`
-- Current: Llama-3.1-8B-Instruct
+- Current default: Llama-3.1-8B-Instruct
 - Add models here to make available throughout extension
 
 ## Key Implementation Notes

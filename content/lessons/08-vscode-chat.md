@@ -143,12 +143,14 @@ cd ~/tt-vllm && \
     --model ~/models/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
-    --max-model-len 65536 \
-    --max-num-seqs 16 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
     --block-size 64
 ```
 
-**For P100:** Change `MESH_DEVICE=N150` to `MESH_DEVICE=P100`
+**For P100:** Change `MESH_DEVICE=N150` to `MESH_DEVICE=P100` and add `export TT_METAL_ARCH_NAME=blackhole`
+
+**💡 Memory Note:** Using 8K context to prevent OOM errors on single-chip hardware.
 
 ### Wormhole N300
 

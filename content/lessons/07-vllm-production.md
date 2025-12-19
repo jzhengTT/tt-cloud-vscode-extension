@@ -99,6 +99,51 @@ python3 --version  # Need 3.10+
 
 ---
 
+## Model Choice
+
+**Choose your model:** This lesson supports two models - pick whichever interests you!
+
+| Model | Size | Strengths | Hardware Support |
+|-------|------|-----------|------------------|
+| **Llama-3.1-8B-Instruct** | 8B params | General-purpose chat, instruction-following | N150, N300, T3K, P100 |
+| **Qwen3-8B** | 8B params | Multilingual (29 languages), coding, math | N150, N300, T3K |
+
+**Model Download Commands:**
+
+<details>
+<summary><b>📥 Llama-3.1-8B-Instruct</b> (click to expand)</summary>
+
+```bash
+# Download Llama model (if not already downloaded in Lesson 3)
+huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
+  --local-dir ~/models/Llama-3.1-8B-Instruct
+```
+
+**Note:** Requires HuggingFace authentication for gated model access.
+
+</details>
+
+<details>
+<summary><b>📥 Qwen3-8B</b> (click to expand)</summary>
+
+```bash
+# Download Qwen3-8B model
+huggingface-cli download Qwen/Qwen3-8B \
+  --local-dir ~/models/Qwen3-8B
+```
+
+**Advantages:**
+- No gated access required (no HF token needed!)
+- Multilingual: 29 languages including English, Chinese, Spanish, French, German, Japanese, Korean
+- Strong coding and math capabilities
+- Same 8B size as Llama
+
+</details>
+
+**💡 Tip:** Both models work with the same vLLM commands below - just change the `--model` path!
+
+---
+
 ## Hardware Configuration
 
 **Quick Check:** Not sure which hardware you have? Run this command to detect your device:
@@ -116,8 +161,8 @@ Look for the "Board Type" field in the output (e.g., n150, n300, t3k, p100).
 
 **Specifications:**
 - Chips: 1
-- Model: Llama-3.1-8B-Instruct
-- Context Length: 64K tokens
+- Models: **Llama-3.1-8B-Instruct** OR **Qwen3-8B**
+- Context Length: 8K tokens (reduced for memory constraints)
 - Best for: Development, single-user deployments, learning
 
 **Environment Variables:**
@@ -127,12 +172,45 @@ export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 ```
 
-**vLLM Flags (use in Step 4):**
+**vLLM Command - Llama:**
 ```bash
---max-model-len 65536    # 64K context
---max-num-seqs 16        # Concurrent sequences
---block-size 64          # KV cache block size
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
+    --block-size 64
 ```
+
+[🚀 Run vLLM with Llama (N150)](command:tenstorrent.startVllmServerN150)
+
+**vLLM Command - Qwen3-8B:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Qwen3-8B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
+    --block-size 64
+```
+
+[🚀 Run vLLM with Qwen3-8B (N150)](command:tenstorrent.startVllmServerN150Qwen)
+
+**💡 Memory Note:** N150 has limited DRAM. These conservative settings prevent OOM errors. If you need longer context, try reducing `--max-num-seqs` to 1 and increasing `--max-model-len` to 16384.
 
 </details>
 
@@ -141,7 +219,7 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 
 **Specifications:**
 - Chips: 2
-- Models: Llama-3.1-8B-Instruct OR Qwen-2.5-7B-Coder
+- Models: **Llama-3.1-8B-Instruct** OR **Qwen3-8B** OR Qwen-2.5-7B-Coder
 - Context Length: 128K tokens
 - Tensor Parallelism: TP=2 (uses both chips)
 - Best for: Higher throughput, production deployments
@@ -153,13 +231,47 @@ export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 ```
 
-**vLLM Flags (use in Step 4):**
+**vLLM Command - Llama:**
 ```bash
---max-model-len 131072   # 128K context
---max-num-seqs 32        # More concurrent sequences
---block-size 64
---tensor-parallel-size 2 # Use both chips
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N300 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 32 \
+    --block-size 64 \
+    --tensor-parallel-size 2
 ```
+
+[🚀 Run vLLM with Llama (N300)](command:tenstorrent.startVllmServerN300)
+
+**vLLM Command - Qwen3-8B:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N300 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Qwen3-8B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 32 \
+    --block-size 64 \
+    --tensor-parallel-size 2
+```
+
+[🚀 Run vLLM with Qwen3-8B (N300)](command:tenstorrent.startVllmServerN300Qwen)
+
+**💡 Why both models work:** Both Llama and Qwen3 are 8B parameter models that fit comfortably on N300 with TP=2, enabling 128K context windows.
 
 </details>
 
@@ -168,10 +280,10 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 
 **Specifications:**
 - Chips: 8
-- Model: Llama-3.1-70B-Instruct (requires 70B model download)
+- Models: **Llama-3.1-8B** OR **Qwen3-8B** (8B models) OR Llama-3.1-70B (70B model)
 - Context Length: 128K+ tokens
 - Tensor Parallelism: TP=8 (uses all chips)
-- Best for: Large models (70B+), multi-user production
+- Best for: Large models (70B+), multi-user production, or over-provisioned 8B models
 
 **Environment Variables:**
 ```bash
@@ -180,16 +292,49 @@ export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 ```
 
-**vLLM Flags (use in Step 4):**
+**vLLM Command - Llama 8B:**
 ```bash
---model ~/models/Llama-3.1-70B-Instruct  # Note: 70B model!
---max-model-len 131072
---max-num-seqs 64
---block-size 64
---tensor-parallel-size 8
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=T3K && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 64 \
+    --block-size 64 \
+    --tensor-parallel-size 8
 ```
 
-**Note:** T3K supports larger models like Llama-3.1-70B. Download the 70B model separately if you want to use it.
+[🚀 Run vLLM with Llama-8B (T3K)](command:tenstorrent.startVllmServerT3K)
+
+**vLLM Command - Qwen3-8B:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=T3K && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Qwen3-8B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 131072 \
+    --max-num-seqs 64 \
+    --block-size 64 \
+    --tensor-parallel-size 8
+```
+
+[🚀 Run vLLM with Qwen3-8B (T3K)](command:tenstorrent.startVllmServerT3KQwen)
+
+**💡 8B models on T3K:** While T3K can run 70B models, running 8B models with TP=8 gives you extremely high throughput and massive batch sizes for production serving.
+
+**Note:** T3K also supports larger models like Llama-3.1-70B. Download the 70B model separately if you want to use it.
 
 </details>
 
@@ -198,8 +343,8 @@ export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 
 **Specifications:**
 - Chips: 1 (newer Blackhole architecture)
-- Model: Llama-3.1-8B-Instruct
-- Context Length: 64K tokens
+- Models: **Llama-3.1-8B-Instruct** OR **Qwen3-8B**
+- Context Length: 8K tokens (reduced for memory constraints)
 - Best for: Development with latest hardware
 
 **Environment Variables:**
@@ -210,16 +355,49 @@ export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
 ```
 
-**vLLM Flags (use in Step 4):**
+**vLLM Command - Llama:**
 ```bash
---max-model-len 65536
---max-num-seqs 16
---block-size 64
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=P100 && \
+  export TT_METAL_ARCH_NAME=blackhole && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Llama-3.1-8B-Instruct \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
+    --block-size 64
 ```
+
+[🚀 Run vLLM with Llama (P100)](command:tenstorrent.startVllmServerP100)
+
+**vLLM Command - Qwen3-8B:**
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=P100 && \
+  export TT_METAL_ARCH_NAME=blackhole && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Qwen3-8B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
+    --block-size 64
+```
+
+[🚀 Run vLLM with Qwen3-8B (P100)](command:tenstorrent.startVllmServerP100Qwen)
 
 **⚠️ Critical:** Blackhole hardware (P100) requires `TT_METAL_ARCH_NAME=blackhole` environment variable. Without this, device detection will fail.
 
-**Note:** P100 support may be experimental. See "Alternative: Use TT-Jukebox" below for validated configurations.
+**💡 Memory Note:** Like N150, P100 is a single-chip device with limited DRAM. These conservative settings prevent OOM errors. For longer context (16K), use `--max-model-len 16384 --max-num-seqs 1`.
 
 </details>
 
@@ -336,55 +514,7 @@ cd ~/tt-vllm && \
 
 **Time estimate:** ~5-10 minutes total
 
-## Step 3: Run Offline Inference (Optional - Skip for N150)
-
-Test vLLM with a simple offline inference example:
-
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
-  export MESH_DEVICE=N150 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python examples/offline_inference_tt.py
-```
-
-[🧪 Run Offline Inference](command:tenstorrent.runVllmOffline)
-
-**⚠️ N150 Note:** The offline inference script may show warnings about context length (128K default). This is expected - the script is primarily for testing larger hardware. **You can skip this step and go straight to Step 4 (API server)** where you can properly configure the 64K limit.
-
-**Important:** `TT_METAL_HOME` and `PYTHONPATH` are required so vLLM can find the TTLlamaForCausalLM model implementation.
-
-**What you might see:**
-```
-WARNING: The model has a long context length (131072). This may cause OOM...
-```
-
-This warning is safe to ignore - it's just telling you the model *supports* 128K, but we'll configure 64K in the API server.
-
-**What you'll see:**
-
-```
-Loading model...
-Model loaded successfully!
-
-Prompt: 'Hello, my name is'
-Generated text: ' John. I am a software engineer...'
-
-Prompt: 'The capital of France is'
-Generated text: ' Paris. It is known for the Eiffel Tower...'
-
-...
-```
-
-**This demonstrates:**
-- vLLM can load your model
-- Basic inference works
-- ~20-40 tokens/second generation speed
-
-## Step 4: Start the OpenAI-Compatible Server
+## Step 3: Start the OpenAI-Compatible Server
 
 Now start vLLM as an HTTP server with OpenAI-compatible endpoints.
 
@@ -406,12 +536,14 @@ cd ~/tt-vllm && \
     --model ~/models/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
-    --max-model-len 65536 \
-    --max-num-seqs 16 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
     --block-size 64
 ```
 
 [🚀 Start vLLM Server (N150)](command:tenstorrent.startVllmServerN150)
+
+**💡 Memory Tip:** These settings use 8K context to avoid OOM errors. For longer context (16K), use `--max-model-len 16384 --max-num-seqs 1`.
 
 </details>
 
@@ -480,8 +612,8 @@ cd ~/tt-vllm && \
     --model ~/models/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
-    --max-model-len 65536 \
-    --max-num-seqs 16 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
     --block-size 64
 ```
 
@@ -489,7 +621,17 @@ cd ~/tt-vllm && \
 
 **⚠️ Remember:** P100 requires `TT_METAL_ARCH_NAME=blackhole` environment variable.
 
+**💡 Memory Tip:** These settings use 8K context to avoid OOM errors. For longer context (16K), use `--max-model-len 16384 --max-num-seqs 1`.
+
 </details>
+
+---
+
+**First time setup?** Create the starter script before using any of the commands above:
+
+[📝 Create vLLM Starter Script](command:tenstorrent.createVllmStarter)
+
+This creates `~/tt-scratchpad/start-vllm-server.py` which registers TT models with vLLM. The hardware-specific buttons above will create this automatically if it doesn't exist, but you can also create it manually with this button.
 
 ---
 
@@ -530,7 +672,7 @@ ModelRegistry.register_model(
 
 **✅ Our approach:** Self-contained, production-ready script with inline registration
 
-**The extension creates this script automatically** when you click the button above. You can also view/customize it at `~/tt-scratchpad/start-vllm-server.py`.
+**The extension creates this script automatically** when you use any of the "Start vLLM Server" buttons above, or you can create it manually with the "Create vLLM Starter Script" button. You can also view/customize it at `~/tt-scratchpad/start-vllm-server.py`.
 
 ---
 
@@ -601,7 +743,7 @@ training algorithms to learn from data and make predictions...
 
 **Why this is powerful:** Your code is **identical** to code that calls OpenAI's API. Just change the `base_url`!
 
-## Step 6: Test with curl
+## Step 5: Test with curl
 
 You can also use curl (same API as OpenAI):
 
@@ -966,8 +1108,8 @@ cd ~/tt-vllm && \
     --model ~/models/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
-    --max-model-len 65536 \
-    --max-num-seqs 16 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
     --block-size 64
 ```
 
@@ -1024,48 +1166,6 @@ pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
 - Reduce `--max-num-seqs`
 - Reduce `--max-model-len`
 - Close other programs
-
----
-
-## Alternative: Use TT-Jukebox (Recommended!)
-
-**Struggling with version mismatches or hardware compatibility?**
-
-TT-Jukebox is a standalone tool that automates everything in this lesson:
-- ✅ Detects your hardware automatically
-- ✅ Finds compatible models for your device
-- ✅ Sets correct tt-metal and vLLM commits
-- ✅ Generates setup scripts with exact versions
-- ✅ Provides tested vLLM flags
-- ✅ Downloads models automatically
-
-**Quick start with Jukebox:**
-```bash
-# Clone TT-Jukebox (standalone repository)
-git clone https://github.com/tenstorrent/tt-jukebox.git ~/tt-jukebox
-cd ~/tt-jukebox
-
-# Find chat models for your hardware
-python3 tt-jukebox.py chat
-
-# Select a model → generates setup script → run it → done!
-```
-
-**Why use Jukebox?**
-- Eliminates version mismatch errors
-- Uses official Tenstorrent-tested configurations
-- Reproducible environments (share scripts with team)
-- Supports experimental models and hardware
-- Updates automatically from official specs
-
-**When to use Jukebox:**
-- First time setting up vLLM
-- After updating tt-metal or vLLM
-- Switching between different models
-- Working on a team (share setup scripts)
-- Trying experimental hardware (P100, P150)
-
-See the [TT-Jukebox repository](https://github.com/tenstorrent/tt-jukebox) for the complete guide.
 
 ---
 

@@ -1681,24 +1681,6 @@ function installVllm(): void {
 }
 
 /**
- * Command: tenstorrent.runVllmOffline
- * Runs vLLM offline inference example with N150 configuration
- * Note: Offline script may show 128K context warnings - this is expected
- */
-async function runVllmOffline(): Promise<void> {
-  const modelPath = await getModelBasePath();
-  const terminal = getOrCreateTerminal('main');
-
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export HF_MODEL=${modelPath} && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python examples/offline_inference_tt.py`;
-
-  runInTerminal(terminal, command);
-
-  vscode.window.showInformationMessage(
-    'Running vLLM offline inference (may show context length warnings - this is expected). You can skip to API server if preferred.'
-  );
-}
-
-/**
  * Command: tenstorrent.startVllmServer
  * Starts the vLLM OpenAI-compatible server with N150 configuration.
  * Creates a custom starter script that registers TT models and uses local model path.
@@ -1730,12 +1712,12 @@ async function startVllmServer(): Promise<void> {
   const modelPath = await getModelBasePath();
   const terminal = getOrCreateTerminal('server');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 8192 --max-num-seqs 4 --block-size 64`;
 
   runInTerminal(terminal, command);
 
   vscode.window.showInformationMessage(
-    '🚀 Starting vLLM server on N150 with local model. First load takes 2-5 minutes...'
+    '🚀 Starting vLLM server on N150 with 8K context (memory-optimized). First load takes 2-5 minutes...'
   );
 }
 
@@ -1745,8 +1727,8 @@ async function startVllmServer(): Promise<void> {
  */
 async function startVllmServerN150(): Promise<void> {
   await startVllmServerForHardware('N150', {
-    maxModelLen: 65536,
-    maxNumSeqs: 16,
+    maxModelLen: 8192,
+    maxNumSeqs: 4,
     blockSize: 64,
     tensorParallelSize: undefined,
     archName: undefined,
@@ -1787,11 +1769,83 @@ async function startVllmServerT3K(): Promise<void> {
  */
 async function startVllmServerP100(): Promise<void> {
   await startVllmServerForHardware('P100', {
-    maxModelLen: 65536,
-    maxNumSeqs: 16,
+    maxModelLen: 8192,
+    maxNumSeqs: 4,
     blockSize: 64,
     tensorParallelSize: undefined,
     archName: 'blackhole',
+  });
+}
+
+// ============================================================================
+// Qwen Model Variants (Hardware-Specific)
+// ============================================================================
+
+/**
+ * Command: tenstorrent.startVllmServerN150Qwen
+ * Starts vLLM server with Qwen3-8B on N150 hardware.
+ */
+async function startVllmServerN150Qwen(): Promise<void> {
+  const os = await import('os');
+  const homeDir = os.homedir();
+  await startVllmServerForHardware('N150', {
+    maxModelLen: 8192,
+    maxNumSeqs: 4,
+    blockSize: 64,
+    tensorParallelSize: undefined,
+    archName: undefined,
+    modelPath: `${homeDir}/models/Qwen3-8B`,
+  });
+}
+
+/**
+ * Command: tenstorrent.startVllmServerN300Qwen
+ * Starts vLLM server with Qwen3-8B on N300 hardware.
+ */
+async function startVllmServerN300Qwen(): Promise<void> {
+  const os = await import('os');
+  const homeDir = os.homedir();
+  await startVllmServerForHardware('N300', {
+    maxModelLen: 131072,
+    maxNumSeqs: 32,
+    blockSize: 64,
+    tensorParallelSize: 2,
+    archName: undefined,
+    modelPath: `${homeDir}/models/Qwen3-8B`,
+  });
+}
+
+/**
+ * Command: tenstorrent.startVllmServerT3KQwen
+ * Starts vLLM server with Qwen3-8B on T3K hardware.
+ */
+async function startVllmServerT3KQwen(): Promise<void> {
+  const os = await import('os');
+  const homeDir = os.homedir();
+  await startVllmServerForHardware('T3K', {
+    maxModelLen: 131072,
+    maxNumSeqs: 64,
+    blockSize: 64,
+    tensorParallelSize: 8,
+    archName: undefined,
+    modelPath: `${homeDir}/models/Qwen3-8B`,
+  });
+}
+
+/**
+ * Command: tenstorrent.startVllmServerP100Qwen
+ * Starts vLLM server with Qwen3-8B on P100 (Blackhole) hardware.
+ */
+async function startVllmServerP100Qwen(): Promise<void> {
+  const os = await import('os');
+  const homeDir = os.homedir();
+  await startVllmServerForHardware('P100', {
+    maxModelLen: 8192,
+    maxNumSeqs: 4,
+    blockSize: 64,
+    tensorParallelSize: undefined,
+    archName: 'blackhole',
+    modelPath: `${homeDir}/models/Qwen3-8B`,
   });
 }
 
@@ -1806,6 +1860,7 @@ async function startVllmServerForHardware(
     blockSize: number;
     tensorParallelSize?: number;
     archName?: string;
+    modelPath?: string;  // Optional: override default Llama path
   }
 ): Promise<void> {
   const path = await import('path');
@@ -1831,7 +1886,7 @@ async function startVllmServerForHardware(
     }
   }
 
-  const modelPath = await getModelBasePath();
+  const modelPath = config.modelPath || await getModelBasePath();
   const terminal = getOrCreateTerminal('server');
 
   // Build environment variables
@@ -1850,9 +1905,10 @@ async function startVllmServerForHardware(
 
   runInTerminal(terminal, command);
 
+  const modelName = config.modelPath ? path.basename(modelPath) : 'Llama-3.1-8B';
   const contextInfo = config.tensorParallelSize
-    ? `${hardware} with ${config.maxModelLen / 1024}K context, TP=${config.tensorParallelSize}`
-    : `${hardware} with ${config.maxModelLen / 1024}K context`;
+    ? `${hardware} with ${modelName}, ${config.maxModelLen / 1024}K context, TP=${config.tensorParallelSize}`
+    : `${hardware} with ${modelName}, ${config.maxModelLen / 1024}K context`;
 
   vscode.window.showInformationMessage(
     `🚀 Starting vLLM server on ${contextInfo}. First load takes 2-5 minutes...`
@@ -1938,17 +1994,62 @@ async function startVllmForChat(): Promise<void> {
   const modelPath = await getModelBasePath();
   const terminal = getOrCreateTerminal('server');
 
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 65536 --max-num-seqs 16 --block-size 64`;
+  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 8192 --max-num-seqs 4 --block-size 64`;
 
   runInTerminal(terminal, command);
 
   const selection = await vscode.window.showInformationMessage(
-    '🚀 Starting vLLM server on N150 with TT model registration... This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
+    '🚀 Starting vLLM server on N150 with 8K context (memory-optimized). This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
     'Show Terminal'
   );
 
   if (selection === 'Show Terminal') {
     terminal.show();
+  }
+}
+
+/**
+ * Command: tenstorrent.createVllmStarter
+ * Creates the vLLM starter script in ~/tt-scratchpad/ without starting the server.
+ * This script registers TT models with vLLM before starting the API server.
+ */
+async function createVllmStarter(): Promise<void> {
+  const path = await import('path');
+  const fs = await import('fs');
+  const os = await import('os');
+
+  const homeDir = os.homedir();
+  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
+  const starterPath = path.join(scratchpadDir, 'start-vllm-server.py');
+
+  // Create directory if it doesn't exist
+  if (!fs.existsSync(scratchpadDir)) {
+    fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  // Copy template
+  const extensionPath = extensionContext.extensionPath;
+  const templatePath = path.join(extensionPath, 'content', 'templates', 'start-vllm-server.py');
+
+  if (!fs.existsSync(templatePath)) {
+    vscode.window.showErrorMessage('❌ Template not found: start-vllm-server.py');
+    return;
+  }
+
+  fs.copyFileSync(templatePath, starterPath);
+  fs.chmodSync(starterPath, 0o755);
+
+  const selection = await vscode.window.showInformationMessage(
+    `✅ Created vLLM starter script at ${starterPath}`,
+    'Open File',
+    'Show in Folder'
+  );
+
+  if (selection === 'Open File') {
+    const doc = await vscode.workspace.openTextDocument(starterPath);
+    await vscode.window.showTextDocument(doc);
+  } else if (selection === 'Show in Folder') {
+    await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(starterPath));
   }
 }
 
@@ -3464,7 +3565,6 @@ async function showCommandMenu(): Promise<void> {
     { label: '🚀 vLLM Production', kind: vscode.QuickPickItemKind.Separator },
     { label: '$(git-branch) Clone vLLM', description: 'Clone Tenstorrent vLLM fork', command: 'tenstorrent.cloneVllm' },
     { label: '$(package) Install vLLM', description: 'Install vLLM with dependencies', command: 'tenstorrent.installVllm' },
-    { label: '$(terminal) Run vLLM Offline', description: 'Test vLLM offline inference', command: 'tenstorrent.runVllmOffline' },
     { label: '$(server-process) Start vLLM Server', description: 'Launch OpenAI-compatible API', command: 'tenstorrent.startVllmServer' },
     { label: '$(beaker) Test vLLM (OpenAI SDK)', description: 'Test with Python SDK', command: 'tenstorrent.testVllmOpenai' },
     { label: '$(symbol-method) Test vLLM (curl)', description: 'Test with HTTP request', command: 'tenstorrent.testVllmCurl' },
@@ -3601,12 +3701,17 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.updateTTMetal', updateTTMetal),
     vscode.commands.registerCommand('tenstorrent.cloneVllm', cloneVllm),
     vscode.commands.registerCommand('tenstorrent.installVllm', installVllm),
-    vscode.commands.registerCommand('tenstorrent.runVllmOffline', runVllmOffline),
     vscode.commands.registerCommand('tenstorrent.startVllmServer', startVllmServer),
     vscode.commands.registerCommand('tenstorrent.startVllmServerN150', startVllmServerN150),
     vscode.commands.registerCommand('tenstorrent.startVllmServerN300', startVllmServerN300),
     vscode.commands.registerCommand('tenstorrent.startVllmServerT3K', startVllmServerT3K),
     vscode.commands.registerCommand('tenstorrent.startVllmServerP100', startVllmServerP100),
+    // Qwen model variants
+    vscode.commands.registerCommand('tenstorrent.startVllmServerN150Qwen', startVllmServerN150Qwen),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerN300Qwen', startVllmServerN300Qwen),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerT3KQwen', startVllmServerT3KQwen),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerP100Qwen', startVllmServerP100Qwen),
+    vscode.commands.registerCommand('tenstorrent.createVllmStarter', createVllmStarter),
     vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
 
