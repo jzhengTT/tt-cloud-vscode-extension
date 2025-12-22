@@ -335,6 +335,22 @@ async function createQwenSymlink(qwenPath: string): Promise<string> {
 
 ## Recent Changes
 
+**v0.0.102** - Lesson 12 (TT-XLA) comprehensive rewrite
+- Completely rewrote TT-XLA installation instructions (Ubuntu-specific)
+- Added Python 3.11 installation via deadsnakes PPA
+- **CRITICAL FIX:** Added `unset TT_METAL_HOME` and `unset LD_LIBRARY_PATH` steps
+- Changed from curl single-file download to full tt-forge repo clone workflow
+- Added `git submodule update --init --recursive` step
+- Added PYTHONPATH export for demo imports
+- Added requirements.txt installation step (JAX 0.7.1, Flax, sentencepiece, etc.)
+- Updated demo instructions to use local tt-forge clone
+- Added comprehensive "What's Next?" section explaining model bring-up workflow
+- Added model bring-up checklist (architecture support, memory requirements, testing)
+- Added learning resources section (official docs, community channels)
+- Added "Is TT-XLA Ready for Model Bring-Up?" summary with clear criteria
+- Cloned tt-forge repo to vendor/ for reference
+- Renamed old Step 4 to Step 5 (Multi-Chip Configuration)
+
 **v0.0.101** - Hardware auto-detection in vLLM starter script
 - Added `detect_and_configure_hardware()` function to `start-vllm-server.py`
 - Automatically detects hardware type via `tt-smi -s` JSON parsing

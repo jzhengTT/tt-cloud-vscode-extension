@@ -84,37 +84,72 @@ print(f"Device: {result.device()}")  # TtDevice(id=0)
 
 **Prerequisites:**
 - tt-metal already installed at `~/tt-metal` (from Lessons 1-10)
-- Python 3.10 or later
-- No need to rebuild tt-metal or change versions!
+- Ubuntu system (these instructions are Ubuntu-specific)
+- Sudo access for Python 3.11 installation
 
-### Installation (Simple Wheel Method)
+**⚠️ Important:** TT-XLA requires **Python 3.11** and a **clean environment** (no conflicting TT-Metal variables).
 
-The PJRT plugin can be installed via pip:
+### Installation
+
+**Step 1.1: Install Python 3.11**
+
+Ubuntu 22.04 ships with Python 3.10, but TT-XLA works best with Python 3.11:
 
 ```bash
-# Create virtual environment
-cd ~
-python3 -m venv tt-xla-venv
-source tt-xla-venv/bin/activate
-
-# Install TT-XLA PJRT plugin
-pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
-
-# Install JAX and supporting libraries
-pip install jax flax transformers
+sudo add-apt-repository ppa:deadsnakes/ppa && \
+  sudo apt-get update && \
+  sudo apt-get install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
 ```
 
-**Notes:**
-- This installs the TT-XLA PJRT plugin (JAX integration)
-- No compilation required
-- Works with Python 3.10+
-- Automatically pulls compatible JAX version
-- Interfaces with your existing `~/tt-metal` installation
+**What this does:**
+- Adds deadsnakes PPA (provides newer Python versions)
+- Installs Python 3.11 with development headers
+- Includes venv and distutils modules
 
-**Optional: Try pre-release (nightly):**
+**Step 1.2: Unset TT-Metal Environment Variables**
+
+**CRITICAL:** TT-XLA uses its own bundled TT-Metal runtime. Existing TT-Metal environment variables cause conflicts:
+
 ```bash
-pip install --pre pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+unset TT_METAL_HOME
+unset LD_LIBRARY_PATH
 ```
+
+**Why this is necessary:**
+- TT-XLA bundles its own TT-Metal libraries with the PJRT plugin
+- Your `~/tt-metal` installation is for direct TT-Metal API usage (Lessons 1-10)
+- TT-XLA and direct TT-Metal use different compilation paths
+- Mixing environments causes cryptic library errors
+
+**Note:** Don't worry - your `~/tt-metal` installation is unchanged. You're just isolating TT-XLA in its own environment.
+
+**Step 1.3: Create Virtual Environment**
+
+Create a clean Python 3.11 environment:
+
+```bash
+python3.11 -m venv ~/tt-xla-venv
+source ~/tt-xla-venv/bin/activate
+```
+
+**Step 1.4: Install TT-XLA PJRT Plugin**
+
+Install the PJRT plugin (includes TT-XLA compiler + runtime):
+
+```bash
+pip install pjrt-plugin-tt --pre --upgrade --extra-index-url https://pypi.eng.aws.tenstorrent.com/
+```
+
+**Flags explained:**
+- `--pre`: Install pre-release (latest features, most tested)
+- `--upgrade`: Ensure latest version
+- `--extra-index-url`: Tenstorrent's private PyPI server
+
+**What this installs:**
+- TT-XLA PJRT plugin (JAX hardware integration)
+- TT-MLIR compiler (bundled with plugin)
+- TT-Metal runtime libraries (compatible with plugin)
+- Compatible JAX version
 
 [🚀 Install TT-XLA PJRT Plugin](command:tenstorrent.installTtXla)
 
@@ -171,42 +206,236 @@ Result device: TtDevice(id=0)
 
 ---
 
-## Step 3: Run Official GPT-2 Demo
+## Step 3: Clone tt-forge Repository
 
-TT-XLA includes validated demos in the tt-forge repository:
+TT-XLA demos live in the `tt-forge` repository (alongside TT-Forge demos):
 
 ```bash
-# Activate environment
-source ~/tt-xla-venv/bin/activate
-
-# Download GPT-2 demo from tt-forge repo
-curl -O https://raw.githubusercontent.com/tenstorrent/tt-forge/main/demos/tt-xla/nlp/jax/gpt_demo.py
-
-# Run demo
-python3 gpt_demo.py
+cd ~ && \
+  git clone https://github.com/tenstorrent/tt-forge.git && \
+  cd tt-forge && \
+  git submodule update --init --recursive && \
+  export PYTHONPATH=$(pwd)
 ```
 
+**What this does:**
+- Clones the tt-forge repo (contains both TT-Forge and TT-XLA demos)
+- Initializes submodules (includes `third_party/tt_forge_models` with pre-trained models)
+- Sets PYTHONPATH so demos can import from the repo
+
+**Repository structure:**
+```
+tt-forge/
+├── demos/
+│   ├── tt-forge-fe/    # TT-Forge (MLIR) demos (Lesson 11)
+│   ├── tt-xla/         # TT-XLA demos (this lesson)
+│   │   ├── cnn/        # CNN demos (ResNet, MobileNet, etc.)
+│   │   └── nlp/        # NLP demos (GPT-2, ALBERT, OPT)
+│   │       ├── jax/    # JAX demos
+│   │       └── pytorch/ # PyTorch/XLA demos
+│   └── tt-torch/       # PyTorch demos
+└── third_party/
+    └── tt_forge_models/ # Pre-trained model implementations
+```
+
+**Why clone the full repo?**
+- Gets all demos with proper dependencies
+- Includes submodules (pre-trained models from tt_forge_models)
+- Demos reference models via relative imports
+
+---
+
+## Step 4: Run GPT-2 Demo
+
+Now run the GPT-2 demo with all its dependencies:
+
+```bash
+cd ~/tt-forge/demos/tt-xla/nlp/jax && \
+  source ~/tt-xla-venv/bin/activate && \
+  pip install -r requirements.txt && \
+  python gpt_demo.py
+```
+
+**What this does:**
+1. **Navigates to demo directory** (`demos/tt-xla/nlp/jax/`)
+2. **Activates venv** (TT-XLA environment)
+3. **Installs demo dependencies** (JAX 0.7.1, Flax, sentencepiece, EasyDeL, eformer)
+4. **Runs GPT-2 demo** (tests GPT-2 Base, Medium, Large, XL)
+
 **What the demo does:**
-- Loads GPT-2 model via Flax (JAX's neural network library)
-- Runs inference on TT hardware via JAX
-- Predicts next token for "The capital of France is"
+- Loads GPT-2 models via Flax (JAX's neural network library)
+- Compiles models with JAX JIT for TT hardware
+- Runs inference on TT accelerators
+- Predicts next token + shows top-20 token probabilities
 
 **Expected output:**
 ```
-Loading GPT-2 model...
-Model loaded successfully
+Model Variant: GPT2Variant.BASE
+Prompt: Gravity Gravity Gravity Gravity Gravity
+Next token: ' Gravity' (id: 24532)
+Probability: 0.9876
 
-Input: "The capital of France is"
-Prediction: "Paris"
+Rank  Token ID   Token           Probability
+---------------------------------------------
+1     24532      ' Gravity'      0.9876
+2     338        ' is'           0.0045
+3     25         ','             0.0023
+...
 
-✓ GPT-2 inference on TT hardware complete!
+============================================================
+Model Variant: GPT2Variant.MEDIUM
+...
 ```
+
+**Demo features:**
+- ✅ Tests 4 GPT-2 variants (Base: 117M, Medium: 345M, Large: 774M, XL: 1.5B params)
+- ✅ Shows predicted token + probability
+- ✅ Lists top-20 token candidates
+- ✅ Validates inference quality across model sizes
 
 [🎯 Run TT-XLA GPT-2 Demo](command:tenstorrent.runTtXlaDemo)
 
 ---
 
-## Step 4: Multi-Chip Configuration
+## What's Next? Model Bring-Up with TT-XLA
+
+**You now have a working TT-XLA installation!** But is everything ready for model bring-up?
+
+**What you can do now:**
+
+### 1. **Explore Validated Demos**
+
+The tt-forge repo has many working examples:
+
+```bash
+# CNN demos (computer vision)
+cd ~/tt-forge/demos/tt-xla/cnn/
+ls -la  # ResNet, MobileNet, etc.
+
+# NLP demos (language models)
+cd ~/tt-forge/demos/tt-xla/nlp/jax/
+ls -la  # gpt_demo.py, albert_demo.py, opt_demo.py
+
+# PyTorch/XLA demos
+cd ~/tt-forge/demos/tt-xla/nlp/pytorch/
+ls -la  # PyTorch/XLA equivalents
+```
+
+**Try these next:**
+- `albert_demo.py` - ALBERT model (efficient BERT variant)
+- `opt_demo.py` - OPT model (Meta's open pre-trained transformer)
+- CNN demos - Image classification tasks
+
+### 2. **Understand the Workflow**
+
+**For model bring-up with TT-XLA, you need:**
+
+**A. Model in JAX or PyTorch/XLA format:**
+```python
+# JAX example (using Flax)
+from flax import nnx
+model = MyModel(...)  # Your model
+
+# PyTorch/XLA example
+import torch_xla.core.xla_model as xm
+model = MyPyTorchModel()
+device = xm.xla_device()  # TT device
+```
+
+**B. JAX JIT compilation:**
+```python
+import jax
+
+# Compile for TT hardware
+compiled_fn = jax.jit(my_forward_function)
+
+# Run inference
+output = compiled_fn(inputs)
+```
+
+**C. Model implementation in tt_forge_models:**
+```bash
+# Check existing models
+ls ~/tt-forge/third_party/tt_forge_models/
+
+# Structure:
+tt_forge_models/
+├── gpt2/              # GPT-2 implementation
+├── albert/            # ALBERT implementation
+├── opt/               # OPT implementation
+└── ...                # More models
+```
+
+### 3. **Model Bring-Up Checklist**
+
+**To bring up a new model with TT-XLA:**
+
+- [ ] **Model exists in JAX/Flax or PyTorch/XLA?**
+  - If yes: Adapt existing JAX/PyTorch code
+  - If no: Port model to JAX first
+
+- [ ] **Model architecture supported by TT-XLA?**
+  - Check: Does it use standard transformers/CNN ops?
+  - TT-XLA supports: Attention, MLP, Conv2D, BatchNorm, LayerNorm, etc.
+  - Unsupported ops will fall back to CPU
+
+- [ ] **Model fits in memory?**
+  - N150: ~8GB DRAM (small models only)
+  - N300: ~16GB DRAM (medium models)
+  - T3K/Galaxy: ~64GB DRAM (large models, multi-chip)
+
+- [ ] **Test with simple input first:**
+  - Start with shape inference (forward pass with dummy input)
+  - Check device placement (`result.device()`)
+  - Verify output correctness vs. reference
+
+- [ ] **Optimize for TT hardware:**
+  - Use JAX sharding for multi-chip (see Step 5 below)
+  - Profile with JAX profiler
+  - Tune batch size and sequence length
+
+### 4. **Learning Resources**
+
+**Official docs:**
+- **TT-XLA GitHub:** [github.com/tenstorrent/tt-xla](https://github.com/tenstorrent/tt-xla)
+- **TT-Forge demos:** Browse `~/tt-forge/demos/tt-xla/`
+- **JAX documentation:** [jax.readthedocs.io](https://jax.readthedocs.io)
+
+**Example workflow (study these demos):**
+1. `gpt_demo.py` - Shows model loading, compilation, inference
+2. `albert_demo.py` - Demonstrates tokenization + post-processing
+3. CNN demos - Show image preprocessing
+
+**Community:**
+- Tenstorrent Discord - #tt-xla channel
+- GitHub Issues - Report bugs or ask questions
+
+---
+
+## Summary: Is TT-XLA Ready for Model Bring-Up?
+
+**✅ Yes, if:**
+- Your model is already in JAX/Flax or PyTorch/XLA
+- Model uses standard transformer/CNN operations
+- You can reference working demos (GPT-2, ALBERT, OPT, etc.)
+- You have multi-chip hardware for larger models
+
+**⚠️ Not yet, if:**
+- Your model uses exotic/unsupported ops (need to check compatibility)
+- Model is in a different framework (TensorFlow, ONNX) - port to JAX first
+- Model is too large for your hardware (need larger device or sharding)
+
+**Next steps:**
+1. ✅ Run all demos (`gpt_demo.py`, `albert_demo.py`, `opt_demo.py`)
+2. ✅ Study demo code to understand patterns
+3. ✅ Identify a target model to bring up
+4. ✅ Check if model architecture is similar to working demos
+5. ✅ Start with simple inference on single chip (N150)
+6. ✅ Expand to multi-chip (N300/T3K) with sharding (see Step 5)
+
+---
+
+## Step 5: Multi-Chip Configuration (Advanced)
 
 **Quick Check:** Want to know your hardware type?
 
