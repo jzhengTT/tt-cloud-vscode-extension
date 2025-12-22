@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.90",
+  "version": "0.0.101",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -286,26 +286,6 @@
         "category": "Tenstorrent"
       },
       {
-        "command": "tenstorrent.startVllmServerN150Qwen",
-        "title": "Start vLLM Server with Qwen3-8B (N150)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerN300Qwen",
-        "title": "Start vLLM Server with Qwen3-8B (N300)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerT3KQwen",
-        "title": "Start vLLM Server with Qwen3-8B (T3K)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerP100Qwen",
-        "title": "Start vLLM Server with Qwen3-8B (P100)",
-        "category": "Tenstorrent"
-      },
-      {
         "command": "tenstorrent.testVllmOpenai",
         "title": "Test vLLM with OpenAI SDK",
         "category": "Tenstorrent"
@@ -576,9 +556,8 @@
             ],
             "metadata": {
               "supportedHardware": ["n150", "n300", "t3k", "p100"],
-              "status": "blocked",
-              "validatedOn": [],
-              "blockReason": "Requires tt-vllm validation"
+              "status": "validated",
+              "validatedOn": ["n150"]
             }
           },
           {

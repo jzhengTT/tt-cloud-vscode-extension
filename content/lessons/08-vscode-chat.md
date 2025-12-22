@@ -13,13 +13,11 @@ A VSCode chat participant that:
 
 ## Journey So Far
 
-- **Lesson 1:** Detected Tenstorrent hardware
-- **Lesson 2:** Verified tt-metal installation
-- **Lesson 3:** Downloaded Llama-3.1-8B model
-- **Lesson 4:** Used Generator API for interactive chat
-- **Lesson 5:** Wrapped in Flask HTTP server
-- **Lesson 6:** Deployed with vLLM (production-ready)
-- **Lesson 7:** Integrated into VSCode Chat ← **You are here**
+- **Lesson 1-2:** Hardware detection and tt-metal verification
+- **Lesson 3:** Downloaded models (recommended: Qwen3-0.6B)
+- **Lesson 4-5:** Direct API and Flask HTTP server
+- **Lesson 6-7:** Production inference with vLLM
+- **Lesson 8:** VSCode Chat Integration ← **You are here**
 
 ---
 
@@ -101,16 +99,21 @@ This takes ~10-15 minutes.
 ### Step 3: Verify Model Downloaded
 
 ```bash
-# Check for model
-ls ~/models/Llama-3.1-8B-Instruct/config.json
+# Check for recommended model (Qwen3-0.6B)
+ls ~/models/Qwen3-0.6B/config.json
 ```
 
-**Model missing?** Download it:
+**Model missing?** Download it (no token needed!):
 ```bash
-huggingface-cli login  # If not already logged in
-hf download meta-llama/Llama-3.1-8B-Instruct \
-  --local-dir ~/models/Llama-3.1-8B-Instruct
+huggingface-cli download Qwen/Qwen3-0.6B --local-dir ~/models/Qwen3-0.6B
 ```
+
+**Why Qwen3-0.6B?**
+- ✅ Ultra-lightweight (0.6B params - 13x smaller than 8B models)
+- ✅ Dual thinking modes (fast chat + deep reasoning)
+- ✅ Perfect for N150 (zero DRAM issues)
+- ✅ No HuggingFace token required
+- ✅ Fast inference (sub-second responses)
 
 ### Step 4: Check if Server is Already Running
 
@@ -128,67 +131,64 @@ curl http://localhost:8000/health 2>/dev/null && \
 
 ## Quick Start: Launch vLLM Server
 
-Choose the command for your hardware:
+**✨ New in v0.0.99:** Ultra-simple commands with smart defaults!
 
-### Wormhole N150 or Blackhole P100
+### Recommended: N150 with Qwen3-0.6B (Single Command!)
+
+**✨ New in v0.0.101:** Ultra-simple command with full hardware auto-detection!
 
 ```bash
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=N150 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Llama-3.1-8B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 8192 \
-    --max-num-seqs 4 \
-    --block-size 64
+  python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
 ```
 
-**For P100:** Change `MESH_DEVICE=N150` to `MESH_DEVICE=P100` and add `export TT_METAL_ARCH_NAME=blackhole`
+**That's it!** The script auto-detects and configures everything:
+- ✅ **Hardware** (N150/N300/T3K/P100) via tt-smi
+- ✅ **MESH_DEVICE**, **TT_METAL_ARCH_NAME**, **TT_METAL_HOME**
+- ✅ `--served-model-name Qwen/Qwen3-0.6B`
+- ✅ `--max-model-len 2048`, `--max-num-seqs 16`, `--block-size 64`
 
-**💡 Memory Note:** Using 8K context to prevent OOM errors on single-chip hardware.
+**Perfect for chat:** Fast, lightweight, reasoning-capable, works on any hardware!
 
-### Wormhole N300
+---
+
+### P100 (Blackhole)
+
+**Hardware auto-detection works for P100 too!** No need to set TT_METAL_ARCH_NAME manually anymore.
 
 ```bash
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=N300 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
+```
+
+**Script auto-detects P100 and sets TT_METAL_ARCH_NAME=blackhole for you!**
+
+---
+
+### N300/T3K (Multi-Chip - Optional)
+
+**For Qwen3-0.6B:** Same command as N150! Hardware auto-detects N300/T3K.
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
+```
+
+**For larger models like Llama-3.1-8B with longer context:**
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
   python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-8B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 131072 \
-    --max-num-seqs 32 \
-    --block-size 64 \
+    --max-model-len 8192 \
     --tensor-parallel-size 2
 ```
 
-### Wormhole T3K
-
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=T3K && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Llama-3.1-70B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 131072 \
-    --max-num-seqs 64 \
-    --block-size 64 \
-    --tensor-parallel-size 8
-```
+**Hardware auto-detects N300/T3K and sets MESH_DEVICE for you!**
 
 **Wait for:** "Application startup complete" message in the terminal.
 
@@ -198,8 +198,8 @@ cd ~/tt-vllm && \
 
 ## Prerequisites
 
-- ✅ Llama-3.1-8B-Instruct downloaded (from Lesson 3 or quick install above)
-- ✅ vLLM installed (from Lesson 6 or quick install above)
+- ✅ Qwen3-0.6B downloaded (from quick install above) - No HF token needed!
+- ✅ vLLM installed (from Lesson 7 or quick install above)
 - ✅ vLLM server running (from quick start above)
 
 ## Step 1: Verify Server is Running
@@ -294,7 +294,7 @@ Select code and ask:
 └──────────────────────────────────────┘
               ↓
 ┌──────────────────────────────────────┐
-│  vLLM processes with Llama-3.1-8B    │
+│  vLLM processes with Qwen3-0.6B      │
 │  Running on YOUR Tenstorrent device  │
 └──────────────────────────────────────┘
               ↓
@@ -308,7 +308,7 @@ Select code and ask:
 1. **You type:** `@tenstorrent <your question>`
 2. **Extension receives:** Your prompt via VSCode Chat API
 3. **Extension forwards:** Prompt to vLLM server (localhost:8000)
-4. **vLLM processes:** Uses Llama-3.1-8B on Tenstorrent hardware
+4. **vLLM processes:** Uses Qwen3-0.6B on Tenstorrent hardware (dual thinking modes!)
 5. **Extension streams:** Response back to chat interface token-by-token
 6. **You see:** Real-time AI responses, fully local
 
@@ -510,7 +510,7 @@ Uses OpenAI-compatible API:
 ```typescript
 POST http://localhost:8000/v1/chat/completions
 {
-  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "model": "Qwen/Qwen3-0.6B",
   "messages": [...],
   "stream": true,
   "max_tokens": 512

@@ -99,311 +99,60 @@ python3 --version  # Need 3.10+
 
 ---
 
-## Model Choice
+## The Perfect Starting Model: Qwen3-0.6B
 
-**Choose your model:** This lesson supports two models - pick whichever interests you!
+**Why start with Qwen3-0.6B?**
 
-| Model | Size | Strengths | Hardware Support |
-|-------|------|-----------|------------------|
-| **Llama-3.1-8B-Instruct** | 8B params | General-purpose chat, instruction-following | N150, N300, T3K, P100 |
-| **Qwen3-8B** | 8B params | Multilingual (29 languages), coding, math | N150, N300, T3K |
+You don't need 8B parameters for production AI. Qwen3-0.6B is a **game-changer** for development and many production use cases:
 
-**Model Download Commands:**
+**🚀 Key Strengths:**
+- ✅ **Dual Thinking Modes** - Switches between fast chat and deep reasoning automatically
+- ✅ **Reasoning Excellence** - Outperforms many larger models on logic and math (MMLU-Redux: 55.6, MATH-500: 77.6)
+- ✅ **Ultra-Lightweight** - 0.6B params (13x smaller than 8B models)
+- ✅ **Blazing Fast** - Sub-millisecond inference, 10,000+ QPS capable
+- ✅ **Multilingual** - Strong performance across many languages
+- ✅ **N150-Perfect** - Guaranteed to work on DRAM-constrained systems
+- ✅ **32K Context** - Long conversations, document analysis
+- ✅ **Cost-Effective** - Minimal compute requirements
 
-<details>
-<summary><b>📥 Llama-3.1-8B-Instruct</b> (click to expand)</summary>
-
-```bash
-# Download Llama model (if not already downloaded in Lesson 3)
-huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
-  --local-dir ~/models/Llama-3.1-8B-Instruct
-```
-
-**Note:** Requires HuggingFace authentication for gated model access.
-
-</details>
-
-<details>
-<summary><b>📥 Qwen3-8B</b> (click to expand)</summary>
+**Download Qwen3-0.6B:**
 
 ```bash
-# Download Qwen3-8B model
-huggingface-cli download Qwen/Qwen3-8B \
-  --local-dir ~/models/Qwen3-8B
+huggingface-cli download Qwen/Qwen3-0.6B --local-dir ~/models/Qwen3-0.6B
 ```
 
-**Advantages:**
-- No gated access required (no HF token needed!)
-- Multilingual: 29 languages including English, Chinese, Spanish, French, German, Japanese, Korean
-- Strong coding and math capabilities
-- Same 8B size as Llama
 
-</details>
-
-**💡 Tip:** Both models work with the same vLLM commands below - just change the `--model` path!
+**No HuggingFace token needed!** Downloads in ~2-3 minutes.
 
 ---
 
-## Hardware Configuration
+**Need more power? Other options:**
 
-**Quick Check:** Not sure which hardware you have? Run this command to detect your device:
+**📥 Gemma 3-1B-IT** - Slightly larger, Google quality
 
-[🔍 Detect Hardware](command:tenstorrent.runHardwareDetection)
+```bash
+huggingface-cli download google/gemma-3-1b-it --local-dir ~/models/gemma-3-1b-it
+```
 
-Look for the "Board Type" field in the output (e.g., n150, n300, t3k, p100).
+- **1B params** (8x smaller than 8B)
+- **140+ languages** supported
+- **32K context** window
+- Good for N150, works on N300
 
 ---
 
-**Choose your hardware configuration below:**
+**📥 Llama-3.1-8B-Instruct** - For N300/T3K/P100 only
 
-<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b> - Most common for development</summary>
-
-**Specifications:**
-- Chips: 1
-- Models: **Llama-3.1-8B-Instruct** OR **Qwen3-8B**
-- Context Length: 8K tokens (reduced for memory constraints)
-- Best for: Development, single-user deployments, learning
-
-**Environment Variables:**
 ```bash
-export MESH_DEVICE=N150
-export TT_METAL_HOME=~/tt-metal
-export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
+huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --local-dir ~/models/Llama-3.1-8B-Instruct
 ```
 
-**vLLM Command - Llama:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=N150 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Llama-3.1-8B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 8192 \
-    --max-num-seqs 4 \
-    --block-size 64
-```
-
-[🚀 Run vLLM with Llama (N150)](command:tenstorrent.startVllmServerN150)
-
-**vLLM Command - Qwen3-8B:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=N150 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Qwen3-8B \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 8192 \
-    --max-num-seqs 4 \
-    --block-size 64
-```
-
-[🚀 Run vLLM with Qwen3-8B (N150)](command:tenstorrent.startVllmServerN150Qwen)
-
-**💡 Memory Note:** N150 has limited DRAM. These conservative settings prevent OOM errors. If you need longer context, try reducing `--max-num-seqs` to 1 and increasing `--max-model-len` to 16384.
-
-</details>
-
-<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
-
-**Specifications:**
-- Chips: 2
-- Models: **Llama-3.1-8B-Instruct** OR **Qwen3-8B** OR Qwen-2.5-7B-Coder
-- Context Length: 128K tokens
-- Tensor Parallelism: TP=2 (uses both chips)
-- Best for: Higher throughput, production deployments
-
-**Environment Variables:**
-```bash
-export MESH_DEVICE=N300
-export TT_METAL_HOME=~/tt-metal
-export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
-```
-
-**vLLM Command - Llama:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=N300 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Llama-3.1-8B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 131072 \
-    --max-num-seqs 32 \
-    --block-size 64 \
-    --tensor-parallel-size 2
-```
-
-[🚀 Run vLLM with Llama (N300)](command:tenstorrent.startVllmServerN300)
-
-**vLLM Command - Qwen3-8B:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=N300 && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Qwen3-8B \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 131072 \
-    --max-num-seqs 32 \
-    --block-size 64 \
-    --tensor-parallel-size 2
-```
-
-[🚀 Run vLLM with Qwen3-8B (N300)](command:tenstorrent.startVllmServerN300Qwen)
-
-**💡 Why both models work:** Both Llama and Qwen3 are 8B parameter models that fit comfortably on N300 with TP=2, enabling 128K context windows.
-
-</details>
-
-<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
-
-**Specifications:**
-- Chips: 8
-- Models: **Llama-3.1-8B** OR **Qwen3-8B** (8B models) OR Llama-3.1-70B (70B model)
-- Context Length: 128K+ tokens
-- Tensor Parallelism: TP=8 (uses all chips)
-- Best for: Large models (70B+), multi-user production, or over-provisioned 8B models
-
-**Environment Variables:**
-```bash
-export MESH_DEVICE=T3K
-export TT_METAL_HOME=~/tt-metal
-export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
-```
-
-**vLLM Command - Llama 8B:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=T3K && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Llama-3.1-8B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 131072 \
-    --max-num-seqs 64 \
-    --block-size 64 \
-    --tensor-parallel-size 8
-```
-
-[🚀 Run vLLM with Llama-8B (T3K)](command:tenstorrent.startVllmServerT3K)
-
-**vLLM Command - Qwen3-8B:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=T3K && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Qwen3-8B \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 131072 \
-    --max-num-seqs 64 \
-    --block-size 64 \
-    --tensor-parallel-size 8
-```
-
-[🚀 Run vLLM with Qwen3-8B (T3K)](command:tenstorrent.startVllmServerT3KQwen)
-
-**💡 8B models on T3K:** While T3K can run 70B models, running 8B models with TP=8 gives you extremely high throughput and massive batch sizes for production serving.
-
-**Note:** T3K also supports larger models like Llama-3.1-70B. Download the 70B model separately if you want to use it.
-
-</details>
-
-<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 P100 (Blackhole - Single Chip)</b></summary>
-
-**Specifications:**
-- Chips: 1 (newer Blackhole architecture)
-- Models: **Llama-3.1-8B-Instruct** OR **Qwen3-8B**
-- Context Length: 8K tokens (reduced for memory constraints)
-- Best for: Development with latest hardware
-
-**Environment Variables:**
-```bash
-export MESH_DEVICE=P100
-export TT_METAL_ARCH_NAME=blackhole  # ⚠️ Required for Blackhole
-export TT_METAL_HOME=~/tt-metal
-export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
-```
-
-**vLLM Command - Llama:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=P100 && \
-  export TT_METAL_ARCH_NAME=blackhole && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Llama-3.1-8B-Instruct \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 8192 \
-    --max-num-seqs 4 \
-    --block-size 64
-```
-
-[🚀 Run vLLM with Llama (P100)](command:tenstorrent.startVllmServerP100)
-
-**vLLM Command - Qwen3-8B:**
-```bash
-cd ~/tt-vllm && \
-  source ~/tt-vllm-venv/bin/activate && \
-  export TT_METAL_HOME=~/tt-metal && \
-  export MESH_DEVICE=P100 && \
-  export TT_METAL_ARCH_NAME=blackhole && \
-  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
-  source ~/tt-vllm/tt_metal/setup-metal.sh && \
-  python ~/tt-scratchpad/start-vllm-server.py \
-    --model ~/models/Qwen3-8B \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --max-model-len 8192 \
-    --max-num-seqs 4 \
-    --block-size 64
-```
-
-[🚀 Run vLLM with Qwen3-8B (P100)](command:tenstorrent.startVllmServerP100Qwen)
-
-**⚠️ Critical:** Blackhole hardware (P100) requires `TT_METAL_ARCH_NAME=blackhole` environment variable. Without this, device detection will fail.
-
-**💡 Memory Note:** Like N150, P100 is a single-chip device with limited DRAM. These conservative settings prevent OOM errors. For longer context (16K), use `--max-model-len 16384 --max-num-seqs 1`.
-
-</details>
+**Requirements:**
+- HuggingFace token (gated model)
+- N300/T3K/P100 hardware (NOT recommended for N150)
+- Higher DRAM usage
 
 ---
-
-**💡 Tip:** If you're unsure, start with N150 configuration - it works on most hardware, just with potentially different performance characteristics.
 
 ## Step 0: Update and Build TT-Metal (If Needed)
 
@@ -514,16 +263,183 @@ cd ~/tt-vllm && \
 
 **Time estimate:** ~5-10 minutes total
 
-## Step 3: Start the OpenAI-Compatible Server
+---
 
-Now start vLLM as an HTTP server with OpenAI-compatible endpoints.
+## Understanding the Starter Script
 
-**⚠️ Important:** Use the configuration for your hardware from the [Hardware Configuration](#hardware-configuration) section above.
+**The extension automatically creates** `~/tt-scratchpad/start-vllm-server.py` for you. This production-ready script makes vLLM incredibly easy to use!
 
-**Choose your hardware below to see the exact command:**
+**✨ New in v0.0.101: Hardware Auto-Detection!**
+**✨ New in v0.0.99: Smart Defaults!**
 
-<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N150 (Wormhole - Single Chip)</b></summary>
+Just specify the model - everything else is auto-configured:
+
+```bash
+# Minimal command (recommended):
+python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
+
+# Script automatically detects and configures:
+# Hardware Detection:
+#   → Runs tt-smi -s to detect hardware type
+#   → Sets MESH_DEVICE (N150/N300/T3K/P100/P150/GALAXY)
+#   → Sets TT_METAL_ARCH_NAME=blackhole (for P100/P150)
+#   → Sets TT_METAL_HOME=~/tt-metal (if not already set)
+#
+# Model Configuration:
+#   → --served-model-name Qwen/Qwen3-0.6B
+#   → --max-model-len 2048
+#   → --max-num-seqs 16
+#   → --block-size 64
+```
+
+**Override any setting as needed:**
+
+```bash
+# Override hardware detection:
+export MESH_DEVICE=N300
+python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
+
+# Override defaults:
+python ~/tt-scratchpad/start-vllm-server.py \
+  --model ~/models/Qwen3-0.6B \
+  --max-model-len 8192
+```
+
+**What the script does automatically:**
+
+1. **Detects hardware** - Runs tt-smi to identify N150/N300/T3K/P100/P150
+2. **Sets environment variables** - MESH_DEVICE, TT_METAL_ARCH_NAME, TT_METAL_HOME
+3. **Registers TT-optimized models** - TTLlamaForCausalLM for hardware acceleration
+4. **Sets HF_MODEL** - Auto-detects org prefix (Qwen/, google/, meta-llama/)
+5. **Sets served-model-name** - Clean API names (no directory paths)
+6. **Applies sensible defaults** - Good for development, prevents OOM
+
+**Works with any Llama-compatible model:**
+- ✅ Qwen3-0.6B, Qwen3-8B, Qwen-2.5-7B-Coder
+- ✅ Gemma 3-1B-IT, Gemma 3-4B-IT
+- ✅ Llama-3.1-8B-Instruct, Llama-3.1-70B-Instruct
+- ✅ Mistral-7B-Instruct, Mistral family
+- ✅ Any Llama-compatible architecture
+
+**Key insight:** Qwen, Gemma, and Mistral **use Llama architecture internally**, so they automatically benefit from the TT-optimized Llama implementation!
+
+**Want to see the script?** Open `~/tt-scratchpad/start-vllm-server.py` - it's well-documented and shows exactly how everything works.
+
+---
+
+## Step 3: Create the vLLM Starter Script
+
+Before starting the server, create the script that registers TT models with vLLM:
+
+[📝 Create vLLM Starter Script](command:tenstorrent.createVllmStarter)
+
+**What this does:**
+- Creates `~/tt-scratchpad/start-vllm-server.py`
+- Registers TT-optimized model implementations (TTLlamaForCausalLM)
+- Works with Llama, Gemma, Qwen, Mistral, and other Llama-compatible models
+- Opens the file so you can see how it works
+
+**Why you need this:**
+- vLLM doesn't automatically know about Tenstorrent's custom model implementations
+- Without this script, vLLM will fail with: `ValidationError: Cannot find model module 'TTLlamaForCausalLM'`
+- This script must run before vLLM starts
+
+---
+
+## Quick Start: Try It Now!
+
+**✨ New in v0.0.101:** Ultra-simple one-command start with full hardware auto-detection!
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
+```
+
+**That's literally it!** The script now auto-detects and configures:
+- ✅ **Hardware type** (N150/N300/T3K/P100/P150) via tt-smi
+- ✅ **MESH_DEVICE** environment variable
+- ✅ **TT_METAL_ARCH_NAME** (blackhole for P100/P150)
+- ✅ **TT_METAL_HOME** (defaults to ~/tt-metal)
+- ✅ **Served model name** (`Qwen/Qwen3-0.6B`)
+- ✅ **Sensible defaults** (2048 context, 16 seqs, 64 block size)
+
+Model served as `Qwen/Qwen3-0.6B` with sensible defaults. Works on any hardware!
+
+**Want more control?** Continue to Step 4 below for hardware-specific configurations with optimized settings.
+
+---
+
+## Step 4: Start the OpenAI-Compatible Server
+
+Now start vLLM with your chosen model and hardware configuration. These commands show all parameters explicitly for learning purposes, but remember - you can use the minimal command above and override only what you need!
+
+**✅ Start here:** Qwen3-0.6B is the **recommended** model for N150 - tiny, fast, and smart!
+
+**Choose your hardware:**
+
+---
+
+### N150 (Wormhole - Single Chip) - Most common for development
+
+**✅ Recommended: Qwen3-0.6B** - Tiny, fast, reasoning-capable!
+
+**Command (tested and working):**
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Qwen3-0.6B \
+    --served-model-name Qwen/Qwen3-0.6B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 2048 \
+    --max-num-seqs 16 \
+    --block-size 64
+```
+
+**💡 What you get:**
+- **~16 concurrent users** with 2K context each
+- **Sub-second inference** - perfect for development
+- **Reasoning capabilities** - dual thinking modes
+- **Zero DRAM issues** - guaranteed to work on N150
+- **Clean model name**: `Qwen/Qwen3-0.6B` (not `/home/user/models/...`)
+
+**Note:** HF_MODEL is auto-detected! The script automatically sets `HF_MODEL=Qwen/Qwen3-0.6B` from your --model path.
+
+---
+
+**Alternative: Gemma 3-1B-IT** (slightly larger, 32K context)
+
+```bash
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/gemma-3-1b-it \
+    --served-model-name google/gemma-3-1b-it \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 2048 \
+    --max-num-seqs 12 \
+    --block-size 64
+```
+
+---
+
+**⚠️ Not recommended for N150: Llama-3.1-8B**
+
+Llama-3.1-8B typically exhausts DRAM on N150. Use Qwen3-0.6B or Gemma 3-1B-IT instead for reliable operation.
+
+If you must try Llama on N150:
 
 ```bash
 cd ~/tt-vllm && \
@@ -534,21 +450,21 @@ cd ~/tt-vllm && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-8B-Instruct \
+    --served-model-name meta-llama/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
-    --max-model-len 8192 \
-    --max-num-seqs 4 \
+    --max-model-len 2048 \
+    --max-num-seqs 2 \
     --block-size 64
 ```
 
-[🚀 Start vLLM Server (N150)](command:tenstorrent.startVllmServerN150)
+[🚀 Start vLLM with Llama (N150 - Not Recommended)](command:tenstorrent.startVllmServerN150)
 
-**💡 Memory Tip:** These settings use 8K context to avoid OOM errors. For longer context (16K), use `--max-model-len 16384 --max-num-seqs 1`.
+**Warning:** Expect DRAM exhaustion errors. Qwen3-0.6B is 13x smaller and works reliably.
 
-</details>
+---
 
-<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 N300 (Wormhole - Dual Chip)</b></summary>
+### N300 (Wormhole - Dual Chip)
 
 ```bash
 cd ~/tt-vllm && \
@@ -559,6 +475,7 @@ cd ~/tt-vllm && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-8B-Instruct \
+    --served-model-name meta-llama/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
     --max-model-len 131072 \
@@ -569,10 +486,9 @@ cd ~/tt-vllm && \
 
 [🚀 Start vLLM Server (N300)](command:tenstorrent.startVllmServerN300)
 
-</details>
+---
 
-<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 T3K (Wormhole - 8 Chips)</b></summary>
+### T3K (Wormhole - 8 Chips)
 
 ```bash
 cd ~/tt-vllm && \
@@ -583,6 +499,7 @@ cd ~/tt-vllm && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-70B-Instruct \
+    --served-model-name meta-llama/Llama-3.1-70B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
     --max-model-len 131072 \
@@ -595,10 +512,9 @@ cd ~/tt-vllm && \
 
 **Note:** This uses the 70B model. Make sure you've downloaded it first.
 
-</details>
+---
 
-<details style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 P100 (Blackhole - Single Chip)</b></summary>
+### P100 (Blackhole - Single Chip)
 
 ```bash
 cd ~/tt-vllm && \
@@ -610,6 +526,7 @@ cd ~/tt-vllm && \
   source ~/tt-vllm/tt_metal/setup-metal.sh && \
   python ~/tt-scratchpad/start-vllm-server.py \
     --model ~/models/Llama-3.1-8B-Instruct \
+    --served-model-name meta-llama/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000 \
     --max-model-len 8192 \
@@ -623,7 +540,7 @@ cd ~/tt-vllm && \
 
 **💡 Memory Tip:** These settings use 8K context to avoid OOM errors. For longer context (16K), use `--max-model-len 16384 --max-num-seqs 1`.
 
-</details>
+---
 
 ---
 
@@ -705,6 +622,46 @@ INFO: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
 **Server is ready!** Leave this terminal open.
 
+---
+
+## DIY: Switch Models Manually
+
+**Want to try a different model?** It's easy! Just change the `--model` path in the command.
+
+**Example: Switch from Llama to Qwen on N150:**
+
+```bash
+# Stop the current server (Ctrl+C in the server terminal)
+
+# Start with Qwen instead
+cd ~/tt-vllm && \
+  source ~/tt-vllm-venv/bin/activate && \
+  export TT_METAL_HOME=~/tt-metal && \
+  export MESH_DEVICE=N150 && \
+  export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && \
+  source ~/tt-vllm/tt_metal/setup-metal.sh && \
+  python ~/tt-scratchpad/start-vllm-server.py \
+    --model ~/models/Qwen3-8B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --max-model-len 8192 \
+    --max-num-seqs 4 \
+    --block-size 64
+```
+
+**That's it!** The same script automatically detects Qwen is Llama-compatible and uses the TT-optimized implementation. Same performance, different model.
+
+**Try comparing:**
+1. Ask Llama: "Write hello world in Python"
+2. Stop server (Ctrl+C)
+3. Switch to Qwen (command above)
+4. Ask Qwen the same question
+5. Notice Qwen might give more detailed code comments (it's optimized for coding!)
+
+**For other hardware:** Just copy the Qwen command from the [Hardware Configuration](#hardware-configuration) section above.
+
+---
+
 ## Step 5: Test with OpenAI SDK
 
 Open a **second terminal** and test with the OpenAI Python SDK:
@@ -721,9 +678,9 @@ client = OpenAI(
     api_key="dummy-key"  # vLLM doesn't require auth by default
 )
 
-# Chat completion
+# Chat completion with Qwen3-0.6B
 response = client.chat.completions.create(
-    model="meta-llama/Llama-3.1-8B-Instruct",
+    model="Qwen/Qwen3-0.6B",
     messages=[
         {"role": "user", "content": "What is machine learning?"}
     ],
@@ -738,12 +695,12 @@ print(response.choices[0].message.content)
 **Response:**
 ```
 Machine learning is a subset of artificial intelligence that involves
-training algorithms to learn from data and make predictions...
+training algorithms to learn from data and make predictions or decisions...
 ```
 
 **Why this is powerful:** Your code is **identical** to code that calls OpenAI's API. Just change the `base_url`!
 
-## Step 5: Test with curl
+## Step 6: Test with curl
 
 You can also use curl (same API as OpenAI):
 
@@ -751,7 +708,7 @@ You can also use curl (same API as OpenAI):
 curl http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "model": "Qwen/Qwen3-0.6B",
     "messages": [
       {"role": "user", "content": "Explain neural networks"}
     ],
@@ -767,7 +724,7 @@ curl http://localhost:8000/v1/chat/completions \
   "id": "cmpl-xxx",
   "object": "chat.completion",
   "created": 1234567890,
-  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "model": "Qwen/Qwen3-0.6B",
   "choices": [
     {
       "index": 0,
@@ -798,7 +755,7 @@ Chat-style completions (like ChatGPT):
 curl http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "model": "Qwen/Qwen3-0.6B",
     "messages": [
       {"role": "system", "content": "You are a helpful assistant."},
       {"role": "user", "content": "What is AI?"}
@@ -816,7 +773,7 @@ Text completions (continue a prompt):
 curl http://localhost:8000/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "model": "Qwen/Qwen3-0.6B",
     "prompt": "Once upon a time",
     "max_tokens": 100
   }'
@@ -836,7 +793,7 @@ Response:
   "object": "list",
   "data": [
     {
-      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "id": "Qwen/Qwen3-0.6B",
       "object": "model",
       "owned_by": "tenstorrent"
     }
@@ -854,7 +811,7 @@ from openai import OpenAI
 client = OpenAI(base_url="http://localhost:8000/v1", api_key="dummy")
 
 stream = client.chat.completions.create(
-    model="meta-llama/Llama-3.1-8B-Instruct",
+    model="Qwen/Qwen3-0.6B",
     messages=[{"role": "user", "content": "Write a story"}],
     stream=True,  # Enable streaming
     max_tokens=200
@@ -881,7 +838,7 @@ async def query(prompt_id, prompt):
     """Send a query"""
     print(f"[{prompt_id}] Sending request...")
     response = client.chat.completions.create(
-        model="meta-llama/Llama-3.1-8B-Instruct",
+        model="Qwen/Qwen3-0.6B",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=50
     )
@@ -902,6 +859,84 @@ asyncio.run(main())
 ```
 
 **vLLM handles all 5 requests efficiently** using continuous batching - much better than sequential processing!
+
+---
+
+## Step 7: Showcase - Test Qwen3-0.6B's Reasoning
+
+**Qwen3-0.6B's secret weapon:** Dual thinking modes! It automatically switches between fast chat and deep reasoning.
+
+**Let's test its reasoning capabilities with a classic logic puzzle:**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8000/v1", api_key="dummy")
+
+# Classic reasoning test
+response = client.chat.completions.create(
+    model="Qwen/Qwen3-0.6B",
+    messages=[{
+        "role": "user",
+        "content": "A farmer has 17 sheep. All but 9 die. How many sheep are left? Think step by step."
+    }],
+    max_tokens=256
+)
+
+print(response.choices[0].message.content)
+```
+
+
+**Expected output:**
+```
+Let me think through this carefully:
+
+1. The farmer starts with 17 sheep
+2. "All but 9 die" means that 9 sheep survive
+3. The sheep that die = 17 - 9 = 8 sheep
+4. Therefore, 9 sheep remain alive
+
+Answer: 9 sheep are left.
+```
+
+**Why this works:** Qwen3-0.6B recognizes this requires reasoning and automatically engages its "thinking mode" - even though it's only 0.6B parameters!
+
+**Try more reasoning challenges:**
+
+```python
+# Math reasoning
+response = client.chat.completions.create(
+    model="Qwen/Qwen3-0.6B",
+    messages=[{
+        "role": "user",
+        "content": "If a train travels 60 miles in 45 minutes, what is its speed in miles per hour?"
+    }],
+    max_tokens=128
+)
+```
+
+```python
+# Pattern recognition
+response = client.chat.completions.create(
+    model="Qwen/Qwen3-0.6B",
+    messages=[{
+        "role": "user",
+        "content": "What comes next in this sequence: 2, 4, 8, 16, __?"
+    }],
+    max_tokens=64
+)
+```
+
+
+**What makes Qwen3-0.6B special:**
+- 🧠 **Dual Thinking Modes** - Automatically engages deep reasoning when needed
+- 🎯 **Reasoning Benchmarks** - MMLU-Redux: 55.6, MATH-500: 77.6 (impressive for 0.6B!)
+- ⚡ **Still Fast** - Thinking mode adds minimal latency
+- 💰 **Best Value** - Sub-1B parameters with reasoning capabilities
+
+This is why Qwen3-0.6B punches way above its weight class!
+
+---
 
 ## Advanced Configuration
 
@@ -1061,6 +1096,34 @@ source ~/tt-vllm-venv/bin/activate
 pip install --upgrade ttnn pytest
 pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
 ```
+
+**Out of Memory / DRAM Exhausted (N150 Users):**
+If larger models (8B params) exhaust your DRAM on N150, use smaller models:
+
+**Recommended small models:**
+- **Qwen3-0.6B** - 0.6B params (13x smaller than 8B) ✅ **Best for N150**
+  ```bash
+  # Download and run Qwen3-0.6B
+  huggingface-cli download Qwen/Qwen3-0.6B --local-dir ~/models/Qwen3-0.6B
+
+  # Start server (use N150 command from Step 4 above)
+  python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B ...
+  ```
+
+- **Gemma 3-1B-IT** - 1B params (8x smaller than 8B)
+  ```bash
+  # Download and run Gemma 3-1B-IT
+  huggingface-cli download google/gemma-3-1b-it --local-dir ~/models/gemma-3-1b-it
+
+  # Start server (use N150 command from Step 4 above)
+  python ~/tt-scratchpad/start-vllm-server.py --model ~/models/gemma-3-1b-it ...
+  ```
+
+**Why small models work better on N150:**
+- **Minimal DRAM usage** - Fits comfortably in N150's memory
+- **Faster inference** - Smaller model = faster generation
+- **Same API** - Works with all the same commands
+- **Perfect for development** - Ideal for testing and iteration
 
 **AttributeError: 'InputRegistry' object has no attribute 'register_input_processor':**
 **Error: sfpi not found at /home/user/tt-metal/runtime/sfpi:**

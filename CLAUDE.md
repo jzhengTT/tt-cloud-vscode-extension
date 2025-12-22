@@ -13,19 +13,36 @@ VSCode extension for Tenstorrent hardware development:
 5. **Auto-config** - Solarized Dark + terminal on activation
 6. **Lesson Metadata** - Hardware compatibility and validation tracking (see LESSON_METADATA.md)
 
-## Styled Hardware Configs (v0.0.85+)
+## Hardware Configuration Formatting
 
-All hardware instructions use CSS-styled `<details>` sections:
+**v0.0.98+ (Current)**: Lesson 7 uses clean markdown headers for better walkthrough rendering:
+
+```markdown
+### N150 (Wormhole - Single Chip) - Most common for development
+
+**✅ Recommended: Qwen3-0.6B** - Tiny, fast, reasoning-capable!
+
+```bash
+command here...
+```
+
+---
+```
+
+- Pure markdown (no HTML)
+- Better multi-line code block rendering
+- Cleaner, more maintainable
+
+**v0.0.85-0.0.97 (Legacy)**: Some lessons still use CSS-styled `<details>` sections:
 
 ```html
-<details open style="border: 1px solid var(--vscode-panel-border); border-radius: 6px; padding: 12px; margin: 8px 0; background: var(--vscode-editor-background);">
-<summary style="cursor: pointer; font-weight: bold; padding: 4px; margin: -12px -12px 12px -12px; background: var(--vscode-sideBar-background); border-radius: 4px 4px 0 0; border-bottom: 1px solid var(--vscode-panel-border);"><b>🔧 Hardware Name</b></summary>
+<details open style="border: 1px solid var(--vscode-panel-border); ...">
+<summary><b>🔧 Hardware Name</b></summary>
 Content...
 </details>
 ```
 
-- Uses VSCode CSS variables (theme-aware)
-- N150 open by default
+- Used in Lessons 6, 9, 12 (not yet migrated)
 - See `HARDWARE_CONFIG_TEMPLATE.md` + `STYLING_GUIDE.md`
 
 ## Build Commands
@@ -205,11 +222,51 @@ See `LESSON_METADATA.md` for complete documentation.
 - Helper: `startVllmServerForHardware(hardware, config)` - accepts optional `modelPath` parameter
 - All use `'server'` terminal type
 
-**Model Support (v0.0.89+):**
-- **Llama-3.1-8B-Instruct** - General-purpose chat (gated, requires HF token)
-- **Qwen3-8B** - Multilingual (29 languages), coding, math (no HF token needed!)
-- Both models: Same 8B size, work on all hardware (N150/N300/T3K/P100)
-- Commands available for both models on all hardware configurations
+**Model Support (updated v0.0.97):**
+- **Qwen3-0.6B** - Ultra-lightweight (0.6B params), dual thinking modes, reasoning excellence ✅ **PRIMARY RECOMMENDATION for N150**
+  - MMLU-Redux: 55.6, MATH-500: 77.6 (impressive for 0.6B!)
+  - Sub-millisecond inference, 10,000+ QPS capable
+  - Multilingual, 32K context
+  - **Perfect for development and many production use cases**
+- **Gemma 3-1B-IT** - Small (1B params), multilingual (140+ langs), 32K context ✅ **Good for N150**
+- **Llama-3.1-8B-Instruct** - General-purpose chat (8B params, gated) ⚠️ **Requires N300/T3K/P100**
+- **Qwen3-8B** - Multilingual coding/math (8B params) ⚠️ **Requires N300+ for reliable operation**
+
+**🔑 HF_MODEL Auto-Detection (v0.0.97):**
+- `start-vllm-server.py` now auto-detects and sets `HF_MODEL` from `--model` path
+- Qwen models: `HF_MODEL=Qwen/{model_name}` (e.g., `Qwen/Qwen3-0.6B`)
+- Gemma models: `HF_MODEL=google/{model_name}` (e.g., `google/gemma-3-1b-it`)
+- Llama models: No HF_MODEL needed (auto-detects correctly)
+- **Users no longer need to manually export HF_MODEL** - script handles it automatically!
+
+**⚠️ N150 DRAM Reality:**
+- Llama-3.1-8B-Instruct consistently exhausts DRAM on N150
+- **Solution**: Start with Qwen3-0.6B (13x smaller, reasoning-capable, production-ready)
+- Lesson 7 completely rewritten around Qwen3-0.6B as the hero model (v0.0.97)
+
+**Symlink Workaround Technical Details (v0.0.92):**
+```typescript
+// Helper function creates symlink if needed
+async function createQwenSymlink(qwenPath: string): Promise<string> {
+  // Target: ~/models/Llama-3.1-8B-Instruct-qwen -> ~/models/Qwen3-8B
+  // Path contains expected string, points to actual Qwen model
+  // Checks if symlink already exists and points to correct location
+  // Returns symlink path to use with vLLM
+}
+
+// All 4 Qwen handlers now:
+// 1. Show informational dialog about symlink
+// 2. Call createQwenSymlink() to create/verify symlink
+// 3. Pass symlink path to startVllmServerForHardware()
+// 4. vLLM's path check passes, model loads successfully
+```
+
+**User Experience:**
+- Click Qwen command → See explanation dialog → Click "Start Server"
+- Extension creates symlink (shows confirmation)
+- vLLM starts with symlink path
+- Everything works transparently
+- Symlink persists for future use
 
 **Model Registry:** `MODEL_REGISTRY` in `src/extension.ts`
 - Current default: Llama-3.1-8B-Instruct
@@ -277,6 +334,50 @@ See `LESSON_METADATA.md` for complete documentation.
 - API examples and patterns
 
 ## Recent Changes
+
+**v0.0.101** - Hardware auto-detection in vLLM starter script
+- Added `detect_and_configure_hardware()` function to `start-vllm-server.py`
+- Automatically detects hardware type via `tt-smi -s` JSON parsing
+- Auto-sets MESH_DEVICE (N150/N300/T3K/P100/P150/GALAXY)
+- Auto-sets TT_METAL_ARCH_NAME=blackhole for P100/P150 (Blackhole family)
+- Auto-sets TT_METAL_HOME to ~/tt-metal if not already set
+- Users can now start vLLM with just: `python start-vllm-server.py --model ~/models/Qwen3-0.6B`
+- Updated Lesson 7: Removed all manual environment variable exports from commands
+- Updated Lesson 8: Simplified all hardware commands (N150/N300/T3K/P100)
+- Added startup banner showing detected hardware and auto-configured settings
+- Respects existing environment variables (user overrides take precedence)
+- Graceful error handling with clear warning messages if detection fails
+
+**v0.0.100** - Lesson 8 updates + Lesson 7 metadata validation
+- Fixed `testChat()` command to properly open VSCode chat panel
+- Updated Lesson 8 to use Qwen3-0.6B throughout (no HF token needed)
+- Simplified Lesson 8 commands using v0.0.99 smart defaults
+- Updated Lesson 7 metadata: status changed from "blocked" to "validated"
+- Added N150 to validatedOn array for Lesson 7 (vLLM production)
+- Removed blockReason from Lesson 7 metadata
+
+**v0.0.99** - Smart defaults for vLLM starter script
+- Added `inject_defaults()` function to auto-configure vLLM parameters
+- Auto-sets `--served-model-name` from model path (Qwen/, google/, meta-llama/)
+- Auto-applies sensible defaults: `--max-model-len 2048`, `--max-num-seqs 16`, `--block-size 64`
+- Users can now use minimal command: `python start-vllm-server.py --model ~/models/Qwen3-0.6B`
+- All defaults can be overridden by passing arguments explicitly
+- Added "Quick Start" section to Lesson 7 showing minimal usage
+- Updated "Understanding the Starter Script" section with smart defaults explanation
+
+**v0.0.98** - Lesson 7 rendering fix + model naming
+- Removed `<details>` HTML wrappers from all hardware configurations (N150/N300/T3K/P100)
+- Replaced with clean markdown `###` headers for better walkthrough rendering
+- Added `--served-model-name` parameter to all vLLM commands
+- Fixes multi-line code block rendering issues in VSCode walkthrough
+- Model now served with clean names (e.g., `Qwen/Qwen3-0.6B` instead of `/home/user/models/...`)
+
+**v0.0.97** - Qwen3-0.6B rewrite + HF_MODEL auto-detection
+- Complete Lesson 7 rewrite centered on Qwen3-0.6B (ultra-lightweight, reasoning-capable)
+- Added HF_MODEL auto-detection to `start-vllm-server.py`
+- Added Step 7: Reasoning Showcase demonstrating Qwen's dual thinking modes
+- Updated all examples to use Qwen3-0.6B as primary N150 model
+- Fixed model recommendations (removed Gemma-2-2B-IT, added Gemma 3-1B-IT)
 
 **v0.0.86** - Lesson metadata system + install_dependencies.sh fixes
 - Added metadata to all 16 walkthrough steps (hardware support, validation status)

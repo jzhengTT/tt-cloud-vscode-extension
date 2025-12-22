@@ -1113,6 +1113,11 @@ async function createChatScript(): Promise<void> {
 
   const destPath = path.join(scratchpadDir, 'tt-chat.py');
 
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(destPath))) {
+    return; // User cancelled
+  }
+
   try {
     // Copy the template to scratchpad directory
     fs.copyFileSync(templatePath, destPath);
@@ -1195,6 +1200,11 @@ async function createApiServer(): Promise<void> {
   }
 
   const destPath = path.join(scratchpadDir, 'tt-api-server.py');
+
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(destPath))) {
+    return; // User cancelled
+  }
 
   try {
     // Copy the template to scratchpad directory
@@ -1331,6 +1341,11 @@ async function createChatScriptDirect(): Promise<void> {
 
   const destPath = path.join(scratchpadDir, 'tt-chat-direct.py');
 
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(destPath))) {
+    return; // User cancelled
+  }
+
   try {
     fs.copyFileSync(templatePath, destPath);
     fs.chmodSync(destPath, 0o755);
@@ -1401,6 +1416,11 @@ async function createApiServerDirect(): Promise<void> {
   }
 
   const destPath = path.join(scratchpadDir, 'tt-api-server-direct.py');
+
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(destPath))) {
+    return; // User cancelled
+  }
 
   try {
     fs.copyFileSync(templatePath, destPath);
@@ -1777,78 +1797,6 @@ async function startVllmServerP100(): Promise<void> {
   });
 }
 
-// ============================================================================
-// Qwen Model Variants (Hardware-Specific)
-// ============================================================================
-
-/**
- * Command: tenstorrent.startVllmServerN150Qwen
- * Starts vLLM server with Qwen3-8B on N150 hardware.
- */
-async function startVllmServerN150Qwen(): Promise<void> {
-  const os = await import('os');
-  const homeDir = os.homedir();
-  await startVllmServerForHardware('N150', {
-    maxModelLen: 8192,
-    maxNumSeqs: 4,
-    blockSize: 64,
-    tensorParallelSize: undefined,
-    archName: undefined,
-    modelPath: `${homeDir}/models/Qwen3-8B`,
-  });
-}
-
-/**
- * Command: tenstorrent.startVllmServerN300Qwen
- * Starts vLLM server with Qwen3-8B on N300 hardware.
- */
-async function startVllmServerN300Qwen(): Promise<void> {
-  const os = await import('os');
-  const homeDir = os.homedir();
-  await startVllmServerForHardware('N300', {
-    maxModelLen: 131072,
-    maxNumSeqs: 32,
-    blockSize: 64,
-    tensorParallelSize: 2,
-    archName: undefined,
-    modelPath: `${homeDir}/models/Qwen3-8B`,
-  });
-}
-
-/**
- * Command: tenstorrent.startVllmServerT3KQwen
- * Starts vLLM server with Qwen3-8B on T3K hardware.
- */
-async function startVllmServerT3KQwen(): Promise<void> {
-  const os = await import('os');
-  const homeDir = os.homedir();
-  await startVllmServerForHardware('T3K', {
-    maxModelLen: 131072,
-    maxNumSeqs: 64,
-    blockSize: 64,
-    tensorParallelSize: 8,
-    archName: undefined,
-    modelPath: `${homeDir}/models/Qwen3-8B`,
-  });
-}
-
-/**
- * Command: tenstorrent.startVllmServerP100Qwen
- * Starts vLLM server with Qwen3-8B on P100 (Blackhole) hardware.
- */
-async function startVllmServerP100Qwen(): Promise<void> {
-  const os = await import('os');
-  const homeDir = os.homedir();
-  await startVllmServerForHardware('P100', {
-    maxModelLen: 8192,
-    maxNumSeqs: 4,
-    blockSize: 64,
-    tensorParallelSize: undefined,
-    archName: 'blackhole',
-    modelPath: `${homeDir}/models/Qwen3-8B`,
-  });
-}
-
 /**
  * Helper function to start vLLM server with hardware-specific configuration.
  */
@@ -1861,6 +1809,7 @@ async function startVllmServerForHardware(
     tensorParallelSize?: number;
     archName?: string;
     modelPath?: string;  // Optional: override default Llama path
+    maxNumBatchedTokens?: number;  // Optional: prevents batch size errors (required for Qwen)
   }
 ): Promise<void> {
   const path = await import('path');
@@ -1897,6 +1846,9 @@ async function startVllmServerForHardware(
 
   // Build vLLM flags
   let vllmFlags = `--model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len ${config.maxModelLen} --max-num-seqs ${config.maxNumSeqs} --block-size ${config.blockSize}`;
+  if (config.maxNumBatchedTokens) {
+    vllmFlags += ` --max-num-batched-tokens ${config.maxNumBatchedTokens}`;
+  }
   if (config.tensorParallelSize) {
     vllmFlags += ` --tensor-parallel-size ${config.tensorParallelSize}`;
   }
@@ -2009,6 +1961,30 @@ async function startVllmForChat(): Promise<void> {
 }
 
 /**
+ * Helper function to check if a file should be overwritten.
+ * Shows a confirmation dialog if the file exists.
+ *
+ * @param filePath - The path to check
+ * @returns true if the file should be written (doesn't exist or user confirmed overwrite)
+ */
+async function shouldOverwriteFile(filePath: string): Promise<boolean> {
+  const fs = await import('fs');
+
+  if (!fs.existsSync(filePath)) {
+    return true; // File doesn't exist, safe to write
+  }
+
+  // File exists, ask user
+  const choice = await vscode.window.showWarningMessage(
+    `File already exists: ${filePath}\n\nDo you want to overwrite it?`,
+    'Overwrite',
+    'Cancel'
+  );
+
+  return choice === 'Overwrite';
+}
+
+/**
  * Command: tenstorrent.createVllmStarter
  * Creates the vLLM starter script in ~/tt-scratchpad/ without starting the server.
  * This script registers TT models with vLLM before starting the API server.
@@ -2025,6 +2001,11 @@ async function createVllmStarter(): Promise<void> {
   // Create directory if it doesn't exist
   if (!fs.existsSync(scratchpadDir)) {
     fs.mkdirSync(scratchpadDir, { recursive: true });
+  }
+
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(starterPath))) {
+    return; // User cancelled
   }
 
   // Copy template
@@ -2089,10 +2070,25 @@ async function enableChatParticipant(): Promise<void> {
  * Opens the VSCode chat panel with a pre-filled test prompt.
  */
 async function testChat(): Promise<void> {
-  // Open chat with pre-filled prompt
-  await vscode.commands.executeCommand('workbench.action.chat.open', {
-    query: '@tenstorrent Explain what async/await does in JavaScript'
-  });
+  // Open chat panel first
+  await vscode.commands.executeCommand('workbench.action.chat.open');
+
+  // Give it a moment to open
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  // Try to send the query using the chat.sendToNewChat command
+  // If that fails, just show instructions
+  try {
+    await vscode.commands.executeCommand('workbench.action.chat.newChat', {
+      query: '@tenstorrent Explain what Tenstorrent hardware is and what makes it special'
+    });
+  } catch (error) {
+    // Fallback: show message with instructions
+    vscode.window.showInformationMessage(
+      '💬 Chat panel opened! Type "@tenstorrent" followed by your question to get started.',
+      'Got it!'
+    );
+  }
 }
 
 /**
@@ -2369,6 +2365,11 @@ async function createCodingAssistantScript(): Promise<void> {
 
   const destPath = path.join(scratchpadDir, 'tt-coding-assistant.py');
 
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(destPath))) {
+    return; // User cancelled
+  }
+
   try {
     fs.copyFileSync(templatePath, destPath);
     fs.chmodSync(destPath, 0o755);
@@ -2490,6 +2491,11 @@ async function createForgeClassifier(): Promise<void> {
   }
 
   const destPath = path.join(scratchpadDir, 'tt-forge-classifier.py');
+
+  // Check if file exists and ask for overwrite confirmation
+  if (!(await shouldOverwriteFile(destPath))) {
+    return; // User cancelled
+  }
 
   try {
     fs.copyFileSync(templatePath, destPath);
@@ -3706,11 +3712,6 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand('tenstorrent.startVllmServerN300', startVllmServerN300),
     vscode.commands.registerCommand('tenstorrent.startVllmServerT3K', startVllmServerT3K),
     vscode.commands.registerCommand('tenstorrent.startVllmServerP100', startVllmServerP100),
-    // Qwen model variants
-    vscode.commands.registerCommand('tenstorrent.startVllmServerN150Qwen', startVllmServerN150Qwen),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerN300Qwen', startVllmServerN300Qwen),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerT3KQwen', startVllmServerT3KQwen),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerP100Qwen', startVllmServerP100Qwen),
     vscode.commands.registerCommand('tenstorrent.createVllmStarter', createVllmStarter),
     vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
