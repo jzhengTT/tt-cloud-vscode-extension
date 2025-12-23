@@ -48,9 +48,8 @@ If `tt-smi` is not found on your system, the fastest way to set up is with **tt-
 - ✅ tt-metalium containers (1GB standard, optional 10GB with demos)
 - ✅ Python environment
 
-**See the full tt-installer guide:** [tt-installer reference](command:tenstorrent.showWelcome) (check the "Setup Information" section in the welcome page)
 
-**Alternative:** Manual installation is available for advanced users who need custom builds or bleeding-edge features.
+Consult the [tt-installer](https://github.com/tenstorrent/tt-installer) repo for more information.
 
 ---
 

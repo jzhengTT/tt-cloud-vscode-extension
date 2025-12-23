@@ -11,7 +11,6 @@
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import DOMPurify from 'isomorphic-dompurify';
-import { CommandButtonRenderer } from './CommandButtonRenderer';
 import * as fs from 'fs';
 import * as path from 'path';
 import matter from 'gray-matter';
@@ -67,9 +66,6 @@ export class MarkdownRenderer {
    * Configure marked with custom renderer and extensions
    */
   private configureMarked(): void {
-    // Configure marked with command button renderer
-    const renderer = new CommandButtonRenderer();
-
     // Setup marked with syntax highlighting
     marked.use(
       markedHighlight({
@@ -85,7 +81,33 @@ export class MarkdownRenderer {
       })
     );
 
-    marked.use({ renderer });
+    // Configure marked v17 API with custom link renderer for command buttons
+    marked.use({
+      renderer: {
+        link: (token: any) => {
+          const { href, title, tokens } = token;
+          const text = this.parseInlineTokens(tokens);
+
+          // Check if this is a command link
+          if (href && href.startsWith('command:')) {
+            const commandId = href.replace('command:', '');
+            const titleAttr = title ? ` title="${this.escapeHtml(title)}"` : '';
+
+            return `<button class="tt-command-button"
+                            data-command="${this.escapeHtml(commandId)}"
+                            ${titleAttr}>
+                      ${text}
+                    </button>`;
+          }
+
+          // For regular links, use default rendering
+          const escapedHref = this.escapeHtml(href || '');
+          const titleStr = title ? ` title="${this.escapeHtml(title)}"` : '';
+          return `<a href="${escapedHref}"${titleStr}>${text}</a>`;
+        }
+      }
+    });
+
     marked.setOptions({
       gfm: true,  // GitHub Flavored Markdown
       breaks: true,  // Convert \n to <br>
@@ -146,6 +168,30 @@ export class MarkdownRenderer {
     }
 
     return commands;
+  }
+
+  /**
+   * Parse inline tokens to text
+   */
+  private parseInlineTokens(tokens: any[]): string {
+    if (!tokens || tokens.length === 0) {
+      return '';
+    }
+    return tokens.map(token => {
+      if (token.type === 'text') {
+        return token.text || '';
+      }
+      if (token.type === 'strong') {
+        return `<strong>${this.parseInlineTokens(token.tokens)}</strong>`;
+      }
+      if (token.type === 'em') {
+        return `<em>${this.parseInlineTokens(token.tokens)}</em>`;
+      }
+      if (token.type === 'codespan') {
+        return `<code>${this.escapeHtml(token.text || '')}</code>`;
+      }
+      return token.raw || '';
+    }).join('');
   }
 
   /**
