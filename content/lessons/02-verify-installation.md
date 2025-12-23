@@ -1,3 +1,23 @@
+---
+id: verify-installation
+title: Verify tt-metal Installation
+description: >-
+  Test your tt-metal installation by running a sample operation on your
+  Tenstorrent device.
+category: advanced
+tags:
+  - installation
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: validated
+estimatedMinutes: 5
+---
+
 # Verify tt-metal Installation
 
 Test your tt-metal installation by running a sample operation on your Tenstorrent device.

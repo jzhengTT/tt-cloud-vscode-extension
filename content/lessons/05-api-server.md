@@ -1,3 +1,24 @@
+---
+id: api-server
+title: HTTP API Server with Direct API
+description: Create a production-ready Flask API with the model loaded in memory.
+category: advanced
+tags:
+  - production
+  - api
+  - flask
+  - model
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: validated
+estimatedMinutes: 10
+---
+
 # HTTP API Server with Direct API
 
 Transform your interactive chat into a production-ready HTTP API using the Generator API - perfect for building applications that need fast, reliable inference.

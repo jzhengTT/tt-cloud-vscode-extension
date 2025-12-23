@@ -1,3 +1,26 @@
+---
+id: coding-assistant
+title: Coding Assistant with Prompt Engineering
+description: >-
+  Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn
+  how to shape model behavior through system prompts - a critical real-world
+  skill!
+category: advanced
+tags:
+  - coding
+  - assistant
+  - model
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # Lesson 9: Coding Assistant with Prompt Engineering
 
 ## Future Model Options (Coming Soon)

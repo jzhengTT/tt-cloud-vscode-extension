@@ -1,3 +1,24 @@
+---
+id: bounty-program
+title: 'Bounty Program: Model Bring-Up'
+description: >-
+  Learn how to contribute to the Tenstorrent Bounty Program by bringing up new
+  models. Master TT-Metal while becoming part of the open-source ecosystem. Uses
+  the successful Phi-3 contribution as a case study.
+category: advanced
+tags:
+  - model
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # Bounty Program: Model Bring-Up from Scratch
 
 Learn how to tackle open bounties in the **Tenstorrent Bounty Program** by bringing up a new model on TT hardware. We'll use the successful **Phi-3-mini-128k-instruct** bounty (Issue #19416) as a real-world case study.

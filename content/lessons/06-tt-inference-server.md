@@ -1,3 +1,23 @@
+---
+id: tt-inference-server
+title: Production Inference with tt-inference-server
+description: >-
+  Use Tenstorrent's official inference server for production deployments with
+  simple CLI configuration.
+category: advanced
+tags:
+  - production
+  - deployment
+  - inference
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+status: blocked
+estimatedMinutes: 30
+---
+
 # Production Inference with tt-inference-server
 
 Learn to use tt-inference-server, Tenstorrent's official workflow automation tool for deploying vLLM inference servers with hardware-aware configuration.

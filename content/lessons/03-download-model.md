@@ -1,3 +1,25 @@
+---
+id: download-model
+title: Download Model and Run Inference
+description: >-
+  Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent
+  hardware.
+category: advanced
+tags:
+  - hardware
+  - inference
+  - model
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: validated
+estimatedMinutes: 10
+---
+
 # Download Model from Hugging Face
 
 Download the Llama-3.1-8B-Instruct model from Hugging Face to run AI workloads on your Tenstorrent hardware.

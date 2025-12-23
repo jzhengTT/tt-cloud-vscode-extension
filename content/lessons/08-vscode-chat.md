@@ -1,3 +1,24 @@
+---
+id: vscode-chat
+title: VSCode Chat Integration
+description: >-
+  Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent
+  hardware.
+category: advanced
+tags:
+  - chat
+  - hardware
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # AI-Powered VSCode Chat with Tenstorrent
 
 Bring your Tenstorrent hardware directly into VSCode's chat interface. Use `@tenstorrent` to get AI-powered assistance running on your local hardware - perfect for developing against Tenstorrent while getting AI help from Tenstorrent itself!

@@ -1,3 +1,25 @@
+---
+id: metalium-cookbook
+title: TT-Metalium Cookbook
+description: >-
+  Build creative projects with TT-Metalium! Work through 4 complete cookbook
+  recipes: Conway's Game of Life, Audio Signal Processing, Mandelbrot Fractals,
+  and Image Filters. Deploy all templates with one command and start coding!
+category: advanced
+tags:
+  - image
+  - coding
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # TT-Metalium Cookbook: Build Creative Projects
 
 Welcome to the TT-Metalium Cookbook! In this lesson, you'll build **four complete projects** from scratch, each teaching different aspects of programming Tenstorrent hardware.

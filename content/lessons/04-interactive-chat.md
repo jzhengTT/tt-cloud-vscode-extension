@@ -1,3 +1,22 @@
+---
+id: interactive-chat
+title: Interactive Chat with Direct API
+description: Build a custom chat application using tt-metal's Generator API directly.
+category: advanced
+tags:
+  - chat
+  - api
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: validated
+estimatedMinutes: 10
+---
+
 # Interactive Chat with Direct API
 
 Build your own interactive chat application using tt-metal's Generator API directly.

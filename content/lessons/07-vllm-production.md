@@ -1,3 +1,24 @@
+---
+id: vllm-production
+title: Production Inference with vLLM
+description: >-
+  Deploy with vLLM - OpenAI-compatible APIs, continuous batching, and enterprise
+  features.
+category: advanced
+tags:
+  - vllm
+  - production
+  - api
+  - inference
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+status: validated
+estimatedMinutes: 30
+---
+
 # Production Inference with vLLM
 
 **⚠️ Note:** vLLM requires the HuggingFace model format. If you downloaded the model in Lesson 3 before this update, you may need to re-download to get both Meta and HuggingFace formats. The latest Lesson 3 downloads the complete model with all formats.

@@ -1,3 +1,25 @@
+---
+id: image-generation
+title: Image Generation with SD 3.5 Large
+description: >-
+  Generate high-resolution 1024x1024 images using Stable Diffusion 3.5 Large
+  running natively on your Tenstorrent hardware!
+category: advanced
+tags:
+  - hardware
+  - image
+  - generation
+  - diffusion
+  - stable
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+status: validated
+estimatedMinutes: 20
+---
+
 # Image Generation with Stable Diffusion 3.5 Large
 
 Generate images on your Tenstorrent hardware using Stable Diffusion 3.5 Large - turn text prompts into high-resolution images powered by your N150!

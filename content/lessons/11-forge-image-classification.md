@@ -1,3 +1,24 @@
+---
+id: forge-image-classification
+title: Image Classification with TT-Forge
+description: >-
+  Explore TT-Forge - Tenstorrent's MLIR-based compiler that brings PyTorch
+  models to TT hardware! Start with validated models like MobileNetV2 for image
+  classification. Learn forge.compile(), experiment with supported
+  architectures, and understand the path to high-level model deployment.
+category: advanced
+tags:
+  - hardware
+  - image
+  - forge
+  - deployment
+  - model
+supportedHardware:
+  - n150
+status: blocked
+estimatedMinutes: 20
+---
+
 # Lesson 11: Image Classification with TT-Forge
 
 ## Welcome to the High-Level Compiler! 🎨

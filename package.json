@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.102",
+  "version": "0.0.105",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -21,10 +21,28 @@
   "main": "./dist/extension.js",
   "activationEvents": [
     "onStartupFinished",
+    "onView:tenstorrentLessons",
     "onWalkthrough:tenstorrent.setup",
     "onLanguageModelTool:tenstorrent-chat"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tenstorrent-sidebar",
+          "title": "Tenstorrent",
+          "icon": "assets/img/tt_symbol_purple.svg"
+        }
+      ]
+    },
+    "views": {
+      "tenstorrent-sidebar": [
+        {
+          "id": "tenstorrentLessons",
+          "name": "Lessons"
+        }
+      ]
+    },
     "chatParticipants": [
       {
         "id": "tenstorrent.chat",
@@ -35,6 +53,23 @@
       }
     ],
     "commands": [
+      {
+        "command": "tenstorrent.showLesson",
+        "title": "Show Lesson",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.refreshLessons",
+        "title": "Refresh Lessons",
+        "category": "Tenstorrent",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "tenstorrent.filterLessons",
+        "title": "Filter Lessons",
+        "category": "Tenstorrent",
+        "icon": "$(filter)"
+      },
       {
         "command": "tenstorrent.showCommandMenu",
         "title": "Show Command Menu",
@@ -440,279 +475,12 @@
         "title": "Create Cookbook Projects",
         "category": "Tenstorrent"
       }
-    ],
-    "walkthroughs": [
-      {
-        "id": "tenstorrent.setup",
-        "title": "Tenstorrent walkthrough",
-        "description": "Set up your Tenstorrent development environment step by step",
-        "steps": [
-          {
-            "id": "hardware-detection",
-            "title": "Hardware Detection",
-            "description": "Scan for connected Tenstorrent devices and verify they're properly recognized by the system.",
-            "media": {
-              "markdown": "content/lessons/01-hardware-detection.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.runHardwareDetection"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "validated",
-              "validatedOn": ["n150", "n300", "t3k", "p100"]
-            }
-          },
-          {
-            "id": "verify-installation",
-            "title": "Verify tt-metal Installation",
-            "description": "Test your tt-metal installation by running a sample operation on your Tenstorrent device.",
-            "media": {
-              "markdown": "content/lessons/02-verify-installation.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.verifyInstallation"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "validated",
-              "validatedOn": ["n150"]
-            }
-          },
-          {
-            "id": "download-model",
-            "title": "Download Model and Run Inference",
-            "description": "Download the Llama-3.1-8B-Instruct model and run inference on your Tenstorrent hardware.",
-            "media": {
-              "markdown": "content/lessons/03-download-model.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.runInference"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "validated",
-              "validatedOn": ["n150"]
-            }
-          },
-          {
-            "id": "interactive-chat",
-            "title": "Interactive Chat with Direct API",
-            "description": "Build a custom chat application using tt-metal's Generator API directly.",
-            "media": {
-              "markdown": "content/lessons/04-interactive-chat.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.startChatSessionDirect"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "validated",
-              "validatedOn": ["n150"]
-            }
-          },
-          {
-            "id": "api-server",
-            "title": "HTTP API Server with Direct API",
-            "description": "Create a production-ready Flask API with the model loaded in memory.",
-            "media": {
-              "markdown": "content/lessons/05-api-server.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.testApiBasicDirect"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "validated",
-              "validatedOn": ["n150"]
-            }
-          },
-          {
-            "id": "tt-inference-server",
-            "title": "Production Inference with tt-inference-server",
-            "description": "Use Tenstorrent's official inference server for production deployments with simple CLI configuration.",
-            "media": {
-              "markdown": "content/lessons/06-tt-inference-server.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.testTtInferenceServerSimple"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100"],
-              "status": "blocked",
-              "validatedOn": [],
-              "blockReason": "Requires tt-vllm validation"
-            }
-          },
-          {
-            "id": "vllm-production",
-            "title": "Production Inference with vLLM",
-            "description": "Deploy with vLLM - OpenAI-compatible APIs, continuous batching, and enterprise features.",
-            "media": {
-              "markdown": "content/lessons/07-vllm-production.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.startVllmServer"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100"],
-              "status": "validated",
-              "validatedOn": ["n150"]
-            }
-          },
-          {
-            "id": "vscode-chat",
-            "title": "VSCode Chat Integration",
-            "description": "Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent hardware.",
-            "media": {
-              "markdown": "content/lessons/08-vscode-chat.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.testChat"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          },
-          {
-            "id": "image-generation",
-            "title": "Image Generation with SD 3.5 Large",
-            "description": "Generate high-resolution 1024x1024 images using Stable Diffusion 3.5 Large running natively on your Tenstorrent hardware!",
-            "media": {
-              "markdown": "content/lessons/09-image-generation.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.generateRetroImage"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100"],
-              "status": "validated",
-              "validatedOn": ["n150"]
-            }
-          },
-          {
-            "id": "coding-assistant",
-            "title": "Coding Assistant with Prompt Engineering",
-            "description": "Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn how to shape model behavior through system prompts - a critical real-world skill!",
-            "media": {
-              "markdown": "content/lessons/10-coding-assistant.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.startCodingAssistant"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          },
-          {
-            "id": "forge-image-classification",
-            "title": "Image Classification with TT-Forge",
-            "description": "Explore TT-Forge - Tenstorrent's MLIR-based compiler that brings PyTorch models to TT hardware! Start with validated models like MobileNetV2 for image classification. Learn forge.compile(), experiment with supported architectures, and understand the path to high-level model deployment.",
-            "media": {
-              "markdown": "content/lessons/11-forge-image-classification.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.runForgeClassifier"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150"],
-              "status": "blocked",
-              "validatedOn": [],
-              "blockReason": "TT-Forge experimental - requires validation"
-            }
-          },
-          {
-            "id": "tt-xla-jax",
-            "title": "JAX Inference with TT-XLA",
-            "description": "Master TT-XLA - Tenstorrent's production-ready XLA-based compiler! Simple wheel installation, JAX integration via PJRT, and multi-chip support. Perfect for cloud environments with locked Python/tt-metal versions. Works with Python 3.10+, no rebuilding required!",
-            "media": {
-              "markdown": "content/lessons/12-tt-xla-jax.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.testTtXlaInstall"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          },
-          {
-            "id": "riscv-programming",
-            "title": "RISC-V Programming on Tensix Cores",
-            "description": "Explore 880 RISC-V processors on a single chip! Program the five RISC-V cores (BRISC, NCRISC, TRISC0/1/2) inside each Tensix. Learn bare-metal programming, NoC communication, and parallel computing at scale. Includes comprehensive exploration guide.",
-            "media": {
-              "markdown": "content/lessons/13-riscv-programming.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.runRiscvExample"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          },
-          {
-            "id": "bounty-program",
-            "title": "Bounty Program: Model Bring-Up",
-            "description": "Learn how to contribute to the Tenstorrent Bounty Program by bringing up new models. Master TT-Metal while becoming part of the open-source ecosystem. Uses the successful Phi-3 contribution as a case study.",
-            "media": {
-              "markdown": "content/lessons/11-bounty-program-model-bringup.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.browseOpenBounties"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          },
-          {
-            "id": "explore-metalium",
-            "title": "Exploring TT-Metalium",
-            "description": "Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the model zoo, and dive into programming examples. Learn the architecture, try Jupyter notebooks, and find inspiration for your own projects.",
-            "media": {
-              "markdown": "content/lessons/11-explore-metalium.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.launchTtnnTutorials"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          },
-          {
-            "id": "metalium-cookbook",
-            "title": "TT-Metalium Cookbook",
-            "description": "Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Conway's Game of Life, Audio Signal Processing, Mandelbrot Fractals, and Image Filters. Deploy all templates with one command and start coding!",
-            "media": {
-              "markdown": "content/lessons/12-metalium-cookbook.md"
-            },
-            "completionEvents": [
-              "onCommand:tenstorrent.createCookbookProjects"
-            ],
-            "metadata": {
-              "supportedHardware": ["n150", "n300", "t3k", "p100", "p150", "galaxy"],
-              "status": "draft",
-              "validatedOn": []
-            }
-          }
-        ]
-      }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "tsc -p ./ && npm run copy-content",
-    "copy-content": "mkdir -p dist/content && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/welcome dist/content/",
+    "copy-content": "mkdir -p dist/content dist/src/webview && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/welcome dist/content/ && cp content/lesson-registry.json dist/content/ && cp -r src/webview/* dist/src/webview/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "compile": "tsc -p ./",
@@ -722,13 +490,26 @@
   },
   "devDependencies": {
     "@types/chai": "^5.2.3",
+    "@types/dompurify": "^3.0.5",
+    "@types/js-yaml": "^4.0.9",
+    "@types/jsdom": "^27.0.0",
+    "@types/marked": "^5.0.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.6.2",
     "@types/vscode": "^1.93.0",
     "@vscode/vsce": "^3.6.2",
     "chai": "^6.2.1",
+    "js-yaml": "^4.1.1",
     "mocha": "^11.7.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "dompurify": "^3.3.1",
+    "gray-matter": "^4.0.3",
+    "isomorphic-dompurify": "^2.34.0",
+    "jsdom": "^27.3.0",
+    "marked": "^17.0.1",
+    "marked-highlight": "^2.2.3"
   }
 }

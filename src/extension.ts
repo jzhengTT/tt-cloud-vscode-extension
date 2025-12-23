@@ -18,6 +18,11 @@
 import * as vscode from 'vscode';
 import { TERMINAL_COMMANDS, replaceVariables } from './commands/terminalCommands';
 
+// New lesson system imports
+import { LessonRegistry } from './utils';
+import { StateManager, ProgressTracker } from './state';
+import { LessonTreeDataProvider, LessonWebviewManager } from './views';
+
 // ============================================================================
 // Global State
 // ============================================================================
@@ -2933,25 +2938,9 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
     async (message) => {
       switch (message.command) {
         case 'openWalkthrough':
-          // Open the main walkthrough at a specific step
-          // Workaround for VS Code scroll issue: Close active editor if it's a walkthrough,
-          // then reopen. This forces scroll-to-top behavior.
-          const activeEditor = vscode.window.activeTextEditor;
-          if (!activeEditor || vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes('Tenstorrent')) {
-            // Close the current walkthrough/welcome tab
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-          }
-
-          // Small delay to ensure close completes
-          setTimeout(() => {
-            vscode.commands.executeCommand(
-              'workbench.action.openWalkthrough',
-              {
-                category: 'tenstorrent.tenstorrent-developer-extension#tenstorrent.setup',
-                step: message.stepId
-              }
-            );
-          }, 100);
+          // Open lesson in new system (fallback to old walkthrough if stepId not found)
+          const lessonId = message.stepId;
+          await vscode.commands.executeCommand('tenstorrent.showLesson', lessonId);
           break;
         case 'executeCommand':
           // Execute a command by ID
@@ -3630,11 +3619,105 @@ async function showCommandMenu(): Promise<void> {
  *
  * @param context - Extension context provided by VS Code
  */
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('Tenstorrent Developer Extension is now active');
 
   // Store context globally for use in command handlers
   extensionContext = context;
+
+  // ============================================================================
+  // New Lesson System Initialization
+  // ============================================================================
+
+  // Initialize core managers
+  const stateManager = new StateManager(context);
+  const progressTracker = new ProgressTracker(context, stateManager);
+  const lessonRegistry = new LessonRegistry(context);
+
+  // Load lesson registry - MUST complete before creating TreeView
+  try {
+    await lessonRegistry.load();
+    console.log(`Loaded ${lessonRegistry.getTotalCount()} lessons`);
+  } catch (error) {
+    console.error('Failed to load lesson registry:', error);
+    vscode.window.showErrorMessage(
+      'Failed to load Tenstorrent lessons. Please reload the window and check the extension logs.'
+    );
+    throw error; // Fail activation if registry doesn't load
+  }
+
+  // Create TreeView for lessons
+  const treeDataProvider = new LessonTreeDataProvider(lessonRegistry, progressTracker);
+  const treeView = vscode.window.createTreeView('tenstorrentLessons', {
+    treeDataProvider,
+    showCollapseAll: true,
+  });
+
+  // Create Webview Manager
+  const webviewManager = new LessonWebviewManager(context, lessonRegistry, progressTracker);
+
+  // Connect tree selection to webview
+  treeView.onDidChangeSelection(event => {
+    if (event.selection.length > 0) {
+      const item = event.selection[0];
+      if (item.type === 'lesson' && item.lesson) {
+        webviewManager.showLesson(item.lesson);
+      }
+    }
+  });
+
+  // Hook progress tracking into existing commands
+  // NOTE: Progress is tracked in the commands themselves via recordCommandExecution
+
+  // Register new lesson system commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('tenstorrent.showLesson', async (lessonId: string) => {
+      const lesson = lessonRegistry.get(lessonId);
+      if (lesson) {
+        await stateManager.setCurrentLesson(lessonId);
+        await webviewManager.showLesson(lesson);
+      }
+    }),
+    vscode.commands.registerCommand('tenstorrent.refreshLessons', () => {
+      treeDataProvider.refresh();
+    }),
+    vscode.commands.registerCommand('tenstorrent.filterLessons', async () => {
+      // Show quick pick for filter options
+      const filterType = await vscode.window.showQuickPick(
+        [
+          { label: '$(device-desktop) Hardware', value: 'hardware' },
+          { label: '$(check) Validated Only', value: 'validated' },
+          { label: '$(tag) Tags', value: 'tags' },
+          { label: '$(circle-slash) Clear Filters', value: 'clear' },
+        ],
+        { placeHolder: 'Select filter type' }
+      );
+
+      if (!filterType) {
+        return;
+      }
+
+      if (filterType.value === 'clear') {
+        treeDataProvider.clearFilters();
+        vscode.window.showInformationMessage('Filters cleared');
+        return;
+      }
+
+      if (filterType.value === 'validated') {
+        treeDataProvider.applyFilter({ validatedOnly: true });
+        vscode.window.showInformationMessage('Showing validated lessons only');
+        return;
+      }
+
+      // More filter logic can be added here
+    }),
+    treeView,
+    webviewManager
+  );
+
+  // ============================================================================
+  // End New Lesson System
+  // ============================================================================
 
   // Register all commands (walkthrough management + step commands)
   const commands = [

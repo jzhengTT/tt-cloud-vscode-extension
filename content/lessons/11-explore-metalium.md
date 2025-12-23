@@ -1,3 +1,24 @@
+---
+id: explore-metalium
+title: Exploring TT-Metalium
+description: >-
+  Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the
+  model zoo, and dive into programming examples. Learn the architecture, try
+  Jupyter notebooks, and find inspiration for your own projects.
+category: advanced
+tags:
+  - model
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # Exploring the TT-Metalium Playground
 
 Welcome to the heart of Tenstorrent development! In this lesson, you'll discover what's possible with **TT-Metalium** and **TTNN**, the programming environments that power everything you've used so far.

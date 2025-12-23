@@ -1,3 +1,24 @@
+---
+id: riscv-programming
+title: RISC-V Programming on Tensix Cores
+description: >-
+  Explore 880 RISC-V processors on a single chip! Program the five RISC-V cores
+  (BRISC, NCRISC, TRISC0/1/2) inside each Tensix. Learn bare-metal programming,
+  NoC communication, and parallel computing at scale. Includes comprehensive
+  exploration guide.
+category: advanced
+tags: []
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # RISC-V Programming on Tensix Cores
 
 ## Introduction: 880 RISC-V Processors on a Single Chip

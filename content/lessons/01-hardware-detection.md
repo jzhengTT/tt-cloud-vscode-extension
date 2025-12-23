@@ -1,3 +1,23 @@
+---
+id: hardware-detection
+title: Hardware Detection
+description: >-
+  Scan for connected Tenstorrent devices and verify they're properly recognized
+  by the system.
+category: advanced
+tags:
+  - hardware
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: validated
+estimatedMinutes: 5
+---
+
 # Hardware Detection
 
 Detect and verify your Tenstorrent hardware using the `tt-smi` command-line tool.

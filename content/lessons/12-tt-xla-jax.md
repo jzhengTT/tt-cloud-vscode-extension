@@ -1,3 +1,27 @@
+---
+id: tt-xla-jax
+title: JAX Inference with TT-XLA
+description: >-
+  Master TT-XLA - Tenstorrent's production-ready XLA-based compiler! Simple
+  wheel installation, JAX integration via PJRT, and multi-chip support. Perfect
+  for cloud environments with locked Python/tt-metal versions. Works with Python
+  3.10+, no rebuilding required!
+category: advanced
+tags:
+  - production
+  - installation
+  - xla
+  - jax
+  - inference
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - galaxy
+status: draft
+estimatedMinutes: 10
+---
+
 # Lesson 12: JAX Inference with TT-XLA
 
 ## Welcome to Production-Ready Multi-Chip Inference! 🚀
