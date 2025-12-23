@@ -43,6 +43,13 @@
         }
       ]
     },
+    "themes": [
+      {
+        "label": "Tenstorrent",
+        "uiTheme": "vs-dark",
+        "path": "./themes/tenstorrent-theme.json"
+      }
+    ],
     "chatParticipants": [
       {
         "id": "tenstorrent.chat",

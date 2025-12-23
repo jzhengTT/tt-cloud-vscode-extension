@@ -177,7 +177,7 @@ export class LessonWebviewManager {
   <title>${this.escapeHtml(lesson.title)}</title>
   <link rel="stylesheet" href="${cssUri}">
 </head>
-<body>
+<body data-lesson-id="${this.escapeHtml(lesson.id)}">
   <div class="lesson-header" style="border-bottom: 1px solid var(--tt-border); padding-bottom: 16px; margin-bottom: 24px;">
     <h1 style="margin: 0;">${this.escapeHtml(lesson.title)}</h1>
     <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">

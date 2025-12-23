@@ -8,11 +8,12 @@
     <style>
         /* Tenstorrent Brand Colors */
         :root {
-            --tt-orange: #FF6B35;
-            --tt-dark-bg: #1a1a1a;
-            --tt-darker-bg: #0d0d0d;
-            --tt-light-orange: #FF8C5A;
-            --tt-accent: #FFB088;
+            --tt-cyan: #0D9488;        /* Dark teal - 7:1 contrast with white */
+            --tt-cyan-light: #14B8A6;  /* Medium teal - 5.5:1 contrast */
+            --tt-cyan-dark: #0F766E;   /* Darker teal - 8.5:1 contrast */
+            --tt-dark-bg: #1A3C47;
+            --tt-darker-bg: #0F2A35;
+            --tt-accent: #B8E6D9;
         }
 
         body {
@@ -27,7 +28,7 @@
 
         h1 {
             color: #ffffff;
-            border-bottom: 2px solid var(--tt-orange);
+            border-bottom: 2px solid var(--tt-cyan);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
@@ -44,12 +45,12 @@
         }
 
         a {
-            color: var(--tt-orange);
+            color: var(--tt-cyan);
             text-decoration: none;
         }
 
         a:hover {
-            color: var(--tt-light-orange);
+            color: var(--tt-cyan-light);
             text-decoration: underline;
         }
 
@@ -62,8 +63,8 @@
         }
 
         .hero {
-            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 107, 53, 0.05) 100%);
-            border-left: 4px solid var(--tt-orange);
+            background: linear-gradient(135deg, rgba(79, 209, 197, 0.15) 0%, rgba(79, 209, 197, 0.05) 100%);
+            border-left: 4px solid var(--tt-cyan);
             padding: 20px;
             margin: 20px 0;
             border-radius: 4px;
@@ -77,7 +78,7 @@
 
         .walkthrough-item {
             background-color: var(--tt-dark-bg);
-            border: 1px solid rgba(255, 107, 53, 0.3);
+            border: 1px solid rgba(13, 148, 136, 0.3);
             border-radius: 6px;
             padding: 16px;
             margin: 10px 0;
@@ -86,14 +87,14 @@
         }
 
         .walkthrough-item:hover {
-            background-color: rgba(255, 107, 53, 0.1);
-            border-color: var(--tt-orange);
+            background-color: rgba(13, 148, 136, 0.1);
+            border-color: var(--tt-cyan);
             transform: translateX(4px);
         }
 
         .walkthrough-item h3 {
             margin: 0 0 8px 0;
-            color: var(--tt-orange);
+            color: var(--tt-cyan);
             font-size: 16px;
         }
 
@@ -121,20 +122,21 @@
         }
 
         .quick-link {
-            background-color: var(--tt-dark-bg);
-            color: var(--tt-orange);
+            background-color: var(--tt-cyan);
+            color: white;
             padding: 12px 16px;
             border-radius: 4px;
             text-align: center;
             cursor: pointer;
-            border: 1px solid rgba(255, 107, 53, 0.4);
+            border: 1px solid var(--tt-cyan-dark);
             transition: all 0.2s;
+            font-weight: 600;
         }
 
         .quick-link:hover {
-            background-color: var(--tt-orange);
-            color: var(--tt-darker-bg);
-            border-color: var(--tt-orange);
+            background-color: var(--tt-cyan-light);
+            color: white;
+            border-color: var(--tt-cyan-light);
             transform: scale(1.05);
         }
 
@@ -145,11 +147,11 @@
             font-family: var(--vscode-editor-font-family);
             font-size: 13px;
             margin: 15px 0;
-            border: 1px solid rgba(255, 107, 53, 0.3);
+            border: 1px solid rgba(13, 148, 136, 0.3);
         }
 
         .directory-info code {
-            color: var(--tt-orange);
+            color: var(--tt-cyan-light);
         }
 
         .section {
@@ -168,13 +170,13 @@
             font-family: 'Courier New', Courier, monospace;
             font-size: 10px;
             line-height: 1.1;
-            color: var(--tt-orange);
+            color: var(--tt-cyan);
             background-color: var(--tt-dark-bg);
             padding: 20px;
             border-radius: 8px;
             overflow-x: auto;
             margin: 0;
-            border: 2px solid var(--tt-orange);
+            border: 2px solid var(--tt-cyan);
         }
     </style>
 </head>
@@ -217,13 +219,13 @@
         <p><strong>Already using Tenstorrent Cloud, Quietbox, or a preinstalled system?</strong> Your environment is ready - skip to the Learning Path below!</p>
         <p>If you need to set up a fresh system, use tt-installer 2.0 for one-command installation:</p>
 
-        <div class="directory-info" style="margin: 15px 0; padding: 15px; background-color: rgba(255, 107, 53, 0.1); border-left: 4px solid var(--tt-orange);">
+        <div class="directory-info" style="margin: 15px 0; padding: 15px; background-color: rgba(13, 148, 136, 0.1); border-left: 4px solid var(--tt-cyan);">
             <p style="margin: 0 0 10px 0;"><strong>Quick Install:</strong></p>
             <code style="font-size: 12px;">/bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"</code>
             <p style="margin: 10px 0 0 0; font-size: 13px;">
                 📖 <a href="#" onclick="executeCommand('tenstorrent.runQuickInstall'); return false;">Run Quick Install</a> |
                 📥 <a href="#" onclick="executeCommand('tenstorrent.downloadInstaller'); return false;">Download Script</a> |
-                📚 <a href="https://github.com/tenstorrent/tt-installer" style="color: var(--tt-orange);">Full Documentation</a>
+                📚 <a href="https://github.com/tenstorrent/tt-installer" style="color: var(--tt-cyan);">Full Documentation</a>
             </p>
         </div>
 
@@ -316,7 +318,7 @@
                 <p>Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Game of Life, Audio Processing, Mandelbrot Fractals, and Image Filters.</p>
             </li>
         </ul>
-        <p style="margin-top: 20px; padding: 15px; background-color: rgba(255, 107, 53, 0.08); border-radius: 4px; font-size: 13px; color: #cccccc;">
+        <p style="margin-top: 20px; padding: 15px; background-color: rgba(13, 148, 136, 0.08); border-radius: 4px; font-size: 13px; color: #cccccc;">
             💡 <strong>Note:</strong> These lessons assume you have a working Tenstorrent environment. If you need to set up from scratch, see the "Setup Information" section above.
         </p>
     </div>

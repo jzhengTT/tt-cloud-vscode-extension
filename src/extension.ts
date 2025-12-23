@@ -2072,26 +2072,28 @@ async function enableChatParticipant(): Promise<void> {
 
 /**
  * Command: tenstorrent.testChat
- * Opens the VSCode chat panel with a pre-filled test prompt.
+ * Opens the VSCode chat panel and shows instructions for using @tenstorrent.
  */
 async function testChat(): Promise<void> {
-  // Open chat panel first
-  await vscode.commands.executeCommand('workbench.action.chat.open');
-
-  // Give it a moment to open
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  // Try to send the query using the chat.sendToNewChat command
-  // If that fails, just show instructions
+  // Open the chat view/panel using the more reliable command
   try {
-    await vscode.commands.executeCommand('workbench.action.chat.newChat', {
-      query: '@tenstorrent Explain what Tenstorrent hardware is and what makes it special'
-    });
-  } catch (error) {
-    // Fallback: show message with instructions
+    // This command opens the chat view in the sidebar or panel
+    await vscode.commands.executeCommand('workbench.action.chat.open');
+
+    // Give the panel time to fully open
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Show helpful instructions
     vscode.window.showInformationMessage(
-      '💬 Chat panel opened! Type "@tenstorrent" followed by your question to get started.',
+      '💬 Chat panel opened! Type "@tenstorrent" followed by your question to chat with the AI running on your Tenstorrent hardware.',
+      { modal: false },
       'Got it!'
+    );
+  } catch (error) {
+    // If opening fails, show error with instructions
+    vscode.window.showErrorMessage(
+      `Failed to open chat panel: ${error instanceof Error ? error.message : 'Unknown error'}. Try opening it manually with View > Chat.`,
+      'OK'
     );
   }
 }
@@ -2993,7 +2995,7 @@ async function showFaq(context: vscode.ExtensionContext): Promise<void> {
       <head>
         <style>
           body { font-family: var(--vscode-font-family); padding: 20px; color: var(--vscode-foreground); }
-          h1 { color: #FF6B35; }
+          h1 { color: #4FD1C5; }
         </style>
       </head>
       <body>

@@ -122,21 +122,36 @@
   }
 
   /**
-   * Restore scroll position from state
+   * Get current lesson ID from body data attribute
+   */
+  function getCurrentLessonId() {
+    return document.body.getAttribute('data-lesson-id');
+  }
+
+  /**
+   * Restore scroll position from state (only if same lesson)
    */
   function restoreScrollPosition() {
     const state = vscode.getState();
-    if (state && state.scrollPosition) {
+    const currentLessonId = getCurrentLessonId();
+
+    // Only restore scroll position if we're viewing the same lesson
+    if (state && state.lessonId === currentLessonId && state.scrollPosition) {
       window.scrollTo(0, state.scrollPosition);
+    } else {
+      // New lesson - scroll to top
+      window.scrollTo(0, 0);
     }
   }
 
   /**
-   * Save scroll position to state
+   * Save scroll position to state with lesson ID
    */
   function saveScrollPosition() {
+    const currentLessonId = getCurrentLessonId();
     vscode.setState({
       ...vscode.getState(),
+      lessonId: currentLessonId,
       scrollPosition: window.scrollY
     });
   }
@@ -165,7 +180,7 @@
         // Highlight specific section
         const section = document.getElementById(message.sectionId);
         if (section) {
-          section.style.background = 'rgba(255, 107, 53, 0.2)';
+          section.style.background = 'rgba(79, 209, 197, 0.2)';
           section.scrollIntoView({ behavior: 'smooth' });
           setTimeout(() => {
             section.style.background = '';
