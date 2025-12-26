@@ -231,14 +231,60 @@ class MandelbrotVisualizer:
 
 # Example usage
 if __name__ == "__main__":
+    import sys
     import ttnn
     from renderer import MandelbrotRenderer
 
-    device = ttnn.open_device(0)
+    # Check for save mode flag
+    save_mode = '--save' in sys.argv or '--no-display' in sys.argv
+
+    if save_mode:
+        print("📁 Running in save mode (outputs will be saved to files)")
+        print("💡 Tip: Use mandelbrot_explorer.ipynb for inline viewing in VSCode")
+        import matplotlib
+        matplotlib.use('Agg')  # Non-interactive backend
+        import os
+        output_dir = './mandelbrot_outputs'
+        os.makedirs(output_dir, exist_ok=True)
+    else:
+        print("🖼️  Running in interactive mode (will try to open GUI windows)")
+        print("💡 If no windows appear, try: python explorer.py --save")
+
+    device = ttnn.open_device(device_id=0)
     renderer = MandelbrotRenderer(device)
     viz = MandelbrotVisualizer(renderer)
 
-    # Launch interactive explorer
-    viz.interactive_explorer(width=1024, height=1024)
+    if save_mode:
+        # Render and save to file
+        print("\n🎨 Rendering Mandelbrot set...")
+        fractal = renderer.render(
+            width=2048, height=2048,
+            x_min=-2.5, x_max=1.0,
+            y_min=-1.25, y_max=1.25,
+            max_iter=512
+        )
+
+        # Save the plot
+        fig, ax = plt.subplots(figsize=(12, 12))
+        color_data = np.log(fractal + 1)
+        im = ax.imshow(color_data, cmap='hot', origin='lower',
+                       extent=[-2.5, 1.0, -1.25, 1.25])
+        ax.set_title('Mandelbrot Set')
+        ax.set_xlabel('Real axis')
+        ax.set_ylabel('Imaginary axis')
+        plt.colorbar(im, ax=ax, label='log(iterations)')
+        plt.tight_layout()
+
+        output_path = os.path.join(output_dir, 'mandelbrot_classic.png')
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        plt.close()
+
+        print(f"✅ Saved to: {output_path}")
+        print(f"\n💡 For more features, try:")
+        print(f"   - explorer_save.py (batch rendering)")
+        print(f"   - mandelbrot_explorer.ipynb (interactive notebook)")
+    else:
+        # Launch interactive explorer
+        viz.interactive_explorer(width=1024, height=1024)
 
     ttnn.close_device(device)

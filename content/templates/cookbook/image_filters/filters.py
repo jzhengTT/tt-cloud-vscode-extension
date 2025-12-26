@@ -202,7 +202,7 @@ if __name__ == "__main__":
     import ttnn
     import sys
 
-    device = ttnn.open_device(0)
+    device = ttnn.open_device(device_id=0)
     filters = ImageFilterBank(device)
 
     # Load image (use command line argument or default)

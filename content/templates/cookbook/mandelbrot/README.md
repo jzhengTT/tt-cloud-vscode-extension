@@ -9,20 +9,66 @@ Interactive fractal renderer with GPU-style parallel computation on TT hardware.
 - Interactive zoom and pan
 - Multiple color schemes
 - Performance profiling
+- VSCode-friendly output (inline + file-based)
 
 ## Quick Start
 
+### 🎯 Option 1: Jupyter Notebook (Recommended for VSCode)
+
+Best for interactive exploration with inline visualizations:
+
 ```bash
+# Install dependencies
 pip install -r requirements.txt
 
-# Basic render
-python renderer.py
-
-# Interactive explorer
-python explorer.py
+# Open the notebook in VSCode
+code mandelbrot_explorer.ipynb
+# Then click "Run Cell" buttons or use Shift+Enter
 ```
 
-## Usage
+The notebook includes:
+- Classic Mandelbrot views
+- Zoom sequences into interesting regions
+- Julia set comparisons
+- Color scheme comparisons
+- Performance benchmarking
+- Custom exploration template
+
+### 📁 Option 2: Save to Files
+
+For batch rendering or when no display is available:
+
+```bash
+# Method 1: Use the dedicated save script
+python explorer_save.py
+# Outputs saved to ./mandelbrot_outputs/
+
+# Method 2: Use the main script with --save flag
+python explorer.py --save
+# Outputs saved to ./mandelbrot_outputs/
+```
+
+### 🖼️ Option 3: Interactive GUI (if display available)
+
+If you have X11 or are running locally with a display:
+
+```bash
+python explorer.py
+# Opens interactive matplotlib window with click-to-zoom
+```
+
+## File Overview
+
+| File | Purpose |
+|------|---------|
+| `mandelbrot_explorer.ipynb` | 📓 **Jupyter notebook** - inline visualizations in VSCode |
+| `explorer_save.py` | 💾 **Batch renderer** - saves multiple views to files |
+| `explorer.py` | 🔄 **Flexible** - interactive or save mode (use `--save` flag) |
+| `renderer.py` | ⚙️ **Core engine** - TTNN rendering implementation |
+
+## Usage Examples
+
+### Python API
 
 ```python
 from renderer import MandelbrotRenderer
@@ -40,26 +86,95 @@ fractal = renderer.render(
     max_iter=512
 )
 
-# Interactive explorer with click-to-zoom
+# Interactive explorer with click-to-zoom (requires display)
 viz = MandelbrotVisualizer(renderer)
 viz.interactive_explorer(width=1024, height=1024)
 
 ttnn.close_device(device)
 ```
 
+### Batch Rendering with File Output
+
+```python
+from renderer import MandelbrotRenderer
+from explorer_save import MandelbrotVisualizer
+import ttnn
+
+device = ttnn.open_device(0)
+renderer = MandelbrotRenderer(device)
+viz = MandelbrotVisualizer(renderer, output_dir="./my_fractals")
+
+# Render zoom sequence
+zoom_points = [
+    (-0.5, 0.0, 1),    # Full view
+    (-0.7, 0.0, 8),    # 8x zoom
+    (-0.75, 0.1, 32),  # 32x zoom
+]
+viz.render_sequence(zoom_points, width=1024, height=1024)
+
+# Compare Julia sets
+c_values = [(-0.4, 0.6), (-0.8, 0.156), (0.285, 0.01)]
+viz.compare_julia_sets(c_values, width=512, height=512)
+
+ttnn.close_device(device)
+```
+
+## Interactive Controls
+
+When using interactive mode (GUI window):
+
+- **Click**: Zoom into region (4x)
+- **R**: Reset to full view
+- **C**: Cycle through color maps
+- **U**: Undo last zoom
+- **Q**: Quit
+
+## VSCode Tips
+
+**For best experience in VSCode:**
+
+1. **Use Jupyter notebook** (`mandelbrot_explorer.ipynb`)
+   - Plots appear inline immediately
+   - No display server needed
+   - Can re-run cells to experiment
+
+2. **File-based output** works great too
+   - Run `explorer_save.py` or `explorer.py --save`
+   - Click generated PNG files to preview in VSCode
+   - Perfect for batch rendering
+
+3. **Image preview** in VSCode
+   - Click any `.png` file to see it
+   - Use image preview panel for zoom/pan
+   - Works on local or remote (SSH) connections
+
+## Interesting Coordinates to Explore
+
+**Mandelbrot set regions:**
+- Seahorse Valley: `x=-0.75 to -0.735, y=0.095 to 0.11`
+- Elephant Valley: `x=0.25 to 0.35, y=0.0 to 0.1`
+- Spiral: `x=-0.7, y=0.27` (zoom in from here)
+- Mini Mandelbrot: `x=-0.1592, y=-1.0317` (needs deep zoom)
+
+**Julia set c values:**
+- `-0.4 + 0.6i` - Dragon-like pattern
+- `-0.8 + 0.156i` - Spiral arms
+- `0.285 + 0.01i` - Dendrite structure
+- `-0.7269 + 0.1889i` - Douady rabbit
+- `-0.835 - 0.2321i` - San Marco fractal
+
 ## Complete Implementation
 
-See **Lesson 12** for the full 600+ line implementation including:
-- MandelbrotRenderer with complex number operations
-- Julia set rendering
-- Interactive explorer with zoom/pan/undo
+See **Lesson 12** for the full implementation details including:
+- Complex number operations with TTNN
+- Julia set rendering algorithms
+- Interactive explorer with undo/redo
 - Performance benchmarking
-- Extensions (Burning Ship fractal, 3D Mandelbulb, deep zoom videos)
+- Advanced extensions (Burning Ship, 3D Mandelbulb)
 
-## Controls
+## Performance Tips
 
-- **Click**: Zoom into region
-- **R**: Reset view
-- **C**: Cycle color maps
-- **U**: Undo zoom
-- **Q**: Quit
+- Start with 512×512 or 1024×1024 for exploration
+- Increase `max_iter` for deeper zooms (typically 2x per zoom level)
+- Use `'hot'` or `'viridis'` colormaps for fastest rendering
+- Pre-compute multiple zoom levels for smooth animations

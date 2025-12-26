@@ -82,7 +82,7 @@ if __name__ == "__main__":
         print("❌ librosa is required. Install with: pip install librosa")
         exit(1)
 
-    device = ttnn.open_device(0)
+    device = ttnn.open_device(device_id=0)
     processor = AudioProcessor(device, sample_rate=22050)
 
     # Load and process audio
