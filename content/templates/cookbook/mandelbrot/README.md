@@ -18,15 +18,25 @@ Interactive fractal renderer with GPU-style parallel computation on TT hardware.
 Best for interactive exploration with inline visualizations:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# 1. Ensure ttnn is installed (from TT-Metal)
+cd ~/tt-metal
+pip install -e .
 
-# Open the notebook in VSCode
+# 2. Open the notebook in VSCode
 code mandelbrot_explorer.ipynb
-# Then click "Run Cell" buttons or use Shift+Enter
+
+# 3. Run the first cell - it will:
+#    - Auto-check and install numpy/matplotlib
+#    - Verify ttnn is available
+#    - Auto-install ttnn from ~/tt-metal if needed
+#
+# 4. Follow any instructions if setup is needed
+# 5. Click "Run Cell" on remaining cells to render fractals!
 ```
 
 The notebook includes:
+- **Automatic dependency checking** (numpy, matplotlib, ttnn)
+- **Auto-installation** from requirements.txt and ~/tt-metal
 - Classic Mandelbrot views
 - Zoom sequences into interesting regions
 - Julia set comparisons

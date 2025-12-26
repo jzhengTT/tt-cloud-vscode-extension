@@ -270,4 +270,11 @@ export class LessonRegistry {
   async reload(): Promise<void> {
     await this.load();
   }
+
+  /**
+   * Get extension path
+   */
+  getExtensionPath(): string {
+    return this.extensionContext.extensionPath;
+  }
 }

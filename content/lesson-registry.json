@@ -239,43 +239,15 @@
         "inference"
       ],
       "previousLesson": "tt-inference-server",
-      "nextLesson": "vscode-chat",
-      "estimatedMinutes": 30
-    },
-    {
-      "id": "vscode-chat",
-      "title": "VSCode Chat Integration",
-      "description": "Use @tenstorrent in VSCode chat for AI assistance running on your Tenstorrent hardware.",
-      "category": "serving",
-      "order": 8,
-      "markdownFile": "content/lessons/08-vscode-chat.md",
-      "supportedHardware": [
-        "n150",
-        "n300",
-        "t3k",
-        "p100",
-        "p150",
-        "galaxy"
-      ],
-      "status": "draft",
-      "validatedOn": [],
-      "completionEvents": [
-        "onCommand:tenstorrent.testChat"
-      ],
-      "tags": [
-        "chat",
-        "hardware"
-      ],
-      "previousLesson": "vllm-production",
       "nextLesson": "image-generation",
-      "estimatedMinutes": 10
+      "estimatedMinutes": 30
     },
     {
       "id": "image-generation",
       "title": "Image Generation with SD 3.5 Large",
       "description": "Generate high-resolution 1024x1024 images using Stable Diffusion 3.5 Large running natively on your Tenstorrent hardware!",
       "category": "ecosystem",
-      "order": 9,
+      "order": 8,
       "markdownFile": "content/lessons/09-image-generation.md",
       "supportedHardware": [
         "n150",
@@ -297,7 +269,7 @@
         "diffusion",
         "stable"
       ],
-      "previousLesson": "vscode-chat",
+      "previousLesson": "vllm-production",
       "nextLesson": "coding-assistant",
       "estimatedMinutes": 20
     },
@@ -306,7 +278,7 @@
       "title": "Coding Assistant with Prompt Engineering",
       "description": "Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn how to shape model behavior through system prompts - a critical real-world skill!",
       "category": "ecosystem",
-      "order": 10,
+      "order": 9,
       "markdownFile": "content/lessons/10-coding-assistant.md",
       "supportedHardware": [
         "n150",
@@ -335,7 +307,7 @@
       "title": "Image Classification with TT-Forge",
       "description": "Explore TT-Forge - Tenstorrent's MLIR-based compiler that brings PyTorch models to TT hardware! Start with validated models like MobileNetV2 for image classification. Learn forge.compile(), experiment with supported architectures, and understand the path to high-level model deployment.",
       "category": "ecosystem",
-      "order": 11,
+      "order": 10,
       "markdownFile": "content/lessons/11-forge-image-classification.md",
       "supportedHardware": [
         "n150"
@@ -362,7 +334,7 @@
       "title": "JAX Inference with TT-XLA",
       "description": "Master TT-XLA - Tenstorrent's production-ready XLA-based compiler! Simple wheel installation, JAX integration via PJRT, and multi-chip support. Perfect for cloud environments with locked Python/tt-metal versions. Works with Python 3.10+, no rebuilding required!",
       "category": "ecosystem",
-      "order": 12,
+      "order": 11,
       "markdownFile": "content/lessons/12-tt-xla-jax.md",
       "supportedHardware": [
         "n150",
@@ -391,7 +363,7 @@
       "title": "RISC-V Programming on Tensix Cores",
       "description": "Explore 880 RISC-V processors on a single chip! Program the five RISC-V cores (BRISC, NCRISC, TRISC0/1/2) inside each Tensix. Learn bare-metal programming, NoC communication, and parallel computing at scale. Includes comprehensive exploration guide.",
       "category": "ecosystem",
-      "order": 13,
+      "order": 12,
       "markdownFile": "content/lessons/13-riscv-programming.md",
       "supportedHardware": [
         "n150",
@@ -416,7 +388,7 @@
       "title": "Bounty Program: Model Bring-Up",
       "description": "Learn how to contribute to the Tenstorrent Bounty Program by bringing up new models. Master TT-Metal while becoming part of the open-source ecosystem. Uses the successful Phi-3 contribution as a case study.",
       "category": "ecosystem",
-      "order": 14,
+      "order": 13,
       "markdownFile": "content/lessons/11-bounty-program-model-bringup.md",
       "supportedHardware": [
         "n150",
@@ -443,7 +415,7 @@
       "title": "Exploring TT-Metalium",
       "description": "Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the model zoo, and dive into programming examples. Learn the architecture, try Jupyter notebooks, and find inspiration for your own projects.",
       "category": "ecosystem",
-      "order": 15,
+      "order": 14,
       "markdownFile": "content/lessons/11-explore-metalium.md",
       "supportedHardware": [
         "n150",
@@ -470,7 +442,7 @@
       "title": "TT-Metalium Cookbook",
       "description": "Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Conway's Game of Life, Audio Signal Processing, Mandelbrot Fractals, and Image Filters. Deploy all templates with one command and start coding!",
       "category": "ecosystem",
-      "order": 16,
+      "order": 15,
       "markdownFile": "content/lessons/12-metalium-cookbook.md",
       "supportedHardware": [
         "n150",

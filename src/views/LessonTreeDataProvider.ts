@@ -59,7 +59,7 @@ export class LessonTreeItem extends vscode.TreeItem {
    */
   private setupLessonItem(lesson: LessonMetadata): void {
     this.id = lesson.id;
-    this.description = lesson.description;
+    this.description = ''; // Keep description empty, only in tooltip
     this.tooltip = new vscode.MarkdownString(
       `**${lesson.title}**\n\n${lesson.description}\n\n` +
       `**Category:** ${lesson.category}\n` +
@@ -103,7 +103,7 @@ export class LessonTreeItem extends vscode.TreeItem {
    */
   private setupCategoryItem(category: CategoryDefinition): void {
     this.id = `category-${category.id}`;
-    this.description = category.description;
+    this.description = ''; // Keep description empty
     this.tooltip = category.description;
 
     // Set icon
@@ -155,8 +155,7 @@ export class LessonTreeItem extends vscode.TreeItem {
     };
 
     const badge = badges[status];
-    const currentLabel = typeof this.label === 'string' ? this.label : String(this.label);
-    this.description = `${badge} ${currentLabel}`;
+    this.description = badge; // Just the emoji, not the label
   }
 }
 
@@ -177,6 +176,11 @@ export class LessonTreeDataProvider implements vscode.TreeDataProvider<LessonTre
 
     // Listen to progress changes
     progressTracker.onDidChangeProgress(() => {
+      this.refresh();
+    });
+
+    // Listen to theme changes to update logo
+    vscode.window.onDidChangeActiveColorTheme(() => {
       this.refresh();
     });
   }
@@ -200,8 +204,18 @@ export class LessonTreeDataProvider implements vscode.TreeDataProvider<LessonTre
    */
   async getChildren(element?: LessonTreeItem): Promise<LessonTreeItem[]> {
     if (!element) {
-      // Root level - return categories
-      return this.getCategoryItems();
+      // Root level - add logo header, then categories
+      const items: LessonTreeItem[] = [];
+
+      // Add logo header at the top
+      const logoItem = this.createLogoHeaderItem();
+      items.push(logoItem);
+
+      // Add categories
+      const categoryItems = this.getCategoryItems();
+      items.push(...categoryItems);
+
+      return items;
     }
 
     if (element.type === 'category' && element.category) {
@@ -236,6 +250,44 @@ export class LessonTreeDataProvider implements vscode.TreeDataProvider<LessonTre
     }
 
     return items;
+  }
+
+  /**
+   * Create logo header item for the top of the tree
+   */
+  private createLogoHeaderItem(): LessonTreeItem {
+    const item = new LessonTreeItem(
+      'special',
+      undefined,
+      undefined,
+      '━━━  T E N S T O R R E N T  ━━━', // Visual separator with branding
+      vscode.TreeItemCollapsibleState.None
+    );
+
+    // Select logo based on theme
+    const themeKind = vscode.window.activeColorTheme.kind;
+    const isDark = themeKind === vscode.ColorThemeKind.Dark || themeKind === vscode.ColorThemeKind.HighContrast;
+
+    // Use symbol logo (smaller, cleaner)
+    const logoFileName = isDark ? 'tt_symbol_purple.svg' : 'tt_symbol_black.svg';
+
+    // Set icon path to the logo symbol
+    const extensionPath = this.lessonRegistry.getExtensionPath();
+    item.iconPath = vscode.Uri.file(`${extensionPath}/assets/img/${logoFileName}`);
+
+    // Style as a separator/header
+    item.description = '';
+    item.tooltip = 'Tenstorrent Developer Extension';
+    item.contextValue = 'logo-header'; // For styling purposes
+
+    // Make it clickable to open welcome page
+    item.command = {
+      command: 'tenstorrent.showWelcome',
+      title: 'Open Welcome Page',
+      arguments: [],
+    };
+
+    return item;
   }
 
   /**

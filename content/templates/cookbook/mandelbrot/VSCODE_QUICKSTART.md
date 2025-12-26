@@ -12,11 +12,15 @@ Three ways to visualize Mandelbrot fractals in VSCode - choose what works best f
 # 1. Open the notebook
 code mandelbrot_explorer.ipynb
 
-# 2. Click "Run Cell" or press Shift+Enter
+# 2. Run cells in order (Shift+Enter or click "Run Cell")
+#    - First cell: Checks and installs dependencies automatically
+#    - Second cell: Initializes hardware
+#    - Remaining cells: Render fractals!
 # 3. Plots appear inline automatically!
 ```
 
 **What you get:**
+- ✅ **Automatic dependency installation** (numpy, matplotlib)
 - ✅ Inline matplotlib plots (no external windows needed)
 - ✅ Classic Mandelbrot views
 - ✅ Zoom sequences
@@ -25,6 +29,18 @@ code mandelbrot_explorer.ipynb
 - ✅ Customizable exploration cells
 
 **Requirements:** VSCode with Jupyter extension (should be built-in)
+
+**Note:** The first cell will automatically:
+- ✅ Check for and install numpy/matplotlib if missing
+- ✅ Check for ttnn (from TT-Metal)
+- ✅ Attempt to auto-install ttnn from ~/tt-metal if available
+- ⚠️ If ttnn missing, provides clear installation instructions
+
+**If ttnn is not installed:** The cell will detect this and either:
+1. Auto-install it from ~/tt-metal (if found)
+2. Provide step-by-step instructions to install it manually
+
+Just run the first cell and follow any instructions it displays!
 
 ---
 
@@ -97,6 +113,41 @@ python explorer.py --save          # Save to file
 # or
 code mandelbrot_explorer.ipynb     # Use notebook
 ```
+
+---
+
+**Problem:** Dependencies missing in notebook (numpy/matplotlib)
+
+**Solution:** Just run the first cell! It automatically checks and installs numpy/matplotlib if they're missing from your Python environment.
+
+If that doesn't work, manually install:
+```bash
+pip install -r requirements.txt
+# or
+pip install numpy matplotlib
+```
+
+---
+
+**Problem:** ttnn module not found
+
+**Solution:** The first cell will detect this and try to auto-install from ~/tt-metal.
+
+If auto-install fails or tt-metal not found, install manually:
+```bash
+# If tt-metal already exists
+cd ~/tt-metal
+pip install -e .
+
+# If tt-metal doesn't exist yet
+git clone https://github.com/tenstorrent/tt-metal.git ~/tt-metal
+cd ~/tt-metal
+./install_dependencies.sh
+./build_metal.sh
+pip install -e .
+```
+
+After installation, **restart the notebook kernel** (Kernel → Restart Kernel) and re-run the first cell.
 
 ---
 
