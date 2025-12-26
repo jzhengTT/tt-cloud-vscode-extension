@@ -583,21 +583,6 @@ function runInTerminal(terminal: vscode.Terminal, command: string): void {
 }
 
 /**
- * Checks if the vLLM server is running and accessible on localhost:8000.
- * Used by chat integration to verify server availability before sending requests.
- *
- * @returns Promise<boolean> - true if server is accessible, false otherwise
- */
-async function checkVllmServerRunning(): Promise<boolean> {
-  try {
-    const response = await fetch('http://localhost:8000/health');
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Prompts the user to install recommended extensions on first activation.
  * Uses a non-intrusive notification that allows user to install all at once or dismiss.
  *
@@ -1911,61 +1896,6 @@ function testVllmCurl(): void {
 // ============================================================================
 
 /**
- * Command: tenstorrent.startVllmForChat
- * Starts vLLM server for use with VSCode chat integration.
- * Checks if server is already running before starting.
- */
-async function startVllmForChat(): Promise<void> {
-  // Check if server already running
-  const isRunning = await checkVllmServerRunning();
-
-  if (isRunning) {
-    vscode.window.showInformationMessage('✅ vLLM server already running on port 8000!');
-    return;
-  }
-
-  // Start vLLM in background terminal with N150 configuration
-  // Create starter script if it doesn't exist
-  const path = await import('path');
-  const fs = await import('fs');
-  const os = await import('os');
-
-  const homeDir = os.homedir();
-  const scratchpadDir = path.join(homeDir, 'tt-scratchpad');
-  const starterPath = path.join(scratchpadDir, 'start-vllm-server.py');
-
-  if (!fs.existsSync(scratchpadDir)) {
-    fs.mkdirSync(scratchpadDir, { recursive: true });
-  }
-
-  if (!fs.existsSync(starterPath)) {
-    const extensionPath = extensionContext.extensionPath;
-    const templatePath = path.join(extensionPath, 'content', 'templates', 'start-vllm-server.py');
-
-    if (fs.existsSync(templatePath)) {
-      fs.copyFileSync(templatePath, starterPath);
-      fs.chmodSync(starterPath, 0o755);
-    }
-  }
-
-  const modelPath = await getModelBasePath();
-  const terminal = getOrCreateTerminal('server');
-
-  const command = `cd ~/tt-vllm && source ~/tt-vllm-venv/bin/activate && export TT_METAL_HOME=~/tt-metal && export MESH_DEVICE=N150 && export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH && source ~/tt-vllm/tt_metal/setup-metal.sh && python ~/tt-scratchpad/start-vllm-server.py --model ${modelPath} --host 0.0.0.0 --port 8000 --max-model-len 8192 --max-num-seqs 4 --block-size 64`;
-
-  runInTerminal(terminal, command);
-
-  const selection = await vscode.window.showInformationMessage(
-    '🚀 Starting vLLM server on N150 with 8K context (memory-optimized). This takes 2-5 minutes. Watch the terminal for "Application startup complete."',
-    'Show Terminal'
-  );
-
-  if (selection === 'Show Terminal') {
-    terminal.show();
-  }
-}
-
-/**
  * Helper function to check if a file should be overwritten.
  * Shows a confirmation dialog if the file exists.
  *
@@ -2040,197 +1970,8 @@ async function createVllmStarter(): Promise<void> {
 }
 
 /**
- * Command: tenstorrent.enableChatParticipant
- * Verifies vLLM server is running and confirms chat participant is ready.
- */
-async function enableChatParticipant(): Promise<void> {
-  // Check if server is running
-  const isRunning = await checkVllmServerRunning();
-
-  if (!isRunning) {
-    const choice = await vscode.window.showWarningMessage(
-      '⚠️ vLLM server not detected on port 8000. Start it first?',
-      'Start Server',
-      'Cancel'
-    );
-
-    if (choice === 'Start Server') {
-      await startVllmForChat();
-    }
-    return;
-  }
-
-  const selection = await vscode.window.showInformationMessage(
-    '✅ Chat participant enabled! Open chat and type "@tenstorrent" to get started.',
-    'Open Chat'
-  );
-
-  if (selection === 'Open Chat') {
-    vscode.commands.executeCommand('workbench.action.chat.open');
-  }
-}
-
-/**
- * Command: tenstorrent.testChat
- * Opens the VSCode chat panel and shows instructions for using @tenstorrent.
- */
-async function testChat(): Promise<void> {
-  // Open the chat view/panel using the more reliable command
-  try {
-    // This command opens the chat view in the sidebar or panel
-    await vscode.commands.executeCommand('workbench.action.chat.open');
-
-    // Give the panel time to fully open
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Show helpful instructions
-    vscode.window.showInformationMessage(
-      '💬 Chat panel opened! Type "@tenstorrent" followed by your question to chat with the AI running on your Tenstorrent hardware.',
-      { modal: false },
-      'Got it!'
-    );
-  } catch (error) {
-    // If opening fails, show error with instructions
-    vscode.window.showErrorMessage(
-      `Failed to open chat panel: ${error instanceof Error ? error.message : 'Unknown error'}. Try opening it manually with View > Chat.`,
-      'OK'
-    );
-  }
-}
-
-/**
- * Chat Participant Handler
- * Handles chat requests from the @tenstorrent participant.
- * Forwards requests to the local vLLM server and streams responses back.
- */
-async function handleChatRequest(
-  request: vscode.ChatRequest,
-  context: vscode.ChatContext,
-  stream: vscode.ChatResponseStream,
-  token: vscode.CancellationToken
-): Promise<void> {
-  // Check if server is running
-  const isRunning = await checkVllmServerRunning();
-  if (!isRunning) {
-    stream.markdown('⚠️ **vLLM server not running.** Please start it first using the walkthrough (Lesson 7, Step 1).\n\n');
-    stream.markdown('Run the command: `Tenstorrent: Start vLLM Server for Chat`');
-    return;
-  }
-
-  try {
-    // Show progress indicator
-    stream.progress('Thinking on Tenstorrent hardware...');
-
-    // Prepare messages (include chat history for context)
-    const messages: Array<{role: string, content: string}> = [
-      {
-        role: 'system',
-        content: 'You are a helpful coding assistant integrated into VSCode, powered by Tenstorrent hardware. Provide concise, accurate answers focused on programming and software development. When explaining code, be clear and educational.'
-      }
-    ];
-
-    // Add chat history for context
-    for (const msg of context.history) {
-      // Check if it's a user request
-      if ('prompt' in msg && msg.prompt) {
-        messages.push({role: 'user', content: msg.prompt});
-      }
-      // Check if it's an assistant response
-      else if ('response' in msg && msg.response) {
-        // Extract markdown text from response
-        let responseText = '';
-        for (const part of msg.response) {
-          // Only extract markdown parts for simplicity
-          if (part instanceof vscode.MarkdownString) {
-            responseText += part.value;
-          } else if (typeof (part as any).value === 'object' && (part as any).value.value) {
-            // Handle ChatResponseMarkdownPart
-            responseText += (part as any).value.value;
-          }
-        }
-        if (responseText) {
-          messages.push({role: 'assistant', content: responseText});
-        }
-      }
-    }
-
-    // Add current user message
-    messages.push({role: 'user', content: request.prompt});
-
-    // Call vLLM server
-    // Use the local model path (same as what server was started with)
-    const modelPath = await getModelBasePath();
-    const response = await fetch('http://localhost:8000/v1/chat/completions', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        model: modelPath,
-        messages,
-        max_tokens: 512,
-        stream: true,
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      stream.markdown(`❌ **Error:** Server returned status ${response.status}\n\nMake sure vLLM server is running properly.`);
-      return;
-    }
-
-    // Stream response back
-    const reader = response.body?.getReader();
-    if (!reader) {
-      stream.markdown('❌ **Error:** Could not read response from server');
-      return;
-    }
-
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const {done, value} = await reader.read();
-      if (done) break;
-
-      // Check cancellation
-      if (token.isCancellationRequested) {
-        reader.cancel();
-        break;
-      }
-
-      // Parse SSE format (Server-Sent Events)
-      const chunk = decoder.decode(value, {stream: true});
-      const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
-
-      for (const line of lines) {
-        if (line.includes('[DONE]')) continue;
-
-        try {
-          const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
-          const content = data.choices?.[0]?.delta?.content;
-
-          if (content) {
-            stream.markdown(content);
-          }
-        } catch (e) {
-          // Skip parse errors (can happen with partial chunks)
-          continue;
-        }
-      }
-    }
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    stream.markdown(`❌ **Error:** ${errorMessage}\n\nMake sure vLLM server is running on port 8000.`);
-  }
-}
-
-// ============================================================================
-// Lesson 8 - Image Generation with Stable Diffusion 3.5 Large
-// ============================================================================
-
-/**
  * Command: tenstorrent.generateRetroImage
- * Generates a sample 1024x1024 image using Stable Diffusion 3.5 Large on TT hardware
- * and displays it in VSCode
+ * Generates a sample retro-style image using SD 3.5 Large on TT hardware
  */
 async function generateRetroImage(): Promise<void> {
   // Get the tt-metal path from stored state (default to ~/tt-metal if not found)
@@ -3566,11 +3307,6 @@ async function showCommandMenu(): Promise<void> {
     { label: '$(beaker) Test vLLM (OpenAI SDK)', description: 'Test with Python SDK', command: 'tenstorrent.testVllmOpenai' },
     { label: '$(symbol-method) Test vLLM (curl)', description: 'Test with HTTP request', command: 'tenstorrent.testVllmCurl' },
 
-    // VSCode Chat
-    { label: '💭 VSCode Chat Integration', kind: vscode.QuickPickItemKind.Separator },
-    { label: '$(rocket) Start vLLM for Chat', description: 'Start vLLM server for @tenstorrent', command: 'tenstorrent.startVllmForChat' },
-    { label: '$(comment) Test Chat Integration', description: 'Verify @tenstorrent chat works', command: 'tenstorrent.testChat' },
-
     // Image Generation
     { label: '🎨 Image Generation', kind: vscode.QuickPickItemKind.Separator },
     { label: '$(file-media) Generate Sample Image', description: 'SD 3.5 Large (1024x1024)', command: 'tenstorrent.generateRetroImage' },
@@ -3802,9 +3538,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),
 
     // Lesson 8 - VSCode Chat Integration (previously Lesson 7)
-    vscode.commands.registerCommand('tenstorrent.startVllmForChat', startVllmForChat),
-    vscode.commands.registerCommand('tenstorrent.enableChatParticipant', enableChatParticipant),
-    vscode.commands.registerCommand('tenstorrent.testChat', testChat),
 
     // Lesson 9 - Image Generation with SD 3.5 Large (previously Lesson 8)
     vscode.commands.registerCommand('tenstorrent.generateRetroImage', generateRetroImage),
@@ -3852,16 +3585,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // Add all command registrations to subscriptions for proper cleanup
   context.subscriptions.push(...commands);
-
-  // Register chat participant
-  const chatParticipant = vscode.chat.createChatParticipant(
-    'tenstorrent.chat',
-    handleChatRequest
-  );
-
-  chatParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'assets', 'icon.png');
-
-  context.subscriptions.push(chatParticipant);
 
   // Initialize command menu statusbar item (left side, high priority)
   commandMenuStatusBarItem = vscode.window.createStatusBarItem(
@@ -3916,13 +3639,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Mark as seen first to avoid reopening if command fails
     context.globalState.update('hasSeenWelcome', true);
 
-    // Set Solarized Dark theme for optimal terminal visibility
+    // Set Tenstorrent theme for brand consistency and optimal visibility
     const config = vscode.workspace.getConfiguration();
     const currentTheme = config.get<string>('workbench.colorTheme');
 
     // Only set theme if it's still the default (to respect user's existing preference)
     if (currentTheme === 'Default Dark Modern' || currentTheme === 'Default Light Modern' || !currentTheme) {
-      config.update('workbench.colorTheme', 'Solarized Dark', vscode.ConfigurationTarget.Global);
+      config.update('workbench.colorTheme', 'Tenstorrent', vscode.ConfigurationTarget.Global);
     }
 
     // Prompt to install recommended extensions (non-blocking)

@@ -2,7 +2,7 @@
   "name": "tenstorrent-developer-extension",
   "displayName": "Tenstorrent Developer Extension",
   "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.107",
+  "version": "0.0.109",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -22,8 +22,7 @@
   "activationEvents": [
     "onStartupFinished",
     "onView:tenstorrentLessons",
-    "onWalkthrough:tenstorrent.setup",
-    "onLanguageModelTool:tenstorrent-chat"
+    "onWalkthrough:tenstorrent.setup"
   ],
   "contributes": {
     "viewsContainers": {
@@ -48,15 +47,6 @@
         "label": "Tenstorrent",
         "uiTheme": "vs-dark",
         "path": "./themes/tenstorrent-theme.json"
-      }
-    ],
-    "chatParticipants": [
-      {
-        "id": "tenstorrent.chat",
-        "name": "tenstorrent",
-        "fullName": "Tenstorrent AI",
-        "description": "AI assistant powered by Tenstorrent hardware",
-        "isSticky": true
       }
     ],
     "commands": [
@@ -338,21 +328,6 @@
         "category": "Tenstorrent"
       },
       {
-        "command": "tenstorrent.startVllmForChat",
-        "title": "Start vLLM Server for Chat",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.enableChatParticipant",
-        "title": "Enable VSCode Chat",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.testChat",
-        "title": "Test Chat Integration",
-        "category": "Tenstorrent"
-      },
-      {
         "command": "tenstorrent.resetDevice",
         "title": "Reset Device",
         "category": "Tenstorrent"
@@ -506,6 +481,7 @@
     "@types/vscode": "^1.93.0",
     "@vscode/vsce": "^3.6.2",
     "chai": "^6.2.1",
+    "esbuild": "^0.27.2",
     "js-yaml": "^4.1.1",
     "mocha": "^11.7.5",
     "ts-node": "^10.9.2",
