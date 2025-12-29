@@ -1,3 +1,25 @@
+---
+id: tt-installer
+title: Modern Setup with tt-installer 2.0
+description: >-
+  The fastest way to get started with Tenstorrent! Use tt-installer 2.0 for
+  one-command installation of the full stack including drivers, firmware,
+  tt-metalium containers, and Python environment.
+category: advanced
+tags:
+  - installation
+  - setup
+supportedHardware:
+  - n150
+  - n300
+  - t3k
+  - p100
+  - p150
+  - galaxy
+status: validated
+estimatedMinutes: 15
+---
+
 # Modern Setup with tt-installer 2.0
 
 **Welcome to the fastest way to get started with Tenstorrent!**
@@ -58,7 +80,7 @@ The fastest way to get started:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
-```bash
+```
 
 **What happens:**
 1. Downloads the latest installer script
@@ -80,13 +102,13 @@ For more control, download the installer first:
 cd ~
 curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh -O
 chmod +x install.sh
-```text
+```
 
 Then review it:
 
 ```bash
 less install.sh
-```bash
+```
 
 [📥 Download Installer](command:tenstorrent.downloadInstaller)
 
@@ -97,7 +119,7 @@ Run the installer with prompts to customize your setup:
 ```bash
 cd ~
 ./install.sh
-```text
+```
 
 **You'll be asked:**
 - **Python environment choice** - Use active venv, create new venv, use system Python, or use pipx
@@ -120,7 +142,7 @@ For automated deployments or cloud environments, use non-interactive mode:
   --python-choice=new-venv \
   --install-metalium-models-container=off \
   --reboot-option=never
-```python
+```
 
 **Key flags:**
 - `--mode-non-interactive` - No prompts, uses defaults or provided flags
@@ -141,7 +163,7 @@ After installation (and reboot if prompted), verify everything works:
 
 ```bash
 tt-smi
-```python
+```
 
 You should see your Tenstorrent device(s) listed with:
 - Board Type (N150, N300, T3K, etc.)
@@ -158,7 +180,7 @@ Run a simple test inside the container:
 
 ```bash
 tt-metalium "python3 -c 'import ttnn; print(ttnn.__version__)'"
-```python
+```
 
 This verifies:
 - ✅ Container launches successfully
@@ -177,7 +199,7 @@ Launch an interactive session:
 
 ```bash
 tt-metalium
-```python
+```
 
 This:
 - Starts a bash shell inside the container
@@ -198,7 +220,7 @@ tt-metalium "python3 ~/my-inference-script.py"
 
 # Use pytest (for demos)
 tt-metalium "pytest models/demos/wormhole/llama31_8b/demo/demo.py"
-```bash
+```
 
 **Key benefit:** Your files in `~` are automatically accessible inside the container!
 
@@ -237,7 +259,7 @@ Install specific versions of components:
   --fw-version=80.18.3.0 \
   --smi-version=2.0.0 \
   --metalium-image-tag=v0.53.0-rc36
-```text
+```
 
 ### Skip Components
 
@@ -249,7 +271,7 @@ Customize what gets installed:
   --no-install-hugepages \        # Skip HugePages config
   --no-install-podman \           # Skip Podman (if you have Docker)
   --no-install-metalium-container # Skip container download
-```json
+```
 
 ### Container Mode
 
@@ -257,7 +279,7 @@ When running inside a container (like Docker), use container mode:
 
 ```bash
 ./install.sh --mode-container
-```bash
+```
 
 This automatically:
 - Skips KMD installation (must be on host)
@@ -273,7 +295,7 @@ Specify where to create the Python venv:
 ./install.sh \
   --python-choice=new-venv \
   --new-venv-location=$HOME/my-custom-venv
-```python
+```
 
 ### Custom Container Image
 
@@ -283,7 +305,7 @@ Use a different container image or registry:
 ./install.sh \
   --metalium-image-url=myregistry.example.com/tt-metalium \
   --metalium-image-tag=custom-build-123
-```text
+```
 
 ### Use UV Instead of Pip
 
@@ -291,7 +313,7 @@ For faster Python package installation:
 
 ```bash
 ./install.sh --use-uv=on
-```bash
+```
 
 [uv](https://github.com/astral-sh/uv) is a faster alternative to pip written in Rust.
 
@@ -314,7 +336,7 @@ After installation completes, you're ready to:
    tt-metalium-models
    cd tt-metal/models/demos
    pytest wormhole/llama31_8b/demo/demo.py
-```text
+```
 
 3. **Read Official Documentation**:
    - [TT-Metalium Docs](https://docs.tenstorrent.com/tt-metal/latest/)
@@ -334,7 +356,7 @@ After installation completes, you're ready to:
 **Solution:** Run with sudo or ensure your user is in sudoers file:
 ```bash
 sudo ./install.sh
-```bash
+```
 
 ### "tt-smi: command not found" after installation
 
@@ -348,7 +370,7 @@ source ~/.bashrc
 
 # If using venv
 source ~/.tenstorrent-venv/bin/activate
-```text
+```
 
 ### Kernel driver not loading
 
@@ -359,7 +381,7 @@ source ~/.tenstorrent-venv/bin/activate
 sudo reboot
 # After reboot, verify:
 lsmod | grep tenstorrent
-```text
+```
 
 ### Container fails to start
 
@@ -375,7 +397,7 @@ ls -l /dev/tenstorrent/
 
 # Re-run installer to fix permissions
 ./install.sh --no-install-kmd --no-install-hugepages
-```bash
+```
 
 ### Firmware update fails
 
@@ -388,7 +410,7 @@ tt-smi
 
 # Force firmware update
 ./install.sh --update-firmware=force --no-install-kmd
-```text
+```
 
 ### HugePages not configured
 
@@ -404,7 +426,7 @@ cat /proc/meminfo | grep Huge
 
 # Then reboot
 sudo reboot
-```text
+```
 
 ### Model Demos container too large
 
@@ -413,12 +435,12 @@ sudo reboot
 **Solution:** Use standard container only:
 ```bash
 ./install.sh --install-metalium-models-container=off
-```text
+```
 
 You can always add it later:
 ```bash
 ./install.sh --no-install-kmd --no-install-hugepages --install-metalium-models-container=on
-```bash
+```
 
 ## Supported Operating Systems
 

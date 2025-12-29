@@ -41,7 +41,7 @@ compiled_model = forge.compile(model, sample_inputs=[sample_input])
 
 # Run on TT accelerators
 output = compiled_model(input_tensor)
-```bash
+```
 
 **Why TT-Forge?**
 - ✅ **Higher-level API:** Simpler than manual TT-Metal programming
@@ -78,7 +78,7 @@ output = compiled_model(input_tensor)
 ┌──────────────────▼──────────────────────┐
 │         N150 / N300 / T3K               │  ← Hardware (single-chip)
 └─────────────────────────────────────────┘
-```bash
+```
 
 **Key Benefits:**
 - ✅ **Simpler than TT-Metal:** Automatic graph optimization
@@ -158,13 +158,13 @@ cmake --build build
 
 # Set environment variable (add to ~/.bashrc for persistence)
 export TTMLIR_TOOLCHAIN_DIR=~/tt-mlir/build
-```bash
+```
 
 **Verify tt-mlir installation:**
 ```bash
 ls $TTMLIR_TOOLCHAIN_DIR/bin/ttmlir-opt
 # Should show: /home/user/tt-mlir/build/bin/ttmlir-opt
-```bash
+```
 
 ---
 
@@ -192,7 +192,7 @@ cmake --build build
 
 # Install Python package
 pip install -e .
-```bash
+```
 
 **Build time:** 15-30 minutes depending on your system.
 - **Python 3.11** (will be installed in build steps - required by JAX 0.7.1)
@@ -240,14 +240,14 @@ cmake --build build
 
 # 10. Install additional dependencies for our classifier
 pip install pillow requests tabulate
-```bash
+```
 
 **Note:** If you don't have clang-17, install it:
 ```bash
 wget https://apt.llvm.org/llvm.sh
 chmod u+x llvm.sh
 sudo ./llvm.sh 17
-```bash
+```
 
 **Why build from source?**
 - ✅ Built against YOUR exact tt-metal version (no symbol mismatches)
@@ -279,7 +279,7 @@ source ~/tt-forge-venv/bin/activate
 pip install tt_forge_fe --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 pip install tt_tvm --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 pip install pillow torch torchvision requests tabulate
-```bash
+```
 
 **Note:** Wheels are built against specific tt-metal versions. If you get `ImportError: undefined symbol` errors, use Option A instead.
 
@@ -298,18 +298,18 @@ Verify `forge` module loads:
 cd ~/tt-forge-fe
 source env/activate
 python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully\!')"
-```bash
+```
 
 **If you used wheels (Option B):**
 ```bash
 source ~/tt-forge-venv/bin/activate
 python3 -c "import forge; print(f'✓ TT-Forge {forge.__version__} loaded successfully\!')"
-```python
+```
 
 Expected output (version will vary):
 ```python
 ✓ TT-Forge 0.4.0.dev20250917 loaded successfully!
-```bash
+```
 
 **If you see `ImportError: undefined symbol` errors:**
 
@@ -322,7 +322,7 @@ This usually means TT-Forge was built against a different version of TT-Metal th
 # Just verify the package installed
 source ~/tt-forge-venv/bin/activate
 pip list | grep forge
-```text
+```
 
 You should see `tt_forge_fe` and `tt_tvm` in the list. The actual test will be whether the classifier script works.
 
@@ -330,7 +330,7 @@ You should see `tt_forge_fe` and `tt_tvm` in the list. The actual test will be w
 Docker images have pre-matched versions:
 ```bash
 docker pull ghcr.io/tenstorrent/tt-forge-fe-slim:latest
-```bash
+```
 
 **Option 3: Build from source**
 For bleeding-edge compatibility, build tt-forge-fe from source against your tt-metal installation. See: https://github.com/tenstorrent/tt-forge-fe
@@ -339,7 +339,7 @@ For bleeding-edge compatibility, build tt-forge-fe from source against your tt-m
 
 ```bash
 tt-smi
-```python
+```
 
 Should show your N150/N300 device is detected.
 
@@ -382,7 +382,7 @@ import torchvision.models as models
 # Load pre-trained MobileNetV2 from torchvision
 model = models.mobilenet_v2(pretrained=True)
 model.eval()  # Set to inference mode
-```python
+```
 
 Nothing TT-specific yet! This is standard PyTorch.
 
@@ -396,7 +396,7 @@ sample_input = torch.randn(1, 3, 224, 224)  # Batch, Channels, Height, Width
 
 # Attempt compilation for TT hardware
 compiled_model = forge.compile(model, sample_inputs=[sample_input])
-```python
+```
 
 **What happens during `forge.compile()`?**
 - Graph capture: Traces PyTorch operations
@@ -429,7 +429,7 @@ preprocess = transforms.Compose([
 
 img = Image.open(image_path).convert('RGB')
 input_tensor = preprocess(img).unsqueeze(0)  # Add batch dimension
-```python
+```
 
 **4. Inference on TT Hardware:**
 
@@ -445,7 +445,7 @@ for i in range(5):
     class_name = imagenet_classes[top5_idx[i]]
     confidence = top5_prob[i].item() * 100
     print(f"{i+1}. {class_name}: {confidence:.2f}%")
-```bash
+```
 
 ---
 
@@ -459,7 +459,7 @@ The script downloads a sample cat image and classifies it:
 cd ~/tt-scratchpad
 source ~/tt-forge-venv/bin/activate
 python tt-forge-classifier.py
-```python
+```
 
 **Expected output:**
 
@@ -482,7 +482,7 @@ Top 5 Predictions:
 5. Persian cat: 0.31%
 
 ✓ Classification complete!
-```bash
+```
 
 **First compilation takes time (2-5 minutes):**
 - Model graph analysis
@@ -516,7 +516,7 @@ python tt-forge-classifier.py --image ~/Pictures/pizza.jpg
 
 # Classify objects
 python tt-forge-classifier.py --image ~/Pictures/coffee-mug.jpg
-```python
+```
 
 **ImageNet classes include:**
 - 🐾 Animals: 398 classes (dogs, cats, birds, marine life)
@@ -537,12 +537,12 @@ Full list: https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
 **ResNet variants:**
 ```python
 model = models.resnet50(pretrained=True)
-```python
+```
 
 **Other MobileNet versions:**
 ```python
 model = models.mobilenet_v3_small(pretrained=True)
-```python
+```
 
 **Experimenting with other models:**
 
@@ -563,7 +563,7 @@ model = models.resnet50(pretrained=True)  # Validated model
 
 # Re-run compilation
 python tt-forge-classifier.py
-```python
+```
 
 **If compilation fails:**
 - Check error message for unsupported operators
@@ -623,7 +623,7 @@ from tt_forge_models.mobilenet_v2.pytorch import ModelLoader
 model = ModelLoader.load_model()
 inputs = ModelLoader.load_inputs()
 # Then compile with forge.compile()
-```python
+```
 
 **Repository:** https://github.com/tenstorrent/tt-forge-models
 
@@ -647,7 +647,7 @@ from tt_forge_models.yolov5.pytorch import ModelLoader
 model = ModelLoader.load_model()
 compiled_model = forge.compile(model, sample_inputs=[...])
 detections = compiled_model(image_tensor)
-```python
+```
 
 **Use cases:** Security, inventory, autonomous systems
 
@@ -667,7 +667,7 @@ torch.onnx.export(model, sample_input, "model.onnx",
 # Try compiling ONNX version
 import forge
 compiled_model = forge.compile("model.onnx", ...)
-```text
+```
 
 ONNX may have different operator support than direct PyTorch ingestion.
 
@@ -697,7 +697,7 @@ Help expand operator coverage:
 **Error:**
 ```text
 ImportError: /path/to/libTTMLIRRuntime.so: undefined symbol: _ZN4ttnn...
-```bash
+```
 
 **ROOT CAUSE #1: Environment Variable Pollution (90% of cases)**
 
@@ -715,7 +715,7 @@ unset TT_METAL_VERSION
 # Try running forge again
 cd ~/tt-forge-fe && source env/activate
 python3 -c "import forge; print('Success!')"
-```bash
+```
 
 **Why this happens:**
 - These variables cause forge to load TT-Metal from outdated system paths
@@ -727,7 +727,7 @@ python3 -c "import forge; print('Success!')"
 # Add to ~/.bashrc to prevent future issues
 echo 'unset TT_METAL_HOME' >> ~/.bashrc
 echo 'unset TT_METAL_VERSION' >> ~/.bashrc
-```bash
+```
 
 ---
 
@@ -743,7 +743,7 @@ Check which TT-Metal version your forge was built against:
 ```bash
 # In tt-forge-venv
 pip show tt_forge_fe
-```text
+```
 
 Look at the release date, then checkout the corresponding tt-metal commit from around that time.
 
@@ -752,7 +752,7 @@ Docker images have pre-matched versions:
 ```bash
 docker run -it --rm --device /dev/tenstorrent \
   ghcr.io/tenstorrent/tt-forge-fe-slim:latest
-```bash
+```
 
 **D. Build from source**
 Clone tt-forge-fe and build against your exact tt-metal installation:
@@ -760,7 +760,7 @@ Clone tt-forge-fe and build against your exact tt-metal installation:
 git clone https://github.com/tenstorrent/tt-forge-fe.git
 cd tt-forge-fe
 # Follow build instructions in README
-```python
+```
 
 **2. Compilation Errors**
 
@@ -772,7 +772,7 @@ import os
 os.environ['FORGE_LOG_LEVEL'] = 'DEBUG'
 
 compiled_model = forge.compile(model, sample_inputs=[...])
-```text
+```
 
 Common issues:
 - **Unsupported operators:** Check error message, search GitHub issues
@@ -784,7 +784,7 @@ Common issues:
 
 ```yaml
 Error: Operator 'some_op' not implemented
-```bash
+```
 
 **What to do:**
 1. Search GitHub issues: `site:github.com/tenstorrent/tt-forge-fe "some_op"`
@@ -805,7 +805,7 @@ If model compiles but gives incorrect results:
 ```yaml
 ERROR: Could not find a version that satisfies the requirement jax==0.7.1
 ERROR: Ignored the following versions that require a different python version: ... Requires-Python >=3.11
-```yaml
+```
 
 **Cause:** JAX 0.7.1 requires Python >=3.11. The build process needs Python 3.11 specifically.
 
@@ -813,14 +813,14 @@ ERROR: Ignored the following versions that require a different python version: .
 ```bash
 sudo apt-get update
 sudo apt-get install -y python3.11 python3.11-venv python3.11-dev
-```bash
+```
 
 Then set `TTFORGE_PYTHON_VERSION` BEFORE sourcing the activate script:
 ```bash
 cd ~/tt-forge-fe
 export TTFORGE_PYTHON_VERSION=python3.11
 source env/activate
-```python
+```
 
 The `env/activate` script defaults to `python3.11`, but explicitly setting it ensures the correct version is used when creating the venv.
 
@@ -845,7 +845,7 @@ input_t = ttnn.from_torch(input_tensor, device=device)
 weight_t = ttnn.from_torch(weights, device=device)
 output_t = ttnn.matmul(input_t, weight_t)
 result = ttnn.to_torch(output_t)
-```python
+```
 
 **Pros:** Full control, predictable behavior, well-documented operators
 **Cons:** Steep learning curve, manual memory management, more code
@@ -857,7 +857,7 @@ import forge
 
 compiled_model = forge.compile(model, sample_inputs=[...])
 output = compiled_model(input)
-```text
+```
 
 **Pros:** Simpler API, higher-level abstraction, faster iteration for supported models
 **Cons:** Less mature, operator coverage gaps, harder to debug failures

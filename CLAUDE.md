@@ -335,6 +335,21 @@ async function createQwenSymlink(qwenPath: string): Promise<string> {
 
 ## Recent Changes
 
+**v0.0.123** - Package.json refactoring for maintainability
+- Reduced commands in package.json from 83 → 28 (66% reduction)
+- Kept only user-facing commands visible in Command Palette
+- Moved 55 internal/helper commands to dynamic registration only
+- Commands removed from package.json still work from lesson buttons and programmatic calls
+- Package.json reduced from 521 → 251 lines (52% reduction)
+- Added organizational comments to group remaining commands by category
+- All commands still registered in extension.ts (no functionality removed)
+- **Rationale**: Commands in package.json are primarily for Command Palette discoverability. Internal helper commands (script creation, test utilities, setup steps) don't need Command Palette visibility since they're only invoked from lesson buttons or other commands.
+- **User-facing commands kept**: Navigation (showWelcome, showFaq), UI controls (refreshLessons, filterLessons), device management (runHardwareDetection, resetDevice), major workflows (cloneVllm, installVllm, startVllmServer), and exploration tools (browseModelZoo, launchTtnnTutorials, createCookbookProjects)
+- **Internal commands moved**: All create*Script, start*Session, test*, install*Deps, setup*, and hardware-specific variant commands (startVllmServerN150/N300/T3K/P100, startTtInferenceServerN150/N300)
+- Created backup: package.json.backup before refactoring
+- All tests passing (134/134)
+- Package size: 782.54 KB (193 files) - unchanged from previous version
+
 **v0.0.102** - Lesson 12 (TT-XLA) comprehensive rewrite
 - Completely rewrote TT-XLA installation instructions (Ubuntu-specific)
 - Added Python 3.11 installation via deadsnakes PPA

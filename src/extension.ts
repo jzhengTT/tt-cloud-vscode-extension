@@ -18,6 +18,9 @@
 import * as vscode from 'vscode';
 import { TERMINAL_COMMANDS, replaceVariables } from './commands/terminalCommands';
 
+// Configuration imports
+import { getModelConfig, getModelBasePath, getModelOriginalPath, DEFAULT_MODEL_KEY } from './config';
+
 // New lesson system imports
 import { LessonRegistry } from './utils';
 import { StateManager, ProgressTracker } from './state';
@@ -42,95 +45,6 @@ const STATE_KEYS = {
   STATUSBAR_UPDATE_INTERVAL: 'statusbarUpdateInterval',
   STATUSBAR_ENABLED: 'statusbarEnabled',
 };
-
-/**
- * Model configuration type
- */
-interface ModelConfig {
-  /** HuggingFace model ID (used for downloading and API requests) */
-  huggingfaceId: string;
-  /** Local directory name (where model is stored) */
-  localDirName: string;
-  /** Subdirectory for Meta's original format (used by Direct API), if applicable */
-  originalSubdir?: string;
-  /** Display name for UI */
-  displayName: string;
-  /** Model size for user information */
-  size: string;
-  /** Model type (llm, image, etc.) */
-  type: 'llm' | 'image' | 'multimodal';
-}
-
-/**
- * Model Registry
- * Extensible registry of all models supported by the extension.
- * Add new models here to make them available throughout the extension.
- */
-const MODEL_REGISTRY: Record<string, ModelConfig> = {
-  'llama-3.1-8b': {
-    huggingfaceId: 'meta-llama/Llama-3.1-8B-Instruct',
-    localDirName: 'Llama-3.1-8B-Instruct',
-    originalSubdir: 'original',
-    displayName: 'Llama 3.1 8B Instruct',
-    size: '~16GB',
-    type: 'llm',
-  },
-  // Future models can be added here as they become compatible with tt-metal:
-  // 'llama-3.2-9b': {
-  //   huggingfaceId: 'meta-llama/Llama-3.2-9B-Instruct',
-  //   localDirName: 'Llama-3.2-9B-Instruct',
-  //   originalSubdir: 'original',
-  //   displayName: 'Llama 3.2 9B Instruct',
-  //   size: '~18GB',
-  //   type: 'llm',
-  // },
-  // 'sd-3.5-large': {
-  //   huggingfaceId: 'stabilityai/stable-diffusion-3.5-large',
-  //   localDirName: 'stable-diffusion-3.5-large',
-  //   displayName: 'Stable Diffusion 3.5 Large',
-  //   size: '~10GB',
-  //   type: 'image',
-  // },
-} as const;
-
-/**
- * Default model key used throughout the extension
- * Change this to switch the default model for all lessons
- */
-const DEFAULT_MODEL_KEY = 'llama-3.1-8b';
-
-/**
- * Helper function to get a model config by key
- */
-function getModelConfig(modelKey: string = DEFAULT_MODEL_KEY): ModelConfig {
-  const config = MODEL_REGISTRY[modelKey];
-  if (!config) {
-    throw new Error(`Model '${modelKey}' not found in MODEL_REGISTRY. Available models: ${Object.keys(MODEL_REGISTRY).join(', ')}`);
-  }
-  return config;
-}
-
-/**
- * Helper functions for model paths
- */
-async function getModelBasePath(modelKey: string = DEFAULT_MODEL_KEY): Promise<string> {
-  const os = await import('os');
-  const path = await import('path');
-  const config = getModelConfig(modelKey);
-  return path.join(os.homedir(), 'models', config.localDirName);
-}
-
-async function getModelOriginalPath(modelKey: string = DEFAULT_MODEL_KEY): Promise<string> {
-  const path = await import('path');
-  const config = getModelConfig(modelKey);
-  const basePath = await getModelBasePath(modelKey);
-
-  if (!config.originalSubdir) {
-    throw new Error(`Model '${modelKey}' does not have an originalSubdir. This model may not support Direct API.`);
-  }
-
-  return path.join(basePath, config.originalSubdir);
-}
 
 // ============================================================================
 // Device Status Monitoring
@@ -1771,59 +1685,65 @@ async function startVllmServer(): Promise<void> {
 }
 
 /**
- * Command: tenstorrent.startVllmServerN150
- * Starts vLLM server specifically configured for N150 hardware.
+ * Hardware configuration map for vLLM server
+ * Maps hardware names to their optimal vLLM settings
  */
-async function startVllmServerN150(): Promise<void> {
-  await startVllmServerForHardware('N150', {
+const VLLM_HARDWARE_CONFIGS = {
+  N150: {
     maxModelLen: 8192,
     maxNumSeqs: 4,
     blockSize: 64,
     tensorParallelSize: undefined,
     archName: undefined,
-  });
-}
-
-/**
- * Command: tenstorrent.startVllmServerN300
- * Starts vLLM server specifically configured for N300 hardware.
- */
-async function startVllmServerN300(): Promise<void> {
-  await startVllmServerForHardware('N300', {
+  },
+  N300: {
     maxModelLen: 131072,
     maxNumSeqs: 32,
     blockSize: 64,
     tensorParallelSize: 2,
     archName: undefined,
-  });
-}
-
-/**
- * Command: tenstorrent.startVllmServerT3K
- * Starts vLLM server specifically configured for T3K hardware.
- */
-async function startVllmServerT3K(): Promise<void> {
-  await startVllmServerForHardware('T3K', {
+  },
+  T3K: {
     maxModelLen: 131072,
     maxNumSeqs: 64,
     blockSize: 64,
     tensorParallelSize: 8,
     archName: undefined,
-  });
-}
-
-/**
- * Command: tenstorrent.startVllmServerP100
- * Starts vLLM server specifically configured for P100 (Blackhole) hardware.
- */
-async function startVllmServerP100(): Promise<void> {
-  await startVllmServerForHardware('P100', {
+  },
+  P100: {
     maxModelLen: 8192,
     maxNumSeqs: 4,
     blockSize: 64,
     tensorParallelSize: undefined,
     archName: 'blackhole',
-  });
+  },
+} as const;
+
+/**
+ * Command: tenstorrent.startVllmServerWithHardware
+ * Parameterized command to start vLLM server for any hardware.
+ * This command accepts hardware as an argument, enabling DRY markdown lessons.
+ *
+ * Usage from markdown:
+ * [Start N150](command:tenstorrent.startVllmServerWithHardware?%7B%22hardware%22%3A%22N150%22%7D)
+ * [Start N300](command:tenstorrent.startVllmServerWithHardware?%7B%22hardware%22%3A%22N300%22%7D)
+ * [Start T3K](command:tenstorrent.startVllmServerWithHardware?%7B%22hardware%22%3A%22T3K%22%7D)
+ * [Start P100](command:tenstorrent.startVllmServerWithHardware?%7B%22hardware%22%3A%22P100%22%7D)
+ *
+ * @param args - Optional arguments object with hardware type
+ */
+async function startVllmServerWithHardware(args?: { hardware?: string }): Promise<void> {
+  const hardware = (args?.hardware || 'N150') as keyof typeof VLLM_HARDWARE_CONFIGS;
+
+  const config = VLLM_HARDWARE_CONFIGS[hardware];
+  if (!config) {
+    vscode.window.showErrorMessage(
+      `Unknown hardware type: ${hardware}. Valid options: ${Object.keys(VLLM_HARDWARE_CONFIGS).join(', ')}`
+    );
+    return;
+  }
+
+  await startVllmServerForHardware(hardware, config);
 }
 
 /**
@@ -2700,14 +2620,14 @@ async function showWelcome(context: vscode.ExtensionContext): Promise<void> {
     { viewColumn: vscode.ViewColumn.One, preserveFocus: false },
     {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'welcome')]
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'pages')]
     }
   );
 
   // Load welcome HTML
   const fs = await import('fs');
   const path = await import('path');
-  const welcomePath = path.join(context.extensionPath, 'content', 'welcome', 'welcome.html');
+  const welcomePath = path.join(context.extensionPath, 'content', 'pages', 'welcome.html');
 
   if (fs.existsSync(welcomePath)) {
     panel.webview.html = fs.readFileSync(welcomePath, 'utf8');
@@ -2747,7 +2667,7 @@ async function showFaq(context: vscode.ExtensionContext): Promise<void> {
     { viewColumn: vscode.ViewColumn.One, preserveFocus: false },
     {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'welcome')]
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'pages')]
     }
   );
 
@@ -2756,11 +2676,11 @@ async function showFaq(context: vscode.ExtensionContext): Promise<void> {
 
   try {
     // Read FAQ markdown
-    const faqPath = path.join(context.extensionPath, 'FAQ.md');
+    const faqPath = path.join(context.extensionPath, 'content', 'pages', 'FAQ.md');
     const faqMarkdown = fs.readFileSync(faqPath, 'utf8');
 
     // Read template
-    const templatePath = path.join(context.extensionPath, 'content', 'welcome', 'faq-template.html');
+    const templatePath = path.join(context.extensionPath, 'content', 'pages', 'faq-template.html');
     let template = fs.readFileSync(templatePath, 'utf8');
 
     // Convert markdown to HTML (simple conversion)
@@ -2794,6 +2714,18 @@ async function showFaq(context: vscode.ExtensionContext): Promise<void> {
 function convertMarkdownToHtml(markdown: string): string {
   let html = markdown;
 
+  // Helper function to create URL-friendly slug from text
+  // Matches the convention used in the FAQ TOC (e.g., "Remote Development & SSH" -> "remote-development--ssh")
+  const slugify = (text: string): string => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '-') // Replace special characters with hyphens
+      .replace(/\s+/g, '-')      // Replace spaces with hyphens
+      .replace(/--+/g, '--')     // Normalize to max double hyphens (keep double from & replacement)
+      .replace(/^-+|-+$/g, '');  // Remove leading/trailing hyphens
+  };
+
   // Escape HTML characters first
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -2805,9 +2737,13 @@ function convertMarkdownToHtml(markdown: string): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-  // Headers
-  html = html.replace(/^### (.+)$/gm, '<h3 id="$1">$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2 id="$1">$1</h2>');
+  // Headers with proper slugified IDs
+  html = html.replace(/^### (.+)$/gm, (_match, text) => {
+    return `<h3 id="${slugify(text)}">${text}</h3>`;
+  });
+  html = html.replace(/^## (.+)$/gm, (_match, text) => {
+    return `<h2 id="${slugify(text)}">${text}</h2>`;
+  });
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
   // Bold and italic
@@ -2865,6 +2801,61 @@ function convertMarkdownToHtml(markdown: string): string {
   html = html.replace(/⚠️/g, '<span class="warning">⚠️</span>');
 
   return html;
+}
+
+/**
+ * Command: tenstorrent.showRiscvGuide
+ *
+ * Opens the RISC-V Exploration Guide in a rendered webview with search functionality.
+ */
+async function showRiscvGuide(context: vscode.ExtensionContext): Promise<void> {
+  const panel = vscode.window.createWebviewPanel(
+    'tenstorrentRiscvGuide',
+    'RISC-V Exploration Guide',
+    { viewColumn: vscode.ViewColumn.One, preserveFocus: false },
+    {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'content', 'pages')]
+    }
+  );
+
+  const fs = await import('fs');
+  const path = await import('path');
+
+  try {
+    // Read RISC-V guide markdown
+    const guidePath = path.join(context.extensionPath, 'content', 'pages', 'riscv-guide.md');
+    const guideMarkdown = fs.readFileSync(guidePath, 'utf8');
+
+    // Read template (reuse FAQ template)
+    const templatePath = path.join(context.extensionPath, 'content', 'pages', 'faq-template.html');
+    let template = fs.readFileSync(templatePath, 'utf8');
+
+    // Convert markdown to HTML
+    const guideHtml = convertMarkdownToHtml(guideMarkdown);
+
+    // Inject content into template (update title in template)
+    template = template.replace('Tenstorrent FAQ', 'RISC-V Exploration Guide');
+    template = template.replace('Frequently Asked Questions', 'Exploring Tenstorrent as a RISC-V Platform');
+    panel.webview.html = template.replace('{{FAQ_CONTENT}}', guideHtml);
+  } catch (error) {
+    panel.webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: var(--vscode-font-family); padding: 20px; color: var(--vscode-foreground); }
+          h1 { color: #4FD1C5; }
+        </style>
+      </head>
+      <body>
+        <h1>Error Loading RISC-V Guide</h1>
+        <p>RISC-V Exploration Guide could not be loaded. Please check the extension installation.</p>
+        <p>Error: ${error}</p>
+      </body>
+      </html>
+    `;
+  }
 }
 
 // ============================================================================
@@ -3440,15 +3431,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   // Create Webview Manager
   const webviewManager = new LessonWebviewManager(context, lessonRegistry, progressTracker);
 
-  // Connect tree selection to webview
-  treeView.onDidChangeSelection(event => {
-    if (event.selection.length > 0) {
-      const item = event.selection[0];
-      if (item.type === 'lesson' && item.lesson) {
-        webviewManager.showLesson(item.lesson);
-      }
-    }
-  });
+  // Note: Tree item clicks are handled via the command property set in LessonTreeDataProvider
+  // No need for onDidChangeSelection handler - it would cause lessons to open twice
 
   // Hook progress tracking into existing commands
   // NOTE: Progress is tracked in the commands themselves via recordCommandExecution
@@ -3495,6 +3479,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       // More filter logic can be added here
     }),
+    vscode.commands.registerCommand('tenstorrent.toggleShowAllLessons', async () => {
+      const config = vscode.workspace.getConfiguration('tenstorrent');
+      const currentValue = config.get<boolean>('showUnvalidatedLessons', false);
+      const newValue = !currentValue;
+
+      await config.update('showUnvalidatedLessons', newValue, vscode.ConfigurationTarget.Global);
+
+      if (newValue) {
+        vscode.window.showInformationMessage('✅ Now showing all lessons (including draft and blocked)');
+      } else {
+        vscode.window.showInformationMessage('✅ Now showing validated lessons only');
+      }
+    }),
     treeView,
     webviewManager
   );
@@ -3513,6 +3510,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // FAQ
     vscode.commands.registerCommand('tenstorrent.showFaq', () => showFaq(context)),
+
+    // RISC-V Exploration Guide
+    vscode.commands.registerCommand('tenstorrent.showRiscvGuide', () => showRiscvGuide(context)),
 
     // Walkthrough management commands
     vscode.commands.registerCommand('tenstorrent.openWalkthrough', openWalkthrough),
@@ -3575,10 +3575,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('tenstorrent.cloneVllm', cloneVllm),
     vscode.commands.registerCommand('tenstorrent.installVllm', installVllm),
     vscode.commands.registerCommand('tenstorrent.startVllmServer', startVllmServer),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerN150', startVllmServerN150),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerN300', startVllmServerN300),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerT3K', startVllmServerT3K),
-    vscode.commands.registerCommand('tenstorrent.startVllmServerP100', startVllmServerP100),
+    vscode.commands.registerCommand('tenstorrent.startVllmServerWithHardware', startVllmServerWithHardware), // Parameterized command (replaces N150/N300/T3K/P100 variants)
     vscode.commands.registerCommand('tenstorrent.createVllmStarter', createVllmStarter),
     vscode.commands.registerCommand('tenstorrent.testVllmOpenai', testVllmOpenai),
     vscode.commands.registerCommand('tenstorrent.testVllmCurl', testVllmCurl),

@@ -23,14 +23,57 @@
       "icon": "server"
     },
     {
-      "id": "ecosystem",
-      "title": "🌐 Exploring the Ecosystem",
-      "description": "Advanced topics, tools, and community",
+      "id": "compilers",
+      "title": "🔧 Compilers & Tools",
+      "description": "TT-Forge, TT-XLA, and compiler toolchains",
       "order": 4,
-      "icon": "globe"
+      "icon": "tools"
+    },
+    {
+      "id": "applications",
+      "title": "🎯 Applications",
+      "description": "Build real-world applications with AI",
+      "order": 5,
+      "icon": "lightbulb"
+    },
+    {
+      "id": "advanced",
+      "title": "🎓 Advanced Topics",
+      "description": "Low-level programming, installation, and community contributions",
+      "order": 6,
+      "icon": "mortar-board"
     }
   ],
   "lessons": [
+    {
+      "id": "tt-installer",
+      "title": "Modern Setup with tt-installer 2.0",
+      "description": "The fastest way to get started! One-command installation of the full Tenstorrent stack including drivers, firmware, tt-metalium containers, and Python environment.",
+      "category": "advanced",
+      "order": 1,
+      "markdownFile": "content/lessons/tt-installer.md",
+      "supportedHardware": [
+        "n150",
+        "n300",
+        "t3k",
+        "p100",
+        "p150",
+        "galaxy"
+      ],
+      "status": "validated",
+      "validatedOn": [
+        "n150"
+      ],
+      "completionEvents": [
+        "onCommand:tenstorrent.runQuickInstall"
+      ],
+      "tags": [
+        "installation",
+        "setup"
+      ],
+      "nextLesson": "hardware-detection",
+      "estimatedMinutes": 15
+    },
     {
       "id": "hardware-detection",
       "title": "Hardware Detection",
@@ -59,6 +102,7 @@
       "tags": [
         "hardware"
       ],
+      "previousLesson": "tt-installer",
       "nextLesson": "verify-installation",
       "estimatedMinutes": 5
     },
@@ -246,7 +290,7 @@
       "id": "image-generation",
       "title": "Image Generation with SD 3.5 Large",
       "description": "Generate high-resolution 1024x1024 images using Stable Diffusion 3.5 Large running natively on your Tenstorrent hardware!",
-      "category": "ecosystem",
+      "category": "serving",
       "order": 8,
       "markdownFile": "content/lessons/image-generation.md",
       "supportedHardware": [
@@ -277,7 +321,7 @@
       "id": "coding-assistant",
       "title": "Coding Assistant with Prompt Engineering",
       "description": "Build an AI coding assistant using Llama 3.1 8B and prompt engineering. Learn how to shape model behavior through system prompts - a critical real-world skill!",
-      "category": "ecosystem",
+      "category": "applications",
       "order": 9,
       "markdownFile": "content/lessons/coding-assistant.md",
       "supportedHardware": [
@@ -306,7 +350,7 @@
       "id": "forge-image-classification",
       "title": "Image Classification with TT-Forge",
       "description": "Explore TT-Forge - Tenstorrent's MLIR-based compiler that brings PyTorch models to TT hardware! Start with validated models like MobileNetV2 for image classification. Learn forge.compile(), experiment with supported architectures, and understand the path to high-level model deployment.",
-      "category": "ecosystem",
+      "category": "compilers",
       "order": 10,
       "markdownFile": "content/lessons/forge-image-classification.md",
       "supportedHardware": [
@@ -333,7 +377,7 @@
       "id": "tt-xla-jax",
       "title": "JAX Inference with TT-XLA",
       "description": "Master TT-XLA - Tenstorrent's production-ready XLA-based compiler! Simple wheel installation, JAX integration via PJRT, and multi-chip support. Perfect for cloud environments with locked Python/tt-metal versions. Works with Python 3.10+, no rebuilding required!",
-      "category": "ecosystem",
+      "category": "compilers",
       "order": 11,
       "markdownFile": "content/lessons/tt-xla-jax.md",
       "supportedHardware": [
@@ -362,7 +406,7 @@
       "id": "riscv-programming",
       "title": "RISC-V Programming on Tensix Cores",
       "description": "Explore 880 RISC-V processors on a single chip! Program the five RISC-V cores (BRISC, NCRISC, TRISC0/1/2) inside each Tensix. Learn bare-metal programming, NoC communication, and parallel computing at scale. Includes comprehensive exploration guide.",
-      "category": "ecosystem",
+      "category": "advanced",
       "order": 12,
       "markdownFile": "content/lessons/riscv-programming.md",
       "supportedHardware": [
@@ -387,7 +431,7 @@
       "id": "bounty-program",
       "title": "Bounty Program: Model Bring-Up",
       "description": "Learn how to contribute to the Tenstorrent Bounty Program by bringing up new models. Master TT-Metal while becoming part of the open-source ecosystem. Uses the successful Phi-3 contribution as a case study.",
-      "category": "ecosystem",
+      "category": "advanced",
       "order": 13,
       "markdownFile": "content/lessons/bounty-program-model-bringup.md",
       "supportedHardware": [
@@ -414,7 +458,7 @@
       "id": "explore-metalium",
       "title": "Exploring TT-Metalium",
       "description": "Discover what's possible with TT-Metalium! Explore TTNN tutorials, browse the model zoo, and dive into programming examples. Learn the architecture, try Jupyter notebooks, and find inspiration for your own projects.",
-      "category": "ecosystem",
+      "category": "advanced",
       "order": 14,
       "markdownFile": "content/lessons/explore-metalium.md",
       "supportedHardware": [
@@ -425,8 +469,10 @@
         "p150",
         "galaxy"
       ],
-      "status": "draft",
-      "validatedOn": [],
+      "status": "validated",
+      "validatedOn": [
+        "n150"
+      ],
       "completionEvents": [
         "onCommand:tenstorrent.launchTtnnTutorials"
       ],
@@ -441,7 +487,7 @@
       "id": "metalium-cookbook",
       "title": "TT-Metalium Cookbook",
       "description": "Build creative projects with TT-Metalium! Work through 4 complete cookbook recipes: Conway's Game of Life, Audio Signal Processing, Mandelbrot Fractals, and Image Filters. Deploy all templates with one command and start coding!",
-      "category": "ecosystem",
+      "category": "advanced",
       "order": 15,
       "markdownFile": "content/lessons/metalium-cookbook.md",
       "supportedHardware": [
@@ -452,8 +498,10 @@
         "p150",
         "galaxy"
       ],
-      "status": "draft",
-      "validatedOn": [],
+      "status": "validated",
+      "validatedOn": [
+        "n150"
+      ],
       "completionEvents": [
         "onCommand:tenstorrent.createCookbookProjects"
       ],
@@ -465,5 +513,5 @@
       "estimatedMinutes": 10
     }
   ],
-  "lastUpdated": "2025-12-22T22:53:40.084Z"
+  "lastUpdated": "2025-12-29T13:00:00.000Z"
 }

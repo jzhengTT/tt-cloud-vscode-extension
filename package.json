@@ -1,21 +1,23 @@
 {
-  "name": "tenstorrent-developer-extension",
-  "displayName": "Tenstorrent Developer Extension",
-  "description": "Setup and development tools for Tenstorrent hardware",
-  "version": "0.0.115",
+  "name": "tt-vscode-toolkit",
+  "displayName": "Tenstorrent VSCode Toolkit",
+  "description": "Explore Tenstorrent hardware and software through interactive lesssons and ",
+  "version": "0.0.124",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jzhengTT/tt-cloud-vscode-extension.git"
+    "url": "https://github.com/tenstorrent/tt-vscode-toolkit"
   },
   "bugs": {
-    "url": "https://github.com/jzhengTT/tt-cloud-vscode-extension/issues"
+    "url": "https://github.com/tenstorrent/tt-vscode-toolkit/issues"
   },
-  "homepage": "https://github.com/jzhengTT/tt-cloud-vscode-extension#readme",
+  "homepage": "https://github.com/tenstorrent/tt-vscode-toolkit#readme",
   "engines": {
     "vscode": "^1.93.0"
   },
   "categories": [
+    "Education",
+    "AI",
     "Other"
   ],
   "main": "./dist/extension.js",
@@ -49,6 +51,16 @@
         "path": "./themes/tenstorrent-theme.json"
       }
     ],
+    "configuration": {
+      "title": "Tenstorrent",
+      "properties": {
+        "tenstorrent.showUnvalidatedLessons": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show lessons that haven't been validated on hardware yet. When disabled (default), only validated lessons are displayed in production builds."
+        }
+      }
+    },
     "commands": [
       {
         "command": "tenstorrent.showLesson",
@@ -68,6 +80,12 @@
         "icon": "$(filter)"
       },
       {
+        "command": "tenstorrent.toggleShowAllLessons",
+        "title": "Toggle Show All Lessons",
+        "category": "Tenstorrent",
+        "icon": "$(eye)"
+      },
+      {
         "command": "tenstorrent.showCommandMenu",
         "title": "Show Command Menu",
         "category": "Tenstorrent"
@@ -80,6 +98,11 @@
       {
         "command": "tenstorrent.showFaq",
         "title": "Show FAQ",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.showRiscvGuide",
+        "title": "Show RISC-V Exploration Guide",
         "category": "Tenstorrent"
       },
       {
@@ -234,17 +257,7 @@
       },
       {
         "command": "tenstorrent.startTtInferenceServer",
-        "title": "Start tt-inference-server (Basic)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startTtInferenceServerN150",
-        "title": "Start tt-inference-server (N150 Config)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startTtInferenceServerN300",
-        "title": "Start tt-inference-server (N300 Config)",
+        "title": "Start tt-inference-server",
         "category": "Tenstorrent"
       },
       {
@@ -295,26 +308,6 @@
       {
         "command": "tenstorrent.startVllmServer",
         "title": "Start vLLM Server",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerN150",
-        "title": "Start vLLM Server (N150)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerN300",
-        "title": "Start vLLM Server (N300)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerT3K",
-        "title": "Start vLLM Server (T3K)",
-        "category": "Tenstorrent"
-      },
-      {
-        "command": "tenstorrent.startVllmServerP100",
-        "title": "Start vLLM Server (P100)",
         "category": "Tenstorrent"
       },
       {
@@ -462,7 +455,7 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "tsc -p ./ && npm run copy-content",
-    "copy-content": "mkdir -p dist/content dist/src/webview && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/welcome dist/content/ && cp content/lesson-registry.json dist/content/ && cp -r src/webview/* dist/src/webview/",
+    "copy-content": "mkdir -p dist/content dist/src/webview && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/pages dist/content/ && cp content/lesson-registry.json dist/content/ && cp -r src/webview/* dist/src/webview/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "compile": "tsc -p ./",

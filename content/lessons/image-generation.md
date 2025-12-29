@@ -77,7 +77,7 @@ Stable Diffusion 3.5 uses a Multimodal Diffusion Transformer (MMDiT):
      │ Generated      │
      │ Image (PNG)    │
      └────────────────┘
-```text
+```
 
 ---
 
@@ -139,7 +139,7 @@ Login to download the model (uses token from Lesson 3):
 
 ```bash
 huggingface-cli login
-```bash
+```
 
 [🔐 Login to Hugging Face](command:tenstorrent.loginHuggingFace)
 
@@ -154,7 +154,7 @@ Set the appropriate mesh device environment variable for your hardware:
 
 ```bash
 export MESH_DEVICE=N150
-```bash
+```
 
 **Performance:** ~12-15 seconds per 1024x1024 image
 
@@ -165,7 +165,7 @@ export MESH_DEVICE=N150
 
 ```bash
 export MESH_DEVICE=N300
-```bash
+```
 
 **Performance:** ~8-10 seconds per 1024x1024 image (faster with 2 chips!)
 
@@ -176,7 +176,7 @@ export MESH_DEVICE=N300
 
 ```bash
 export MESH_DEVICE=T3K
-```bash
+```
 
 **Performance:** ~5-8 seconds per 1024x1024 image (production speed!)
 
@@ -188,7 +188,7 @@ export MESH_DEVICE=T3K
 ```bash
 export MESH_DEVICE=P100
 export TT_METAL_ARCH_NAME=blackhole  # Required for Blackhole
-```bash
+```
 
 **Performance:** ~12-15 seconds per 1024x1024 image (similar to N150)
 
@@ -215,7 +215,7 @@ export PYTHONPATH=~/tt-metal:$PYTHONPATH
 
 # Run with default prompt
 pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
-```bash
+```
 
 [🎨 Generate Sample Image](command:tenstorrent.generateRetroImage)
 
@@ -232,7 +232,7 @@ Decoding with VAE...
 
 ✓ Image saved to: sd35_1024_1024.png
 Generation time: [varies by hardware - see Step 3 performance notes]
-```bash
+```
 
 The generated image will be saved to `~/tt-scratchpad/sd35_1024_1024.png`.
 
@@ -248,7 +248,7 @@ export PYTHONPATH=~/tt-metal:$PYTHONPATH
 
 # Run interactive mode
 pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
-```bash
+```
 
 [🖼️ Start Interactive Image Generation](command:tenstorrent.startInteractiveImageGen)
 
@@ -256,7 +256,7 @@ pytest ~/tt-metal/models/experimental/stable_diffusion_35_large/demo.py
 
 ```text
 Enter the input prompt, or q to exit: If Tenstorrent were a company in the 1960s and 1970s, retro corporate office, vintage computers, orange and brown color scheme
-```text
+```
 
 The model will generate a new image for each prompt and save it to `~/tt-scratchpad/sd35_1024_1024.png`. Type `q` to exit.
 
@@ -265,27 +265,27 @@ The model will generate a new image for each prompt and save it to `~/tt-scratch
 1. **Retro Tech:**
 ```text
    "1970s computer lab with orange and brown terminals, vintage aesthetic"
-```bash
+```
 
 2. **Futuristic Office:**
 ```text
    "Modern tech company office with AI hardware, orange accent lighting, sleek design"
-```text
+```
 
 3. **Abstract Tech:**
 ```text
    "Abstract visualization of AI neural network, orange and blue colors, digital art"
-```text
+```
 
 4. **Historical Computing:**
 ```text
    "1960s mainframe computer room, scientists in white coats, vintage photograph"
-```text
+```
 
 5. **Product Design:**
 ```text
    "Futuristic AI accelerator card, orange accents, product photography, studio lighting"
-```text
+```
 
 ## Understanding the Generation Process
 
@@ -331,7 +331,7 @@ The model will generate a new image for each prompt and save it to `~/tt-scratch
 ```text
 "Vintage 1970s office, orange and brown color scheme, retro computers,
 warm lighting, film photograph, detailed, high quality"
-```text
+```
 
 **Keywords that work well:**
 - Art styles: `photorealistic`, `digital art`, `oil painting`, `sketch`
@@ -346,12 +346,12 @@ warm lighting, film photograph, detailed, high quality"
 1. **Reduce steps:**
    ```bash
    --steps 30  # Instead of 50
-```text
+```
 
 2. **Lower resolution:**
    ```bash
    --width 256 --height 256  # Instead of 512x512
-```text
+```
 
 3. **Use attention slicing:**
    The script automatically enables this for N150 to reduce memory usage
@@ -373,7 +373,7 @@ If you experience issues after running other models (like Llama from earlier les
 
 ```bash
 tt-smi -r
-```text
+```
 
 This clears device state and memory. **Usually not needed** between pytest demos, but useful if:
 - Previous demo crashed or hung
@@ -390,7 +390,7 @@ huggingface-cli whoami
 
 # Make sure you granted access at HuggingFace
 # Visit: https://huggingface.co/stabilityai/stable-diffusion-3.5-large
-```text
+```
 
 **Slow first generation:**
 - First run downloads the model (~10 GB) which takes 5-10 minutes
@@ -406,7 +406,7 @@ tt-smi -r
 # If that doesn't work, clear device state completely
 sudo rm -rf /dev/shm/tenstorrent* /dev/shm/tt_*
 tt-smi -r
-```text
+```
 
 ## What You Learned
 

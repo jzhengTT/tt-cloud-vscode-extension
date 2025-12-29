@@ -40,7 +40,7 @@ y = jnp.array([4.0, 5.0, 6.0])
 result = jnp.dot(x, y)
 print(f"Result: {result}")
 print(f"Device: {result.device()}")  # TtDevice(id=0)
-```text
+```
 
 **Why TT-XLA?**
 - ✅ **Production-ready:** Most mature compiler for TT hardware
@@ -78,7 +78,7 @@ print(f"Device: {result.device()}")  # TtDevice(id=0)
 ┌──────────────────▼──────────────────────┐
 │    N150 / N300 / T3K / Galaxy Hardware  │  ← Multi-chip support
 └─────────────────────────────────────────┘
-```bash
+```
 
 **Key Advantages:**
 - ✅ **Production-tested:** Most mature compiler in the stack
@@ -123,7 +123,7 @@ Ubuntu 22.04 ships with Python 3.10, but TT-XLA works best with Python 3.11:
 sudo add-apt-repository ppa:deadsnakes/ppa && \
   sudo apt-get update && \
   sudo apt-get install -y python3.11 python3.11-dev python3.11-venv python3.11-distutils
-```python
+```
 
 **What this does:**
 - Adds deadsnakes PPA (provides newer Python versions)
@@ -137,7 +137,7 @@ sudo add-apt-repository ppa:deadsnakes/ppa && \
 ```bash
 unset TT_METAL_HOME
 unset LD_LIBRARY_PATH
-```bash
+```
 
 **Why this is necessary:**
 - TT-XLA bundles its own TT-Metal libraries with the PJRT plugin
@@ -154,7 +154,7 @@ Create a clean Python 3.11 environment:
 ```bash
 python3.11 -m venv ~/tt-xla-venv
 source ~/tt-xla-venv/bin/activate
-```bash
+```
 
 **Step 1.4: Install TT-XLA PJRT Plugin**
 
@@ -162,7 +162,7 @@ Install the PJRT plugin (includes TT-XLA compiler + runtime):
 
 ```bash
 pip install pjrt-plugin-tt --pre --upgrade --extra-index-url https://pypi.eng.aws.tenstorrent.com/
-```python
+```
 
 **Flags explained:**
 - `--pre`: Install pre-release (latest features, most tested)
@@ -206,14 +206,14 @@ print(f"\nDot product result: {result}")
 print(f"Result device: {result.device()}")
 
 print("\n✓ TT-XLA is working!")
-```bash
+```
 
 **Run test:**
 ```bash
 cd ~
 source tt-xla-venv/bin/activate
 python3 test-tt-xla.py
-```python
+```
 
 **Expected output:**
 ```python
@@ -224,7 +224,7 @@ Dot product result: 32.0
 Result device: TtDevice(id=0)
 
 ✓ TT-XLA is working!
-```bash
+```
 
 [🧪 Create and Run TT-XLA Test](command:tenstorrent.testTtXlaInstall)
 
@@ -240,7 +240,7 @@ cd ~ && \
   cd tt-forge && \
   git submodule update --init --recursive && \
   export PYTHONPATH=$(pwd)
-```python
+```
 
 **What this does:**
 - Clones the tt-forge repo (contains both TT-Forge and TT-XLA demos)
@@ -260,7 +260,7 @@ tt-forge/
 │   └── tt-torch/       # PyTorch demos
 └── third_party/
     └── tt_forge_models/ # Pre-trained model implementations
-```bash
+```
 
 **Why clone the full repo?**
 - Gets all demos with proper dependencies
@@ -278,7 +278,7 @@ cd ~/tt-forge/demos/tt-xla/nlp/jax && \
   source ~/tt-xla-venv/bin/activate && \
   pip install -r requirements.txt && \
   python gpt_demo.py
-```python
+```
 
 **What this does:**
 1. **Navigates to demo directory** (`demos/tt-xla/nlp/jax/`)
@@ -309,7 +309,7 @@ Rank  Token ID   Token           Probability
 ============================================================
 Model Variant: GPT2Variant.MEDIUM
 ...
-```bash
+```
 
 **Demo features:**
 - ✅ Tests 4 GPT-2 variants (Base: 117M, Medium: 345M, Large: 774M, XL: 1.5B params)
@@ -343,7 +343,7 @@ ls -la  # gpt_demo.py, albert_demo.py, opt_demo.py
 # PyTorch/XLA demos
 cd ~/tt-forge/demos/tt-xla/nlp/pytorch/
 ls -la  # PyTorch/XLA equivalents
-```python
+```
 
 **Try these next:**
 - `albert_demo.py` - ALBERT model (efficient BERT variant)
@@ -364,7 +364,7 @@ model = MyModel(...)  # Your model
 import torch_xla.core.xla_model as xm
 model = MyPyTorchModel()
 device = xm.xla_device()  # TT device
-```python
+```
 
 **B. JAX JIT compilation:**
 ```python
@@ -375,7 +375,7 @@ compiled_fn = jax.jit(my_forward_function)
 
 # Run inference
 output = compiled_fn(inputs)
-```bash
+```
 
 **C. Model implementation in tt_forge_models:**
 ```bash
@@ -388,7 +388,7 @@ tt_forge_models/
 ├── albert/            # ALBERT implementation
 ├── opt/               # OPT implementation
 └── ...                # More models
-```bash
+```
 
 ### 3. **Model Bring-Up Checklist**
 
@@ -478,7 +478,7 @@ import jax
 # Single chip - default configuration
 jax.config.update('jax_platform_name', 'tt')
 # No mesh config needed for single chip
-```python
+```
 
 **Best for:** Development, learning JAX on TT hardware
 
@@ -493,7 +493,7 @@ import jax
 # Configure for N300 (2 chips)
 jax.config.update('jax_platform_name', 'tt')
 jax.config.update('jax_tt_mesh', '1x2')  # 2 chips in tensor parallelism
-```python
+```
 
 **Benefits:**
 - Tensor parallelism for larger models (layers split across chips)
@@ -511,7 +511,7 @@ import jax
 # Configure for T3K (8 chips)
 jax.config.update('jax_platform_name', 'tt')
 jax.config.update('jax_tt_mesh', '1x8')  # 8 chips in tensor parallelism
-```python
+```
 
 **Benefits:**
 - Support for large models (70B+)
@@ -529,7 +529,7 @@ import jax
 # Configure for Galaxy (32 chips)
 jax.config.update('jax_platform_name', 'tt')
 jax.config.update('jax_tt_mesh', '8x4')  # 8x4 mesh (32 chips total)
-```json
+```
 
 **Benefits:**
 - Massive parallelism for largest models
@@ -563,7 +563,7 @@ TT-MLIR Compiler (bundled in wheel)
 TT-Metal (your existing ~/tt-metal)
     ↓
 Hardware
-```python
+```
 
 The wheel is designed to work across tt-metal versions, avoiding version mismatch issues.
 
@@ -603,7 +603,7 @@ class CNN(nn.Module):
 model = CNN()
 params = model.init(jax.random.PRNGKey(0), jnp.ones([1, 28, 28, 1]))
 output = model.apply(params, input_image)
-```bash
+```
 
 **For production models:**
 Browse validated examples in the tt-forge repository:
@@ -635,7 +635,7 @@ Browse the tt-forge demos directory:
 ```bash
 git clone https://github.com/tenstorrent/tt-forge.git
 cd tt-forge/demos/tt-xla
-```python
+```
 
 **Available demos:**
 - GPT-2 text generation (JAX)
@@ -660,7 +660,7 @@ x = torch.randn(1, 10).to(device)
 
 # Inference on TT hardware
 output = model(x)
-```text
+```
 
 **Note:** PyTorch/XLA support is still maturing. JAX is the primary supported framework.
 
@@ -681,7 +681,7 @@ If you have N300/T3K/Galaxy hardware, experiment with:
 Check hardware is configured:
 ```bash
 tt-smi
-```bash
+```
 
 If tt-smi fails, your hardware isn't set up correctly.
 
@@ -691,7 +691,7 @@ The wheel didn't install correctly. Try:
 ```bash
 pip uninstall pjrt-plugin-tt
 pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/ --force-reinstall
-```bash
+```
 
 ### "Version mismatch with tt-metal"
 
@@ -706,7 +706,7 @@ This usually means JAX version incompatibility. Reinstall JAX:
 ```bash
 pip uninstall jax jaxlib
 pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
-```bash
+```
 
 The wheel should pull the correct JAX version automatically.
 
@@ -744,7 +744,7 @@ source tt-xla-venv/bin/activate
 pip install pjrt-plugin-tt --extra-index-url https://pypi.eng.aws.tenstorrent.com/
 pip install jax flax transformers
 python3 gpt_demo.py  # Test with official demo
-```python
+```
 
 **Why TT-XLA for your cloud image:**
 - ✅ Works with Python 3.10.12 (no version change needed)

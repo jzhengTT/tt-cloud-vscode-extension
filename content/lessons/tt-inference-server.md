@@ -62,14 +62,14 @@ Before starting, ensure you have:
    which tt-inference-server
    # or check if run.py exists
    ls ~/.local/lib/tt-inference-server/run.py
-```bash
+```
 
    **If not found:** Install with tt-installer (see Setup Information in welcome page)
 
 2. **Docker installed** (required for --docker-server)
    ```bash
    docker --version
-```text
+```
 
    **Expected:** Docker 20.10+ or Podman 3.0+
 
@@ -80,7 +80,7 @@ Before starting, ensure you have:
 4. **Hardware detected** (from Lesson 1)
    ```bash
    tt-smi
-```text
+```
 
    **Expected:** Your Tenstorrent device shown (N150, N300, T3K, etc.)
 
@@ -94,7 +94,7 @@ tt-inference-server uses this command structure:
 
 ```bash
 tt-inference-server --model <model-name> --device <device> --workflow <workflow> [options]
-```text
+```
 
 **Required arguments:**
 - `--model` - Model NAME (e.g., "Llama-3.1-8B-Instruct"), NOT a path
@@ -115,7 +115,7 @@ tt-inference-server \
   --device n150 \
   --workflow server \
   --docker-server
-```bash
+```
 
 **What this does:**
 1. Looks up Llama-3.1-8B-Instruct in MODEL_SPECS
@@ -148,7 +148,7 @@ python3 run.py \
   --device n150 \
   --workflow server \
   --docker-server
-```bash
+```
 
 **Configuration:** Optimized for single-chip development and testing
 
@@ -164,7 +164,7 @@ python3 run.py \
   --device n300 \
   --workflow server \
   --docker-server
-```bash
+```
 
 **Configuration:** Tensor parallelism across 2 chips for higher throughput
 
@@ -180,7 +180,7 @@ python3 run.py \
   --device t3k \
   --workflow server \
   --docker-server
-```bash
+```
 
 **Configuration:** Production-scale deployment across 8 chips
 
@@ -196,7 +196,7 @@ python3 run.py \
   --device galaxy \
   --workflow server \
   --docker-server
-```text
+```
 
 **Configuration:** Data center scale with 32-chip mesh
 
@@ -219,7 +219,7 @@ Starting inference server...
 Created Docker container ID: abc123def456
 Access container logs via: docker logs -f abc123def456
 Stop running container via: docker stop abc123def456
-```bash
+```
 
 **⏱️ First run:** 5-15 minutes (downloads Docker image, downloads model weights)
 **⏱️ Subsequent runs:** 2-5 minutes (uses cached image and model)
@@ -241,12 +241,12 @@ docker ps
 # Expected output
 CONTAINER ID   IMAGE                          STATUS         PORTS
 abc123def456   ghcr.io/tenstorrent/vllm...   Up 2 minutes   0.0.0.0:8000->8000/tcp
-```text
+```
 
 **View server logs:**
 ```bash
 docker logs -f abc123def456  # Replace with your container ID
-```text
+```
 
 **Expected in logs:**
 ```yaml
@@ -255,7 +255,7 @@ INFO: Initializing Tenstorrent device (N150)...
 INFO: Model loaded successfully
 INFO: Starting vLLM server on port 8000
 INFO: Server ready to handle requests
-```text
+```
 
 ---
 
@@ -272,7 +272,7 @@ curl -X POST http://localhost:8000/v1/completions \
     "max_tokens": 50,
     "temperature": 0.7
   }'
-```text
+```
 
 **Expected response:**
 ```json
@@ -294,7 +294,7 @@ curl -X POST http://localhost:8000/v1/completions \
     "total_tokens": 40
   }
 }
-```text
+```
 
 [🧪 Test Server (Simple)](command:tenstorrent.testTtInferenceServerSimple)
 
@@ -315,7 +315,7 @@ tt-inference-server provides many options. Here are the most important:
 
 --workflow WORKFLOW         # What to run
                             # Options: server, benchmarks, evals, reports, release
-```bash
+```
 
 ### Optional Arguments
 
@@ -325,13 +325,13 @@ tt-inference-server provides many options. Here are the most important:
 --local-server              # Run on localhost (not yet implemented)
 --service-port PORT         # Service port (default: 8000)
 --dev-mode                  # Mount local files into container for development
-```bash
+```
 
 **Docker Configuration:**
 ```bash
 --override-docker-image IMG # Use custom Docker image instead of default
 -it, --interactive          # Run Docker in interactive mode
-```bash
+```
 
 **Advanced:**
 ```bash
@@ -339,13 +339,13 @@ tt-inference-server provides many options. Here are the most important:
 --disable-trace-capture     # Skip trace capture for faster startup
 --override-tt-config JSON   # Override TT config as JSON
 --vllm-override-args JSON   # Override vLLM arguments as JSON
-```json
+```
 
 **For debugging:**
 ```bash
 --reset-venvs               # Remove .workflow_venvs/ if dependencies broken
 --skip-system-sw-validation # Skip tt-smi/tt-topology verification
-```text
+```
 
 ### Example Commands
 
@@ -356,7 +356,7 @@ python3 run.py \
   --device n150 \
   --workflow server \
   --docker-server
-```text
+```
 
 **N300 with custom port:**
 ```bash
@@ -366,7 +366,7 @@ python3 run.py \
   --workflow server \
   --docker-server \
   --service-port 8001
-```text
+```
 
 **T3K with specific devices:**
 ```bash
@@ -376,7 +376,7 @@ python3 run.py \
   --workflow server \
   --docker-server \
   --device-id 0,1,2,3,4,5,6,7
-```text
+```
 
 [⚙️ Start with N150 Config](command:tenstorrent.startTtInferenceServerN150)
 
@@ -399,7 +399,7 @@ curl -X POST http://localhost:8000/v1/completions \
     "max_tokens": 100,
     "stream": true
   }'
-```text
+```
 
 **Expected:** Server-Sent Events stream
 
@@ -411,7 +411,7 @@ data: {"choices":[{"text":" minds","finish_reason":null}]}
 data: {"choices":[{"text":" awakening","finish_reason":null}]}
 ...
 data: [DONE]
-```text
+```
 
 [🌊 Test Streaming](command:tenstorrent.testTtInferenceServerStreaming)
 
@@ -428,7 +428,7 @@ curl -X POST http://localhost:8000/v1/completions \
     "temperature": 1.2,
     "top_p": 0.95
   }'
-```text
+```
 
 **Low temperature (deterministic):**
 ```bash
@@ -440,7 +440,7 @@ curl -X POST http://localhost:8000/v1/completions \
     "max_tokens": 10,
     "temperature": 0.1
   }'
-```python
+```
 
 [🎲 Test Sampling Parameters](command:tenstorrent.testTtInferenceServerSampling)
 
@@ -466,7 +466,7 @@ response = client.completions.create(
 )
 
 print(response.choices[0].text)
-```text
+```
 
 [📝 Create Python Client](command:tenstorrent.createTtInferenceServerClient)
 
@@ -486,7 +486,7 @@ python3 run.py \
   --device n150 \
   --workflow benchmarks \
   --docker-server
-```text
+```
 
 **What this does:**
 1. Starts vLLM server in Docker
@@ -504,7 +504,7 @@ python3 run.py \
   --device n150 \
   --workflow evals \
   --docker-server
-```text
+```
 
 **What this does:**
 1. Starts vLLM server in Docker
@@ -522,7 +522,7 @@ python3 run.py \
   --device n150 \
   --workflow release \
   --docker-server
-```text
+```
 
 **Use this before deploying a new model to production!**
 
@@ -535,7 +535,7 @@ tt-inference-server uses MODEL_SPECS to define validated model configurations.
 **When you run:**
 ```bash
 python3 run.py --model Llama-3.1-8B-Instruct --device n150 --workflow server --docker-server
-```bash
+```
 
 **tt-inference-server looks up:**
 - Docker image: `ghcr.io/tenstorrent/tt-inference-server/vllm-tt-metal-src-release-ubuntu-22.04-amd64:0.3.0-9b67e09-a91b644`
@@ -562,32 +562,32 @@ Each model has a validated configuration tested by Tenstorrent.
 
 ```bash
 docker ps
-```text
+```
 
 **Output:**
 ```text
 CONTAINER ID   IMAGE                          STATUS         PORTS
 abc123def456   ghcr.io/tenstorrent/vllm...   Up 10 minutes  0.0.0.0:8000->8000/tcp
-```text
+```
 
 ### View Logs
 
 ```bash
 docker logs -f abc123def456  # Follow logs in real-time
 docker logs abc123def456      # View all logs
-```text
+```
 
 ### Stop Server
 
 ```bash
 docker stop abc123def456
-```text
+```
 
 ### Remove Container
 
 ```bash
 docker rm abc123def456
-```bash
+```
 
 ### Clean Up All
 
@@ -597,7 +597,7 @@ docker ps | grep vllm-tt-metal | awk '{print $1}' | xargs docker stop
 
 # Remove all stopped containers
 docker container prune
-```bash
+```
 
 ---
 
@@ -638,7 +638,7 @@ docker container prune
 **Solution:** Install with tt-installer:
 ```bash
 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
-```text
+```
 
 ### "Cannot find model module 'Llama-3.1-8B-Instruct'"
 
@@ -648,7 +648,7 @@ docker container prune
 ```bash
 # List all supported models
 python3 run.py --help | grep -A 100 "Available models"
-```bash
+```
 
 Or check vendor/tt-inference-server/README.md for full model list.
 
@@ -661,7 +661,7 @@ Or check vendor/tt-inference-server/README.md for full model list.
 sudo systemctl start docker
 # or
 sudo service docker start
-```text
+```
 
 ### "Failed to detect Tenstorrent device"
 
@@ -677,7 +677,7 @@ tt-smi -r
 
 # Skip validation (for debugging)
 python3 run.py ... --skip-system-sw-validation
-```bash
+```
 
 ### "Port 8000 already in use"
 
@@ -686,7 +686,7 @@ python3 run.py ... --skip-system-sw-validation
 **Solution:** Use different port:
 ```bash
 python3 run.py ... --service-port 8001
-```bash
+```
 
 ### Container starts but requests timeout
 
@@ -699,7 +699,7 @@ docker logs -f <container-id>
 
 # Health check
 curl http://localhost:8000/health
-```text
+```
 
 ### "out of memory" in container
 
@@ -725,7 +725,7 @@ tt-inference-server creates organized logs:
 ├── benchmarks_output/         # Benchmark results
 ├── evals_output/              # Evaluation results
 └── run_specs/                 # Model spec JSON files
-```json
+```
 
 **Useful for debugging:**
 ```bash
@@ -734,7 +734,7 @@ ls -lt ~/tt-inference-server/workflow_logs/run_logs/ | head -2
 
 # View specific run
 tail -f ~/tt-inference-server/workflow_logs/run_logs/run_*.log
-```bash
+```
 
 ---
 

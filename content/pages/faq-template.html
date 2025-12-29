@@ -8,11 +8,12 @@
     <style>
         /* Tenstorrent Brand Colors */
         :root {
-            --tt-orange: #FF6B35;
-            --tt-dark-bg: #1a1a1a;
-            --tt-darker-bg: #0d0d0d;
-            --tt-light-orange: #FF8C5A;
-            --tt-accent: #FFB088;
+            --tt-cyan: #0D9488;        /* Dark teal - 7:1 contrast with white */
+            --tt-cyan-light: #14B8A6;  /* Medium teal - 5.5:1 contrast */
+            --tt-cyan-dark: #0F766E;   /* Darker teal - 8.5:1 contrast */
+            --tt-dark-bg: #1A3C47;
+            --tt-darker-bg: #0F2A35;
+            --tt-accent: #B8E6D9;
         }
 
         body {
@@ -26,8 +27,8 @@
 
         /* Sticky header with search */
         .header {
-            background: linear-gradient(135deg, rgba(255, 107, 53, 0.2) 0%, rgba(255, 107, 53, 0.1) 100%);
-            border-bottom: 2px solid var(--tt-orange);
+            background: linear-gradient(135deg, rgba(79, 209, 197, 0.15) 0%, rgba(79, 209, 197, 0.05) 100%);
+            border-bottom: 2px solid var(--tt-cyan);
             padding: 20px;
             position: sticky;
             top: 0;
@@ -51,7 +52,7 @@
             padding: 10px 15px;
             font-size: 14px;
             background-color: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 107, 53, 0.3);
+            border: 1px solid rgba(13, 148, 136, 0.3);
             border-radius: 6px;
             color: #ffffff;
             font-family: var(--vscode-font-family);
@@ -59,7 +60,7 @@
 
         .search-box:focus {
             outline: none;
-            border-color: var(--tt-orange);
+            border-color: var(--tt-cyan);
             background-color: rgba(255, 255, 255, 0.15);
         }
 
@@ -77,14 +78,14 @@
         /* Table of Contents */
         .toc {
             background-color: var(--tt-dark-bg);
-            border: 1px solid rgba(255, 107, 53, 0.3);
+            border: 1px solid rgba(13, 148, 136, 0.3);
             border-radius: 6px;
             padding: 20px;
             margin-bottom: 30px;
         }
 
         .toc h2 {
-            color: var(--tt-orange);
+            color: var(--tt-cyan);
             margin-top: 0;
             margin-bottom: 15px;
             font-size: 18px;
@@ -101,13 +102,13 @@
         }
 
         .toc a {
-            color: var(--tt-light-orange);
+            color: var(--tt-cyan-light);
             text-decoration: none;
             transition: color 0.2s;
         }
 
         .toc a:hover {
-            color: var(--tt-orange);
+            color: var(--tt-cyan);
             text-decoration: underline;
         }
 
@@ -117,8 +118,8 @@
         }
 
         h2 {
-            color: var(--tt-orange);
-            border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+            color: var(--tt-cyan);
+            border-bottom: 2px solid rgba(13, 148, 136, 0.3);
             padding-bottom: 10px;
             margin-top: 40px;
             margin-bottom: 20px;
@@ -126,7 +127,7 @@
         }
 
         h3 {
-            color: var(--tt-light-orange);
+            color: var(--tt-cyan-light);
             margin-top: 30px;
             margin-bottom: 15px;
             font-size: 18px;
@@ -147,7 +148,7 @@
         /* Question/Answer blocks */
         .qa-block {
             background-color: var(--tt-dark-bg);
-            border-left: 4px solid var(--tt-orange);
+            border-left: 4px solid var(--tt-cyan);
             padding: 20px;
             margin: 20px 0;
             border-radius: 4px;
@@ -159,17 +160,17 @@
         }
 
         .qa-block h4 {
-            color: var(--tt-light-orange);
+            color: var(--tt-cyan-light);
         }
 
         /* Links */
         a {
-            color: var(--tt-orange);
+            color: var(--tt-cyan);
             text-decoration: none;
         }
 
         a:hover {
-            color: var(--tt-light-orange);
+            color: var(--tt-cyan-light);
             text-decoration: underline;
         }
 
@@ -196,7 +197,7 @@
 
         pre {
             background-color: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 107, 53, 0.2);
+            border: 1px solid rgba(13, 148, 136, 0.2);
             border-radius: 6px;
             padding: 15px;
             overflow-x: auto;
@@ -220,7 +221,7 @@
         }
 
         th {
-            background-color: rgba(255, 107, 53, 0.2);
+            background-color: rgba(13, 148, 136, 0.2);
             color: #ffffff;
             padding: 12px;
             text-align: left;
@@ -229,12 +230,12 @@
 
         td {
             padding: 12px;
-            border-top: 1px solid rgba(255, 107, 53, 0.1);
+            border-top: 1px solid rgba(13, 148, 136, 0.1);
             color: rgba(255, 255, 255, 0.9);
         }
 
         tr:hover {
-            background-color: rgba(255, 107, 53, 0.05);
+            background-color: rgba(13, 148, 136, 0.05);
         }
 
         /* Checkmarks and icons */
@@ -282,7 +283,7 @@
 
         /* Search highlighting */
         .highlight {
-            background-color: rgba(255, 107, 53, 0.3);
+            background-color: rgba(13, 148, 136, 0.3);
             color: #ffffff;
             padding: 2px 4px;
             border-radius: 2px;
@@ -293,7 +294,7 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background-color: var(--tt-orange);
+            background-color: var(--tt-cyan);
             color: #ffffff;
             border: none;
             border-radius: 50%;
@@ -311,7 +312,7 @@
         }
 
         .back-to-top:hover {
-            background-color: var(--tt-light-orange);
+            background-color: var(--tt-cyan-light);
         }
     </style>
 </head>

@@ -83,7 +83,7 @@ Llama 3.1 8B should already be downloaded from Lesson 3. Let's verify:
 **Check command:**
 ```bash
 ls -lh ~/models/Llama-3.1-8B-Instruct/original/
-```bash
+```
 
 **Expected files:**
 - `consolidated.00.pth` - Model weights
@@ -103,7 +103,7 @@ These were installed in Lesson 4, but run again if needed:
 **Required packages:**
 ```bash
 pip install pi && pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
-```bash
+```
 
 [🔧 Install Dependencies](command:tenstorrent.installInferenceDeps)
 
@@ -141,7 +141,7 @@ cd ~/tt-metal && \
   export LLAMA_DIR=~/models/Llama-3.1-8B-Instruct/original && \
   export PYTHONPATH=$(pwd) && \
   python3 ~/tt-scratchpad/tt-coding-assistant.py
-```python
+```
 
 [💬 Start Coding Assistant](command:tenstorrent.startCodingAssistant)
 
@@ -164,7 +164,7 @@ cd ~/tt-metal && \
 > What's the time complexity of this algorithm? [paste code]
 
 > Refactor this function to be more efficient: [paste code]
-```text
+```
 
 ---
 
@@ -192,7 +192,7 @@ When answering:
 - Use appropriate programming language syntax
 
 Focus on being helpful, accurate, and educational."""
-```text
+```
 
 **Why This Works:**
 
@@ -240,14 +240,14 @@ Include examples in your prompt to guide behavior:
 
 # Add context in your prompt:
 > Like you explained quicksort with pseudocode, explain bubble sort with pseudocode and complexity analysis
-```text
+```
 
 **2. Chain-of-Thought Prompting:**
 Ask the model to show its reasoning:
 
 ```python
 > Step by step, explain how to solve the two-sum problem
-```python
+```
 
 **3. Constrained Generation:**
 Set specific output requirements:
@@ -258,7 +258,7 @@ Set specific output requirements:
   - Docstring explaining parameters and return value
   - Time and space complexity in comments
   - Example usage
-```text
+```
 
 **4. Iterative Refinement:**
 Build on previous responses:
@@ -269,7 +269,7 @@ Build on previous responses:
 > Now add error handling for empty lists
 # ... model refines ...
 > Now add type hints and a docstring
-```python
+```
 
 ---
 
@@ -304,7 +304,7 @@ while True:
             break
 
     print(response)
-```text
+```
 
 **Why This Works:**
 - Model loads once, stays in memory
@@ -329,7 +329,7 @@ SYSTEM_PROMPT = """You are a web development expert specializing in:
 - Authentication and security
 - Performance optimization
 ..."""
-```text
+```
 
 **Systems Programming:**
 ```python
@@ -340,7 +340,7 @@ SYSTEM_PROMPT = """You are a systems programming expert specializing in:
 - Low-level optimization
 - Debugging segfaults and race conditions
 ..."""
-```python
+```
 
 **2. Response Format Control:**
 
@@ -350,7 +350,7 @@ Add format requirements to system prompt:
 SYSTEM_PROMPT += """
 
 Always format code in markdown code blocks with language tags:
-```python
+```
 def example():
     pass
 ```python
@@ -361,7 +361,7 @@ For algorithms, include:
 3. Time/space complexity
 4. Example walkthrough
 """
-```text
+```
 
 **3. Context Management:**
 
@@ -381,7 +381,7 @@ while True:
 
     response = generate(full_prompt)
     conversation_history.append({"role": "assistant", "content": response})
-```python
+```
 
 **4. Code Execution Integration:**
 
@@ -402,7 +402,7 @@ if "```python" in response:
     if input().lower() == 'y':
         output = execute_python(code)
         print(f"Output:\n{output}")
-```python
+```
 
 ---
 
@@ -412,37 +412,37 @@ if "```python" in response:
 ```python
 > Review this function for bugs and suggest improvements:
   [paste code]
-```python
+```
 
 **2. Algorithm Learning:**
 ```python
 > Teach me dynamic programming by explaining the coin change problem
-```python
+```
 
 **3. Debugging Assistant:**
 ```python
 > I'm getting "IndexError: list index out of range" in this code:
   [paste code]
   Help me find and fix the bug
-```text
+```
 
 **4. Code Translation:**
 ```python
 > Translate this Python function to Rust:
   [paste code]
-```python
+```
 
 **5. Test Generation:**
 ```python
 > Write pytest unit tests for this function:
   [paste code]
-```python
+```
 
 **6. Documentation Generation:**
 ```python
 > Write a comprehensive docstring for this function:
   [paste code]
-```bash
+```
 
 ---
 

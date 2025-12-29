@@ -9,32 +9,7 @@
  * When updating commands, update them here and they'll automatically sync everywhere.
  */
 
-/**
- * Model configuration type
- */
-interface ModelConfig {
-  huggingfaceId: string;
-  localDirName: string;
-  displayName: string;
-}
-
-/**
- * Model Registry
- * Must match MODEL_REGISTRY in extension.ts
- */
-const MODEL_REGISTRY: Record<string, ModelConfig> = {
-  'llama-3.1-8b': {
-    huggingfaceId: 'meta-llama/Llama-3.1-8B-Instruct',
-    localDirName: 'Llama-3.1-8B-Instruct',
-    displayName: 'Llama 3.1 8B Instruct',
-  },
-  // Future models can be added here as they become compatible with tt-metal
-} as const;
-
-/**
- * Default model key
- */
-const DEFAULT_MODEL_KEY = 'llama-3.1-8b';
+import { MODEL_REGISTRY, DEFAULT_MODEL_KEY, type ModelConfig } from '../config';
 
 /**
  * Get the default model config

@@ -38,7 +38,7 @@ If `tt-smi` is not found on your system, the fastest way to set up is with **tt-
 ```bash
 # One-command installation (5-15 minutes)
 /bin/bash -c "$(curl -fsSL https://github.com/tenstorrent/tt-installer/releases/latest/download/install.sh)"
-```bash
+```
 
 **What it installs:**
 - ✅ tt-smi (this tool)
@@ -67,7 +67,7 @@ This command will scan for connected Tenstorrent devices:
 
 ```bash
 tt-smi
-```text
+```
 
 [🔍 Detect Tenstorrent Hardware](command:tenstorrent.runHardwareDetection)
 
@@ -77,7 +77,7 @@ After running `tt-smi`, you'll see information about your Tenstorrent hardware. 
 
 ```bash
 tt-smi -s
-```text
+```
 
 **Example output (JSON format):**
 ```json
@@ -93,7 +93,7 @@ tt-smi -s
     "temperature": 45.0
   }
 }
-```text
+```
 
 ### Hardware Types
 
@@ -132,7 +132,7 @@ Extract just your hardware type:
 
 ```bash
 tt-smi -s | grep -o '"board_type": "[^"]*"'
-```text
+```
 
 **Output:** `"board_type": "n150"`
 
@@ -152,7 +152,7 @@ PCIe: Bus 0x01, Device 0x00
 Firmware Version: 1.2.3
 Temperature: 45°C
 Power: 20W
-```text
+```
 
 **For Blackhole hardware (P100, P150):**
 ```text
@@ -162,7 +162,7 @@ PCIe: Bus 0x01, Device 0x00
 Firmware Version: 2.0.1
 Temperature: 42°C
 Power: 18W
-```text
+```
 
 **Multiple devices:**
 ```text
@@ -170,7 +170,7 @@ Device 0: Wormhole (n150)
 Device 1: Wormhole (n150)
 Device 2: Wormhole (n150)
 Device 3: Wormhole (n150)
-```text
+```
 
 ---
 
@@ -183,12 +183,12 @@ Don't worry if `tt-smi` doesn't detect your hardware immediately. You can usuall
 **Verify card is detected by PCIe:**
 ```bash
 lspci | grep -i tenstorrent
-```text
+```
 
 **Expected output:**
 ```yaml
 01:00.0 Processing accelerators: Tenstorrent Inc. Device [model]
-```yaml
+```
 
 **If nothing appears:**
 - Card isn't properly seated
@@ -201,7 +201,7 @@ lspci | grep -i tenstorrent
 **Check if tt-smi is installed:**
 ```bash
 which tt-smi
-```text
+```
 
 **Expected:** `/usr/local/bin/tt-smi` or similar path
 
@@ -214,7 +214,7 @@ which tt-smi
 **Try with sudo:**
 ```bash
 sudo tt-smi
-```bash
+```
 
 **If this works but `tt-smi` alone doesn't:**
 - Permissions issue
@@ -225,14 +225,14 @@ sudo tt-smi
 ```bash
 sudo usermod -a -G tenstorrent $USER
 # Log out and back in for group changes to take effect
-```text
+```
 
 ### Check 4: Device Reset
 
 **If device appears but shows errors:**
 ```bash
 tt-smi -r
-```text
+```
 
 **What this does:**
 - Resets the Tenstorrent device
@@ -246,14 +246,14 @@ sudo pkill -9 -f tt-metal
 sudo pkill -9 -f vllm
 sudo rm -rf /dev/shm/tenstorrent* /dev/shm/tt_*
 tt-smi -r
-```text
+```
 
 ### Still Having Issues?
 
 **Check system logs:**
 ```bash
 dmesg | grep -i tenstorrent
-```text
+```
 
 **Get help:**
 - [tt-smi troubleshooting guide](https://github.com/tenstorrent/tt-smi/blob/main/TROUBLESHOOTING.md)

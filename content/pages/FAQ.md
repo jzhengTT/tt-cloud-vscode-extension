@@ -23,7 +23,7 @@
 
 ### Q: Which lesson should I start with?
 
-**A:** Start with **Lesson 1** if you're brand new. The lessons are designed to progress logically:
+**A:** Start with **[Hardware Detection](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22hardware-detection%22%7D)** if you're brand new. The lessons are designed to progress logically:
 
 1. **Hardware Detection** - Verify your hardware
 2. **Verify Installation** - Check tt-metal works
@@ -36,14 +36,14 @@
 ### Q: Do I need to complete lessons in order?
 
 **A:** Not strictly, but:
-- **Lessons 1-3** are foundational - most later lessons assume you've done these
-- **Lessons 4-9** build on each other but can be done selectively
-- **Lessons 10-13** are more independent (compilers, projects)
+- **Hardware Detection, Verify Installation, and Download Model** are foundational - most later lessons assume you've done these
+- **Interactive Chat through Image Generation** build on each other but can be done selectively
+- **Advanced topics** (compilers, RISC-V, bounty program) are more independent
 
 **Quick start for experienced users:**
-1. Run Lesson 1 (2 minutes - verify hardware)
-2. Skip to Lesson 6 (vLLM production serving)
-3. Explore Lessons 10-13 (compilers and projects)
+1. Run [Hardware Detection](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22hardware-detection%22%7D) (2 minutes - verify hardware)
+2. Skip to [Production Inference with vLLM](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22vllm-production%22%7D) (production serving)
+3. Explore advanced topics (compilers, RISC-V, bounty program)
 
 ### Q: What's the difference between the different tools?
 
@@ -57,10 +57,10 @@
 | **TT-XLA** | XLA compiler | JAX/PyTorch (production) | Production |
 
 **Simple guide:**
-- Need to run LLMs? → **vLLM** (Lesson 6)
-- Want to experiment with PyTorch? → **TT-Forge** (Lesson 10)
-- Need JAX support? → **TT-XLA** (Lesson 12)
-- Building custom kernels? → **tt-metal** (Lessons 1-3, 13)
+- Need to run LLMs? → **[Production Inference with vLLM](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22vllm-production%22%7D)**
+- Want to experiment with PyTorch? → **[Image Classification with TT-Forge](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22forge-image-classification%22%7D)**
+- Need JAX support? → **[JAX Inference with TT-XLA](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22tt-xla-jax%22%7D)**
+- Building custom kernels? → **tt-metal** (Hardware Detection, Verify Installation, Download Model, RISC-V Programming)
 
 ---
 
@@ -137,7 +137,7 @@ Host tenstorrent-dev
 **Example workflow:**
 1. Connect via Remote-SSH from your Mac
 2. Open Tenstorrent walkthrough (works like local)
-3. Run Lesson 1 "Hardware Detection" → `tt-smi` runs on remote
+3. Run Hardware Detection → `tt-smi` runs on remote
 4. Download model → Saves to remote `~/models/`
 5. Start vLLM server → Runs on remote, port auto-forwarded
 6. Test from local browser → `http://localhost:8000` works!
@@ -322,11 +322,11 @@ cd $TT_METAL_HOME
 - ❌ Real-time applications
 
 **Which lessons work with ttsim:**
-- **Lesson 1:** Hardware detection (partial - `ttnn` works, `tt-smi` won't)
-- **Lesson 2:** Verify installation (yes - programming examples)
-- **Lesson 13:** TT-Metalium programming (yes - perfect for learning)
-- **Lessons 3-9:** Model inference (no - too slow for practical use)
-- **Lessons 10-12:** Compilers (limited - depends on workload)
+- **Hardware Detection:** Partial support - `ttnn` works, `tt-smi` won't detect simulated device
+- **Verify Installation:** Yes - programming examples work great
+- **RISC-V Programming:** Yes - perfect for learning low-level programming
+- **Model Inference lessons:** No - too slow for practical use (Interactive Chat through Image Generation)
+- **Compiler lessons:** Limited - depends on workload (TT-Forge, TT-XLA)
 
 **Resources:**
 - GitHub: https://github.com/tenstorrent/ttsim
@@ -378,7 +378,7 @@ tt-smi -s | grep -o '"board_type": "[^"]*"'
    tt-smi -r
    ```
 
-**Still not working?** Check [Lesson 1 troubleshooting section](#) for detailed steps.
+**Still not working?** Check the [Hardware Detection](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22hardware-detection%22%7D) lesson troubleshooting section for detailed steps.
 
 ### Q: What's the difference between Wormhole and Blackhole?
 
@@ -463,7 +463,7 @@ python3 --version
 
 ### Q: Which model should I download first?
 
-**A:** **Llama-3.1-8B-Instruct** - covered in Lesson 3.
+**A:** **Llama-3.1-8B-Instruct** - covered in [Download Model](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22download-model%22%7D).
 
 **Why this model:**
 - ✅ Works on N150 (most common hardware)
@@ -515,9 +515,9 @@ login(token="hf_...")
 ### Q: Can I use models from other sources?
 
 **A:** Yes, but:
-- **HuggingFace format** required for vLLM (Lessons 6-9)
-- **Meta checkpoint format** required for Direct API (Lessons 4-5)
-- **ONNX/PyTorch format** for TT-Forge (Lesson 10)
+- **HuggingFace format** required for vLLM (Production Inference lessons)
+- **Meta checkpoint format** required for Direct API (Interactive Chat, API Server)
+- **ONNX/PyTorch format** for TT-Forge (Image Classification)
 
 **Recommendation:** Stick with HuggingFace - most compatible.
 
@@ -531,16 +531,16 @@ login(token="hf_...")
 
 | Method | Lesson | Best For | Speed (after load) |
 |--------|--------|----------|-------------------|
-| **One-shot demo** | 3 | Testing, verification | 2-5 min per query |
-| **Interactive chat** | 4 | Learning, prototyping | 1-3 sec per query |
-| **Flask API** | 5 | Simple custom APIs | 1-3 sec per query |
-| **vLLM** | 6 | Production serving | 1-3 sec per query |
+| **One-shot demo** | Download Model | Testing, verification | 2-5 min per query |
+| **Interactive chat** | Interactive Chat | Learning, prototyping | 1-3 sec per query |
+| **Flask API** | API Server | Simple custom APIs | 1-3 sec per query |
+| **vLLM** | Production Inference | Production serving | 1-3 sec per query |
 
 **Quick guide:**
-- Just testing? → **Lesson 3** (one-shot demo)
-- Learning/experimenting? → **Lesson 4** (interactive)
-- Building custom app? → **Lesson 5** (Flask API)
-- Production deployment? → **Lesson 6** (vLLM)
+- Just testing? → **[Download Model](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22download-model%22%7D)** (one-shot demo)
+- Learning/experimenting? → **[Interactive Chat](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22interactive-chat%22%7D)** (interactive)
+- Building custom app? → **[API Server](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22api-server%22%7D)** (Flask API)
+- Production deployment? → **[Production Inference with vLLM](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22vllm-production%22%7D)** (vLLM)
 
 ### Q: Why does first load take 2-5 minutes?
 
@@ -591,8 +591,8 @@ RuntimeError: Input sequence length exceeds maximum
 
 **A:**
 
-| Feature | TT-Forge (Lesson 10) | TT-XLA (Lesson 12) |
-|---------|---------------------|-------------------|
+| Feature | TT-Forge | TT-XLA |
+|---------|----------|--------|
 | **Status** | Experimental | Production-ready |
 | **Multi-chip** | Single only | Yes (TP/DP) |
 | **Frameworks** | PyTorch, ONNX | JAX, PyTorch/XLA |
@@ -629,7 +629,7 @@ RuntimeError: Input sequence length exceeds maximum
    # Then try again
    ```
 
-**Recommendation:** Start with MobileNetV2 (Lesson 10 default) - known to work.
+**Recommendation:** Start with MobileNetV2 (Image Classification with TT-Forge default) - known to work.
 
 ### Q: How do I know if my model is supported?
 
@@ -649,7 +649,7 @@ RuntimeError: Input sequence length exceeds maximum
 **For TT-XLA:**
 - Most JAX/Flax models work
 - PyTorch/XLA support growing
-- GPT-2 demo included (Lesson 12)
+- GPT-2 demo included (JAX Inference with TT-XLA)
 
 ---
 
@@ -923,7 +923,7 @@ Steps to reproduce: [numbered list]
 
 **A:** Yes! Several ways:
 
-**1. Bounty Program (Lesson 11)**
+**1. [Bounty Program](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22bounty-program%22%7D)**
 - Bring up new models
 - Earn rewards
 - Official contribution path
@@ -1022,7 +1022,7 @@ python3 --version
 
 ### Q: Where can I learn about low-level RISC-V programming on Tenstorrent hardware?
 
-**A:** Check out **Lesson 13: RISC-V Programming on Tensix Cores** in the walkthrough!
+**A:** Check out **[RISC-V Programming on Tensix Cores](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22riscv-programming%22%7D)** in the walkthrough!
 
 Each Tensix core contains **five RISC-V processors** (RV32IM ISA):
 - **BRISC (RISCV_0)** - Primary data movement
@@ -1046,12 +1046,11 @@ With 176 Tensix cores on Wormhole, that's **880 RISC-V cores** you can program d
 - Comparison with other RISC-V platforms
 
 **Access the lesson:**
-- From Welcome page → Lesson 13
+- From Welcome page → [RISC-V Programming](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22riscv-programming%22%7D)
 - Or run command: `Tenstorrent: Run RISC-V Addition Example`
 
 **View the full guide:**
-- `RISC-V_EXPLORATION.md` in extension directory
-- Or run command: `Tenstorrent: Open RISC-V Exploration Guide`
+- [Open RISC-V Exploration Guide](command:tenstorrent.showRiscvGuide) - Comprehensive deep-dive documentation
 
 **Perfect for:**
 - Developers who want to understand the hardware at the lowest level

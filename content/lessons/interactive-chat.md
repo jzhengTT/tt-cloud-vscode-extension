@@ -63,7 +63,7 @@ while True:
 
     response = tokenizer.decode(all_tokens)
     print(response)
-```python
+```
 
 **Key insight:** The model stays in memory between queries!
 
@@ -84,27 +84,27 @@ python3 -c "import ttnn; print('✓ tt-metal ready')"
 
 # Model downloaded (Meta format)?
 ls ~/models/Llama-3.1-8B-Instruct/original/consolidated.00.pth
-```text
+```
 
 **All checks passed?** Continue to Step 1 below.
 
 **If any checks fail:**
 
 **No hardware?**
-- See [Lesson 1: Hardware Detection](#)
+- See [Hardware Detection](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22hardware-detection%22%7D)
 
 **No tt-metal?**
-- See [Lesson 2: Verify Installation](#)
+- See [Verify Installation](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22verify-installation%22%7D)
 - Or install: [tt-metal installation guide](https://github.com/tenstorrent/tt-metal/blob/main/INSTALLING.md)
 
 **No model?**
-- See [Lesson 3: Download Model](#)
+- See [Download Model](command:tenstorrent.showLesson?%7B%22lessonId%22%3A%22download-model%22%7D)
 - Or quick download:
   ```bash
   huggingface-cli login
   hf download meta-llama/Llama-3.1-8B-Instruct \
     --local-dir ~/models/Llama-3.1-8B-Instruct
-```bash
+```
 
 ### Dependencies Required
 
@@ -113,12 +113,12 @@ This lesson uses the Generator API which needs:
 ```bash
 pip install pi  # Required for Generator API
 pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
-```python
+```
 
 **Already installed?** Check with:
 ```bash
 python3 -c "import pi; print('✓ pi installed')"
-```bash
+```
 
 **Not installed?** Run the commands above or use the button in Step 1.
 
@@ -140,7 +140,7 @@ The Direct API needs specific Python packages:
 
 ```bash
 pip install pi && pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
-```bash
+```
 
 [🔧 Install Direct API Dependencies](command:tenstorrent.installInferenceDeps)
 
@@ -159,7 +159,7 @@ This command creates `~/tt-scratchpad/tt-chat-direct.py` - a standalone chat cli
 ```bash
 # Creates the direct API chat script
 mkdir -p ~/tt-scratchpad && cp template ~/tt-scratchpad/tt-chat-direct.py && chmod +x ~/tt-scratchpad/tt-chat-direct.py
-```bash
+```
 
 [📝 Create Direct API Chat Script](command:tenstorrent.createChatScriptDirect)
 
@@ -185,7 +185,7 @@ cd ~/tt-metal && \
   export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
   export PYTHONPATH=$(pwd) && \
   python3 ~/tt-scratchpad/tt-chat-direct.py
-```python
+```
 
 [💬 Start Direct API Chat](command:tenstorrent.startChatSessionDirect)
 
@@ -207,7 +207,7 @@ Commands:
   • Press Ctrl+C to interrupt
 
 >
-```text
+```
 
 **First run:** 2-5 minutes to load (kernel compilation + model loading)
 **Subsequent queries:** 1-3 seconds per response!
@@ -239,7 +239,7 @@ good at understanding relationships in sequential data like text...
 > exit
 
 👋 Chat session ended
-```python
+```
 
 **Notice:**
 - First query after load: ~1-3 seconds
@@ -267,7 +267,7 @@ def prepare_generator(mesh_device, max_batch_size=1, ...):
     generator = Generator([model], [model_args], mesh_device, ...)
 
     return generator, model_args, model, ...
-```python
+```
 
 **This happens once at startup!**
 
@@ -291,7 +291,7 @@ def generate_response(generator, prompt, max_tokens=128):
     # 4. Decode tokens to text
     response = tokenizer.decode(all_tokens)
     return response
-```text
+```
 
 **This runs for each query - fast because model is already loaded!**
 
@@ -305,12 +305,12 @@ Now that you have the code, try modifying it:
 response = generate_response(..., temperature=0.7)  # More creative
 # vs
 response = generate_response(..., temperature=0.0)  # Deterministic
-```text
+```
 
 **2. Increase max tokens**
 ```python
 response = generate_response(..., max_generated_tokens=256)
-```python
+```
 
 **3. Add streaming output**
 ```python
@@ -319,7 +319,7 @@ for iteration in range(max_tokens):
     logits = generator.decode_forward_text(...)
     next_token = sample(logits)
     print(tokenizer.decode([next_token]), end='', flush=True)
-```text
+```
 
 **4. Multi-turn conversations**
 ```python
@@ -331,7 +331,7 @@ while True:
     full_prompt = "\n".join(conversation_history)
     response = generate_response(generator, full_prompt, ...)
     conversation_history.append(f"Assistant: {response}")
-```bash
+```
 
 ## Performance Notes
 
@@ -351,14 +351,14 @@ while True:
 **Import errors:**
 ```bash
 export PYTHONPATH=~/tt-metal
-```bash
+```
 
 **MESH_DEVICE errors:**
 ```bash
 # Let tt-metal auto-detect (default behavior)
 # Or explicitly set:
 export MESH_DEVICE=N150  # or N300, T3K, etc.
-```text
+```
 
 **Out of memory:**
 - Close other programs

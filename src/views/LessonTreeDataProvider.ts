@@ -174,6 +174,9 @@ export class LessonTreeDataProvider implements vscode.TreeDataProvider<LessonTre
     this.lessonRegistry = lessonRegistry;
     this.progressTracker = progressTracker;
 
+    // Apply default filter based on configuration
+    this.applyConfigurationFilter();
+
     // Listen to progress changes
     progressTracker.onDidChangeProgress(() => {
       this.refresh();
@@ -183,6 +186,30 @@ export class LessonTreeDataProvider implements vscode.TreeDataProvider<LessonTre
     vscode.window.onDidChangeActiveColorTheme(() => {
       this.refresh();
     });
+
+    // Listen to configuration changes
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('tenstorrent.showUnvalidatedLessons')) {
+        this.applyConfigurationFilter();
+        this.refresh();
+      }
+    });
+  }
+
+  /**
+   * Apply filter based on configuration setting
+   */
+  private applyConfigurationFilter(): void {
+    const config = vscode.workspace.getConfiguration('tenstorrent');
+    const showUnvalidated = config.get<boolean>('showUnvalidatedLessons', false);
+
+    // If showUnvalidatedLessons is false (default), filter to validated only
+    if (!showUnvalidated) {
+      this.filterOptions.validatedOnly = true;
+    } else {
+      // If explicitly enabled, remove the validated-only filter
+      this.filterOptions.validatedOnly = false;
+    }
   }
 
   /**

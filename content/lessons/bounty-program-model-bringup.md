@@ -76,7 +76,7 @@ May 12:  Individual blocks functional, full network integration underway
 May 26:  Testing with varied prefill lengths
 May 29:  Pull request #22716 submitted
 Status:  MERGED ✅ Contribution accepted
-```text
+```
 
 ### Key Success Factors
 
@@ -98,7 +98,7 @@ Status:  MERGED ✅ Contribution accepted
 ```bash
 # Visit GitHub issues page
 open https://github.com/tenstorrent/tt-metal/labels/bounty
-```bash
+```
 
 **Filter by difficulty:**
 - Look for `bounty_difficulty/easy`, `bounty_difficulty/medium`, `bounty_difficulty/hard` labels
@@ -125,7 +125,7 @@ git submodule update --init --recursive
 # Set environment variables
 export TT_METAL_HOME=~/tt-metal
 export PYTHONPATH=$TT_METAL_HOME:$PYTHONPATH
-```bash
+```
 
 **Install dependencies:**
 ```bash
@@ -135,12 +135,12 @@ pip install -r models/tt_transformers/requirements.txt
 
 # Additional tools
 pip install pytest huggingface-hub
-```text
+```
 
 **Verify hardware:**
 ```bash
 tt-smi  # Should detect your TT device
-```bash
+```
 
 #### 1.3 Run a Reference Demo
 
@@ -152,7 +152,7 @@ export MESH_DEVICE=N150  # or N300, T3K, etc.
 
 # Run demo to verify setup
 pytest models/tt_transformers/demo/simple_text_demo.py -k "performance and batch-1"
-```bash
+```
 
 **What to expect:**
 - First run: Downloads model (~16GB), creates weight cache (2-5 min)
@@ -170,7 +170,7 @@ pytest models/tt_transformers/demo/simple_text_demo.py -k "performance and batch
 ```bash
 # Create a reference validation script
 cd ~/tt-scratchpad
-```python
+```
 
 **Example reference script (save as `validate_reference.py`):**
 ```python
@@ -193,12 +193,12 @@ print(f"Response: {response}")
 
 # Save logits for later comparison
 torch.save(outputs, "reference_outputs.pt")
-```text
+```
 
 **Run validation:**
 ```bash
 python validate_reference.py
-```bash
+```
 
 #### 2.2 Analyze Model Architecture
 
@@ -206,7 +206,7 @@ python validate_reference.py
 ```bash
 huggingface-cli download microsoft/Phi-3-mini-128k-instruct config.json --local-dir ~/models/Phi-3
 cat ~/models/Phi-3/config.json
-```json
+```
 
 **Key questions to answer:**
 1. **Architecture type**: LlamaForCausalLM, Qwen2ForCausalLM, MistralForCausalLM, Phi3ForCausalLM?
@@ -235,7 +235,7 @@ cat ~/models/Phi-3/config.json
 ls models/tt_transformers/model_params/
 # Phi-3 architecture is similar to Llama
 # Use Llama as the base implementation
-```python
+```
 
 #### 3.2 Bring Up Decode Stage First
 
@@ -272,7 +272,7 @@ def test_rmsnorm():
     # Check PCC (Pearson Correlation Coefficient)
     pcc = compute_pcc(tt_out, ref_out)
     assert pcc > 0.99, f"RMSNorm PCC too low: {pcc}"
-```text
+```
 
 **Test each module:**
 - ✅ RMSNorm / LayerNorm
@@ -286,7 +286,7 @@ def test_rmsnorm():
 pytest tests/test_phi3_rmsnorm.py -v
 pytest tests/test_phi3_attention.py -v
 pytest tests/test_phi3_mlp.py -v
-```python
+```
 
 #### 3.3 Compose Full Decoder
 
@@ -315,7 +315,7 @@ def test_full_decoder():
     # Check PCC
     pcc = compute_pcc(tt_output, ref_output)
     assert pcc > 0.98
-```text
+```
 
 #### 3.4 Handle Model-Specific Modifications
 
@@ -332,7 +332,7 @@ if isinstance(rope_scaling, dict) and "long_factor" in rope_scaling:
     scale_tensor = compute_longrope_scale(rope_scaling)
 else:
     scale = 1.0 / rope_scaling_factor
-```text
+```
 
 **File: `models/tt_transformers/tt/model_config.py`**
 ```python
@@ -340,7 +340,7 @@ else:
 if "Phi-3" in self.model_name:
     # Set prefill chunk size for long context
     self.min_prefill_chunk_size = 1024  # Lower for N150
-```text
+```
 
 **File: `models/tt_transformers/tt/common.py`**
 ```python
@@ -349,7 +349,7 @@ if "Phi-3" in self.model_name:
 # New: Pad all prompts to max length across batch
 max_len = max(len(p) for p in prompts)
 padded_len = next_power_of_2(max_len)
-```python
+```
 
 **Key insight:** These are **MINIMAL** changes. Most of the implementation is reused from Llama!
 
@@ -381,7 +381,7 @@ def test_prefill():
 
     pcc = compute_pcc(logits, ref_logits)
     assert pcc > 0.98
-```bash
+```
 
 #### 4.2 End-to-End Testing
 
@@ -391,7 +391,7 @@ def test_prefill():
 # Run full demo
 export HF_MODEL=microsoft/Phi-3-mini-128k-instruct
 pytest models/tt_transformers/demo/simple_text_demo.py -k "batch-1"
-```python
+```
 
 **What to check:**
 1. **Does it generate coherent text?**
@@ -428,7 +428,7 @@ def test_teacher_forcing():
 
     assert top1_accuracy > 0.80  # Bounty requirement
     assert top5_accuracy > 0.95  # Bounty requirement
-```text
+```
 
 ---
 
@@ -441,7 +441,7 @@ def test_teacher_forcing():
 pytest models/tt_transformers/demo/simple_text_demo.py \
   -k "performance and batch-32" \
   --max_generated_tokens 200
-```text
+```
 
 **Key metrics:**
 - **TTFT** (Time to First Token): How long until first token generated?
@@ -462,7 +462,7 @@ pytest models/tt_transformers/demo/simple_text_demo.py \
 pytest models/tt_transformers/demo/simple_text_demo.py \
   -k "performance and batch-32" \
   --optimizations 'precision_cfg = {ff1_3: bfp4, ff2: bfp4, wqkv: bfp8, wo: bfp8}'
-```text
+```
 
 **Create custom decoder config:**
 ```json
@@ -476,7 +476,7 @@ pytest models/tt_transformers/demo/simple_text_demo.py \
   },
   // ... remaining decoders
 }
-```text
+```
 
 **Advanced optimizations:**
 - **Metal Trace**: Record and replay command buffers (reduces overhead)
@@ -495,7 +495,7 @@ cmake --build build
 
 # Run with profiling
 pytest models/tt_transformers/demo/simple_text_demo.py -k "batch-32"
-```bash
+```
 
 **Analyze bottlenecks:**
 - Slow ops? Try different layouts (ROW_MAJOR, TILE)
@@ -519,7 +519,7 @@ pytest models/tt_transformers/tests/test_perf.py -k "phi3"
 
 # Demo test (end-to-end)
 pytest models/tt_transformers/demo/simple_text_demo.py -k "phi3"
-```text
+```
 
 #### 6.2 Generate Reference Logits
 
@@ -529,7 +529,7 @@ pytest models/tt_transformers/demo/simple_text_demo.py -k "phi3"
 python models/tt_transformers/tests/generate_reference_hf.py \
   --model microsoft/Phi-3-mini-128k-instruct \
   --output reference_outputs/Phi-3-mini-128k-instruct.refpt
-```python
+```
 
 #### 6.3 Add CI Configuration
 
@@ -544,7 +544,7 @@ python models/tt_transformers/tests/generate_reference_hf.py \
 def test_model_demo(model_name):
     # CI will run this test on every commit
     ...
-```bash
+```
 
 ---
 
@@ -588,7 +588,7 @@ pytest models/tt_transformers/demo/simple_text_demo.py -k "batch-32"
 - Top-1: 84.3%
 - Top-5: 96.7%
 (Tested on 512-token prefill + 511-token generation)
-```text
+```
 
 #### 7.2 Submit Pull Request
 
@@ -609,7 +609,7 @@ PR #1: Phi-3 model integration
 - Unit tests
 - Demo test
 - Documentation
-```text
+```
 
 **Option B: Multi-PR (large changes)**
 ```text
@@ -621,7 +621,7 @@ PR #2: Phi-3 performance tests
 
 PR #3: Phi-3 demo test
   → Run: demo tests
-```bash
+```
 
 **PR description template:**
 ```markdown
@@ -649,7 +649,7 @@ Closes #19416 (bounty issue)
 ## Accuracy
 - Top-1: 84.3% ✅ (>80% required)
 - Top-5: 96.7% ✅ (>95% required)
-```text
+```
 
 #### 7.3 Respond to Review Feedback
 
@@ -663,7 +663,7 @@ Closes #19416 (bounty issue)
 ```text
 Reviewer: "Does this need to be restricted to Phi-3-mini?"
 Response: "Good point! Updated to support all Phi-3 variants (3.5, 4) with long_factor RoPE scaling."
-```bash
+```
 
 ---
 
