@@ -2,7 +2,7 @@
   "name": "tt-vscode-toolkit",
   "displayName": "Tenstorrent VSCode Toolkit",
   "description": "Explore Tenstorrent hardware and software through interactive lesssons and ",
-  "version": "0.0.124",
+  "version": "0.0.126",
   "publisher": "tenstorrent",
   "repository": {
     "type": "git",
@@ -257,7 +257,17 @@
       },
       {
         "command": "tenstorrent.startTtInferenceServer",
-        "title": "Start tt-inference-server",
+        "title": "Start tt-inference-server (Basic)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startTtInferenceServerN150",
+        "title": "Start tt-inference-server (N150 Config)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startTtInferenceServerN300",
+        "title": "Start tt-inference-server (N300 Config)",
         "category": "Tenstorrent"
       },
       {
@@ -308,6 +318,26 @@
       {
         "command": "tenstorrent.startVllmServer",
         "title": "Start vLLM Server",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerN150",
+        "title": "Start vLLM Server (N150)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerN300",
+        "title": "Start vLLM Server (N300)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerT3K",
+        "title": "Start vLLM Server (T3K)",
+        "category": "Tenstorrent"
+      },
+      {
+        "command": "tenstorrent.startVllmServerP100",
+        "title": "Start vLLM Server (P100)",
         "category": "Tenstorrent"
       },
       {
@@ -454,7 +484,8 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
-    "build": "tsc -p ./ && npm run copy-content",
+    "build": "npm run clean && tsc -p ./ && npm run copy-content",
+    "clean": "rm -rf dist/",
     "copy-content": "mkdir -p dist/content dist/src/webview && cp -r content/lessons dist/content/ && cp -r content/templates dist/content/ && cp -r content/pages dist/content/ && cp content/lesson-registry.json dist/content/ && cp -r src/webview/* dist/src/webview/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",

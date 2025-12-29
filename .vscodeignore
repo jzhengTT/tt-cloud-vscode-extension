@@ -15,8 +15,8 @@ tsconfig.test.json
 src/**
 test/**
 
-# Node modules (dependencies are bundled in dist/)
-node_modules/**
+# We need to include node_modules since we're not bundling with webpack/esbuild
+# node_modules/** is commented out - dependencies must be included
 
 # Build artifacts
 *.vsix

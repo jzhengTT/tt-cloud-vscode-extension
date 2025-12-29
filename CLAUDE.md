@@ -335,6 +335,29 @@ async function createQwenSymlink(qwenPath: string): Promise<string> {
 
 ## Recent Changes
 
+**v0.0.126** - Fixed dependency bundling (critical fix)
+- **ROOT CAUSE:** `Error: Cannot find module 'marked'` - dependencies not included in package
+- Extension was excluding node_modules but NOT bundling with webpack/esbuild
+- **FIX:** Include node_modules in package (removed exclusion from .vscodeignore)
+- Restored all 83 commands from backup (v0.0.124 command removal broke extension)
+- **Kept clean build process**: `"clean": "rm -rf dist/"` prevents stale file issues
+- Package size: 5.42 MB (1942 files) - includes all dependencies
+- All tests passing (134/134)
+- **Lesson learned:**
+  - All 83 commands are necessary - they're all actively used
+  - Dependencies (marked, dompurify, etc.) MUST be included in package
+  - Future optimization: Set up webpack/esbuild bundling to reduce package size
+
+**v0.0.125** - Build and packaging fixes (ROLLED BACK)
+- **CRITICAL FIX:** Resolved "no data provider registered" error by cleaning stale files from dist/
+- Added `clean` script to package.json: `"clean": "rm -rf dist/"`
+- Build now cleans dist/ before compiling: `"build": "npm run clean && tsc -p ./ && npm run copy-content"`
+- Excluded duplicate `dist/content/` from package (content/ at root is used by extension)
+- Package size reduced: 783.1 KB → 389.38 KB (50% reduction!)
+- File count reduced: 193 files → 114 files (removed duplicates)
+- All content properly packaged: 16 lessons, 40 templates, 4 pages, 1 registry
+- All tests passing (134/134)
+
 **v0.0.124** - Command consolidation via parameterization
 - Reduced commands from 83 → 77 (6 commands removed)
 - Consolidated hardware variant commands using parameters:
