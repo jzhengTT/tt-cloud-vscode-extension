@@ -1480,36 +1480,6 @@ function startTtInferenceServer(): void {
 }
 
 /**
- * Command: tenstorrent.startTtInferenceServerN150
- * Starts vLLM server via tt-inference-server optimized for N150 hardware
- */
-function startTtInferenceServerN150(): void {
-  const terminal = getOrCreateTerminal('vllm-server');
-  const command = TERMINAL_COMMANDS.START_TT_INFERENCE_SERVER_N150.template;
-
-  vscode.window.showInformationMessage(
-    '⚙️ Starting vLLM server for N150 via tt-inference-server.'
-  );
-
-  runInTerminal(terminal, command);
-}
-
-/**
- * Command: tenstorrent.startTtInferenceServerN300
- * Starts vLLM server via tt-inference-server optimized for N300 dual-chip hardware
- */
-function startTtInferenceServerN300(): void {
-  const terminal = getOrCreateTerminal('vllm-server');
-  const command = TERMINAL_COMMANDS.START_TT_INFERENCE_SERVER_N300.template;
-
-  vscode.window.showInformationMessage(
-    '⚙️ Starting vLLM server for N300 via tt-inference-server.'
-  );
-
-  runInTerminal(terminal, command);
-}
-
-/**
  * Command: tenstorrent.testTtInferenceServerSimple
  * Tests the vLLM server started by tt-inference-server with OpenAI-compatible API
  */
@@ -3562,8 +3532,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Lesson 6 - tt-inference-server
     vscode.commands.registerCommand('tenstorrent.verifyInferenceServerPrereqs', verifyInferenceServerPrereqs),
     vscode.commands.registerCommand('tenstorrent.startTtInferenceServer', startTtInferenceServer),
-    vscode.commands.registerCommand('tenstorrent.startTtInferenceServerN150', startTtInferenceServerN150),
-    vscode.commands.registerCommand('tenstorrent.startTtInferenceServerN300', startTtInferenceServerN300),
     vscode.commands.registerCommand('tenstorrent.testTtInferenceServerSimple', testTtInferenceServerSimple),
     vscode.commands.registerCommand('tenstorrent.testTtInferenceServerStreaming', testTtInferenceServerStreaming),
     vscode.commands.registerCommand('tenstorrent.testTtInferenceServerSampling', testTtInferenceServerSampling),

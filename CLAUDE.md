@@ -335,20 +335,17 @@ async function createQwenSymlink(qwenPath: string): Promise<string> {
 
 ## Recent Changes
 
-**v0.0.123** - Package.json refactoring for maintainability
-- Reduced commands in package.json from 83 → 28 (66% reduction)
-- Kept only user-facing commands visible in Command Palette
-- Moved 55 internal/helper commands to dynamic registration only
-- Commands removed from package.json still work from lesson buttons and programmatic calls
-- Package.json reduced from 521 → 251 lines (52% reduction)
-- Added organizational comments to group remaining commands by category
-- All commands still registered in extension.ts (no functionality removed)
-- **Rationale**: Commands in package.json are primarily for Command Palette discoverability. Internal helper commands (script creation, test utilities, setup steps) don't need Command Palette visibility since they're only invoked from lesson buttons or other commands.
-- **User-facing commands kept**: Navigation (showWelcome, showFaq), UI controls (refreshLessons, filterLessons), device management (runHardwareDetection, resetDevice), major workflows (cloneVllm, installVllm, startVllmServer), and exploration tools (browseModelZoo, launchTtnnTutorials, createCookbookProjects)
-- **Internal commands moved**: All create*Script, start*Session, test*, install*Deps, setup*, and hardware-specific variant commands (startVllmServerN150/N300/T3K/P100, startTtInferenceServerN150/N300)
-- Created backup: package.json.backup before refactoring
+**v0.0.124** - Command consolidation via parameterization
+- Reduced commands from 83 → 77 (6 commands removed)
+- Consolidated hardware variant commands using parameters:
+  - Removed: `startVllmServerN150`, `N300`, `T3K`, `P100` (4 commands)
+  - Removed: `startTtInferenceServerN150`, `N300` (2 commands)
+  - Infrastructure already existed: `startVllmServerWithHardware(args)` accepts `{hardware: "N150"}` etc.
+  - Command URI format: `command:tenstorrent.startVllmServerWithHardware?%7B%22hardware%22%3A%22N150%22%7D`
+- All commands declared in `package.json` (VSCode requirement for command system visibility)
+- Command handlers organized in `src/` modules for maintainability
 - All tests passing (134/134)
-- Package size: 782.54 KB (193 files) - unchanged from previous version
+- Package size: 783.1 KB (193 files)
 
 **v0.0.102** - Lesson 12 (TT-XLA) comprehensive rewrite
 - Completely rewrote TT-XLA installation instructions (Ubuntu-specific)
