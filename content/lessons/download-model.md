@@ -50,7 +50,7 @@ python3 --version  # Need 3.10+
 
 # huggingface-cli installed?
 which huggingface-cli || pip install huggingface-hub[cli]
-```
+```text
 
 **All checks passed?** Continue below to download the model.
 
@@ -65,7 +65,7 @@ Check if you're already logged in to Hugging Face:
 
 ```bash
 huggingface-cli whoami
-```
+```text
 
 **If this shows your username:** You're already authenticated! Skip to [Step 3: Download the Model](#step-3-download-the-model).
 
@@ -79,7 +79,7 @@ Check if the model already exists:
 
 ```bash
 ls ~/models/Llama-3.1-8B-Instruct/config.json
-```
+```json
 
 **If the file exists:** Model is already downloaded! You can skip to the next lesson or verify the download below.
 
@@ -92,7 +92,7 @@ ls ~/models/Llama-3.1-8B-Instruct/model*.safetensors
 # Check Meta format (for Lessons 4-5, 9)
 ls ~/models/Llama-3.1-8B-Instruct/original/consolidated.00.pth
 ls ~/models/Llama-3.1-8B-Instruct/original/params.json
-```
+```bash
 
 **All files present?** You're good to go! Continue to Lesson 4.
 
@@ -124,7 +124,7 @@ This model comes in **two formats** for different tools:
 
 ```bash
 echo $HF_TOKEN
-```
+```bash
 
 **If you see your token:** It's already set! Skip to [Step 2: Authenticate](#step-2-authenticate).
 
@@ -140,14 +140,14 @@ When you click the button below, you'll be prompted to enter your token securely
 
 ```bash
 export HF_TOKEN="your-token-here"
-```
+```bash
 
 **Note:** This only lasts for your current terminal session. For permanent setup, add it to `~/.bashrc` or `~/.zshrc`:
 
 ```bash
 echo 'export HF_TOKEN="your-token-here"' >> ~/.bashrc
 source ~/.bashrc
-```
+```bash
 
 ---
 
@@ -157,7 +157,7 @@ Once your token is set, authenticate with Hugging Face using this command:
 
 ```bash
 huggingface-cli login --token "$HF_TOKEN"
-```
+```bash
 
 [✓ Authenticate with Hugging Face](command:tenstorrent.loginHuggingFace)
 
@@ -168,7 +168,7 @@ Download the Llama-3.1-8B-Instruct model to `~/models/Llama-3.1-8B-Instruct`:
 ```bash
 mkdir -p ~/models && hf download meta-llama/Llama-3.1-8B-Instruct \
   --local-dir ~/models/Llama-3.1-8B-Instruct
-```
+```bash
 
 [⬇️ Download Llama 3.1-8B Model](command:tenstorrent.downloadModel)
 
@@ -194,7 +194,7 @@ This will clone the repository (if needed):
 
 ```bash
 git clone https://github.com/tenstorrent/tt-metal.git "/path/you/choose" --recurse-submodules
-```
+```bash
 
 [📦 Setup TT-Metal Repository](command:tenstorrent.cloneTTMetal)
 
@@ -216,7 +216,7 @@ This command will execute (using your tt-metal location):
 cd "/path/to/tt-metal" && \
   export PYTHONPATH=$(pwd) && \
   pip install -r tt_metal/python_env/requirements-dev.txt
-```
+```bash
 
 [🐍 Install Python Dependencies](command:tenstorrent.setupEnvironment)
 
@@ -241,7 +241,7 @@ cd "/path/to/tt-metal" && \
     -k performance-batch-1 \
     --max_seq_len 1024 \
     --max_generated_tokens 128
-```
+```text
 
 [🚀 Run Inference Now!](command:tenstorrent.runInference)
 

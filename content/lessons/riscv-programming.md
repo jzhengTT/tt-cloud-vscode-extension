@@ -60,7 +60,7 @@ tt-metal includes programming examples that demonstrate low-level RISC-V program
 ```bash
 cd ~/tt-metal && \
   ./build_metal.sh --build-programming-examples
-```
+```text
 
 [🔨 Build Programming Examples](command:tenstorrent.buildProgrammingExamples)
 
@@ -81,7 +81,7 @@ Now let's run the canonical RISC-V example: adding two integers on a BRISC proce
 3. **Host** reads back result (21)
 
 **Architecture diagram:**
-```
+```text
 ┌──────────────┐
 │     Host     │  Uploads: 14, 7
 │   (C++ API)  │
@@ -107,27 +107,27 @@ Now let's run the canonical RISC-V example: adding two integers on a BRISC proce
 ┌──────────────┐
 │     Host     │  Reads back: 21
 └──────────────┘
-```
+```bash
 
 **Enable debug output** (optional, to see messages from RISC-V core):
 ```bash
 export TT_METAL_DPRINT_CORES=0,0
-```
+```bash
 
 **Run the example:**
 ```bash
 cd ~/tt-metal && \
   export TT_METAL_DPRINT_CORES=0,0 && \
   ./build/programming_examples/add_2_integers_in_riscv
-```
+```text
 
 [🚀 Run RISC-V Addition Example](command:tenstorrent.runRiscvExample)
 
 **Expected output:**
-```
+```bash
 Adding integers: 14 + 7
 Success: Result is 21
-```
+```text
 
 ---
 
@@ -136,10 +136,10 @@ Success: Result is 21
 Let's look at the actual RISC-V kernel that runs on the BRISC processor.
 
 **File location:**
-```
+```bash
 ~/tt-metal/tt_metal/programming_examples/add_2_integers_in_riscv/kernels/
   reader_writer_add_in_riscv.cpp
-```
+```text
 
 **Open the kernel in VS Code:**
 
@@ -158,7 +158,7 @@ void kernel_main() {
     uint32_t dst_l1    = get_arg_val<uint32_t>(5);
     // ...
 }
-```
+```text
 
 ### 2. NoC DMA Operations (Reading from DRAM)
 ```cpp
@@ -170,7 +170,7 @@ void kernel_main() {
     noc_async_read(src0_dram_noc_addr, src0_l1, sizeof(uint32_t));
     noc_async_read(src1_dram_noc_addr, src1_l1, sizeof(uint32_t));
     noc_async_read_barrier();  // Wait for DMA to complete
-```
+```text
 
 ### 3. THE RISC-V ADDITION (Runs on BRISC Processor)
 ```cpp
@@ -187,7 +187,7 @@ void kernel_main() {
     (*out0) = (*dat0) + (*dat1);
 
     DPRINT << "Adding integers: " << *dat0 << " + " << *dat1 << "\n";
-```
+```text
 
 ### 4. Writing Result Back to DRAM
 ```cpp
@@ -196,7 +196,7 @@ void kernel_main() {
     noc_async_write(dst_l1, dst_dram_noc_addr, sizeof(uint32_t));
     noc_async_write_barrier();  // Wait for write to complete
 }
-```
+```text
 
 **What's happening:**
 - The C++ code is compiled to RISC-V machine code by `riscv32-gcc`
@@ -210,7 +210,7 @@ void kernel_main() {
 
 ### Memory Regions (Wormhole/Blackhole)
 
-```
+```text
 ┌─────────────────────────────────────┐
 │  L1 SRAM (1.5 MB per Tensix)       │  ← Shared by all 5 RISC-V cores
 │  Base: 0x00000000                  │     Fast access, user-managed
@@ -236,13 +236,13 @@ void kernel_main() {
 │  DRAM (1 GB per chip)              │  ← Accessed via NoC DMA only
 │  Not directly addressable          │     Requires noc_async_read/write
 └─────────────────────────────────────┘
-```
+```text
 
 ### The Network-on-Chip (NoC)
 
 The NoC is a 2D mesh interconnect that connects all Tensix cores, DRAM controllers, PCIe, and Ethernet:
 
-```
+```text
 Wormhole NoC Grid:
 ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
 │ D │ T │ T │ T │ T │ T │ T │ T │ T │ T │ T │ D │
@@ -255,15 +255,15 @@ Wormhole NoC Grid:
 └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
 
 Legend: T=Tensix (5 RISC-V cores each), D=DRAM, E=Ethernet, P=PCIe, A=ARC
-```
+```text
 
 **NoC addressing:**
-```
+```text
 63        48 47      40 39              0
 ┌───────────┬─────────┬──────────────────┐
 │  NoC Y    │  NoC X  │  Local Address   │
 └───────────┴─────────┴──────────────────┘
-```
+```text
 
 **Example: Reading from another Tensix core:**
 ```cpp
@@ -271,7 +271,7 @@ Legend: T=Tensix (5 RISC-V cores each), D=DRAM, E=Ethernet, P=PCIe, A=ARC
 uint64_t remote_addr = get_noc_addr(3, 4, 0x1000);
 noc_async_read(remote_addr, local_l1_addr, 1024);
 noc_async_read_barrier();
-```
+```text
 
 ---
 
@@ -341,7 +341,7 @@ ls ~/tt-metal/tt_metal/programming_examples/
 
 # More examples in tech reports
 ~/tt-metal/tech_reports/prog_examples/
-```
+```text
 
 ### Write Your Own Kernel
 
@@ -362,7 +362,7 @@ void kernel_main() {
     uint32_t* output = (uint32_t*)0x1000;
     *output = result;
 }
-```
+```text
 
 Then compile and run via the tt-metal C++ API!
 

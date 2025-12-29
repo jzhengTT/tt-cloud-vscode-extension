@@ -83,7 +83,7 @@ TTNN comes with interactive Jupyter notebooks that teach core concepts hands-on.
 
 ### Explore the Model Zoo
 
-Tenstorrent has implementations of dozens of popular models, from production LLMs to experimental vision models.
+Tenstorrent has implementations of dozens of popular models, from production LLMs to experimental vision models (as of December 2025).
 
 [🔍 Browse Model Zoo](command:tenstorrent.browseModelZoo)
 
@@ -107,7 +107,7 @@ Tenstorrent has implementations of dozens of popular models, from production LLM
 - **Mamba** - State-space models
 
 **🧪 Experimental Models** (`models/experimental/`)
-- **Grok** 🆕 - xAI's reasoning model (experimental port)
+- **Grok** 🆕 - xAI's reasoning model (experimental port as of December 2025)
 - **Gemma3 4B** 🆕 - Smaller Gemma variant
 - **nanoGPT** - Train your own GPT from scratch
 - **BlazePose** - Real-time pose estimation
@@ -177,7 +177,7 @@ By default, tt-metal doesn't build the programming examples. To build them:
 ```bash
 cd ~/tt-metal
 ./build_metal.sh --build-programming-examples
-```
+```bash
 
 **What this does:**
 - Compiles all programming examples into executables
@@ -196,7 +196,7 @@ cd ~/tt-metal
 # Example: Run the hello world compute kernel
 cd ~/tt-metal/tt_metal/programming_examples/hello_world_compute_kernel
 ./hello_world_compute_kernel
-```
+```bash
 
 ---
 
@@ -210,7 +210,7 @@ Each Tenstorrent chip contains a grid of **Tensix cores**. Understanding their a
 
 **Inside a Tensix Core:**
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │                  Tensix Core                    │
 ├─────────────────────────────────────────────────┤
@@ -240,7 +240,7 @@ Each Tenstorrent chip contains a grid of **Tensix cores**. Understanding their a
         │                           │
         ▼                           ▼
     DRAM Banks              Other Tensix Cores
-```
+```text
 
 **Key Components:**
 
@@ -275,7 +275,7 @@ Each Tenstorrent chip contains a grid of **Tensix cores**. Understanding their a
 
 Most operations use three kernels working together in a pipeline:
 
-```
+```text
          Reader Kernel              Compute Kernel             Writer Kernel
          (Data Movement)            (Math Operations)         (Data Movement)
                 │                          │                         │
@@ -290,7 +290,7 @@ Most operations use three kernels working together in a pipeline:
     Circular Buffers in L1 SRAM enable pipelining:
     - Reader fills buffer while Compute processes previous batch
     - Compute fills output buffer while Writer stores previous batch
-```
+```text
 
 **Example: Matrix Multiplication**
 
@@ -322,7 +322,7 @@ void writer_kernel() {
         write_tile(dst_addr, cb_id, tile_index);
     }
 }
-```
+```python
 
 ---
 
@@ -358,7 +358,7 @@ print(f"Tile layout shape: {tile_layout.shape}")
 print(f"Tile layout padded shape: {tile_layout.padded_shape}")
 # Output: Shape([3, 4]), Padded: Shape([32, 32])
 # Padding added automatically to fill 32×32 tile!
-```
+```python
 
 **Padding Behavior:**
 - Small tensors padded to 32×32 minimum
@@ -389,7 +389,7 @@ e = ttnn.gelu(d)       # Activation function
 
 result = ttnn.to_torch(e)  # Back to PyTorch
 ttnn.close_device(device)
-```
+```text
 
 **When to use TTNN:**
 - ✅ Rapid prototyping
@@ -432,7 +432,7 @@ int main() {
 
     CloseDevice(device);
 }
-```
+```python
 
 **When to use TT-Metalium:**
 - ⚡ Maximum performance (hand-tuned kernels)
@@ -474,7 +474,7 @@ print(f"128×128 tensor shape: {optimal.shape}")
 print(f"128×128 tensor padded: {optimal.padded_shape}")
 
 ttnn.close_device(device)
-```
+```bash
 
 3. **Observe:**
    - How much padding is added for each case?
@@ -534,19 +534,19 @@ Each project includes full source code, extensions, and VS Code integration!
 A: Ensure VS Code's Jupyter extension is installed:
 ```bash
 code --install-extension ms-toolsai.jupyter
-```
+```text
 
 **Q: `ttnn.open_device()` fails**
 
 A: Check device status:
 ```bash
 tt-smi
-```
+```text
 
 If device shows errors, reset:
 ```bash
 tt-smi -r
-```
+```text
 
 **Q: Out of memory errors**
 

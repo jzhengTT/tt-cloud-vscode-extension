@@ -939,9 +939,9 @@ Steps to reproduce: [numbered list]
 - New features
 
 **Start here:**
-- Join Discord #contributing channel
-- Read CONTRIBUTING.md in respective repos
-- Check "good first issue" labels
+- Join Discord #contributing channel for guidance
+- Ask about "good first issue" opportunities
+- Review documentation at https://docs.tenstorrent.com
 
 ### Q: Is this production-ready?
 

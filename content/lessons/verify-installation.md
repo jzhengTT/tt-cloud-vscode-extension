@@ -37,7 +37,7 @@ If you haven't already run this command, do it now:
 
 ```bash
 cd ~/tt-metal && sudo ./install_dependencies.sh
-```
+```text
 
 **What this script does:**
 - Installs required system libraries (build tools, kernel modules, etc.)
@@ -57,7 +57,7 @@ This command will run a test operation on your Tenstorrent device:
 
 ```bash
 python3 -m ttnn.examples.usage.run_op_on_device
-```
+```bash
 
 [✓ Verify TT-Metal Installation](command:tenstorrent.verifyInstallation)
 
@@ -85,21 +85,21 @@ cd ~/tt-metal
 ./build_metal.sh --clean      # Remove all build artifacts
 sudo ./install_dependencies.sh     # Ensure dependencies are current
 ./build_metal.sh              # Rebuild from scratch
-```
+```text
 
 **Why `--clean`?** Sometimes old build artifacts can cause issues. The `--clean` flag removes all cached builds and forces a complete rebuild.
 
 **2. Check device detection:**
 ```bash
 tt-smi
-```
+```python
 
 Make sure your device is detected and shows no errors.
 
 **3. Verify Python environment:**
 ```bash
 python3 -c "import ttnn; print('✓ ttnn import successful')"
-```
+```python
 
 If imports fail, check that your Python environment has access to tt-metal.
 

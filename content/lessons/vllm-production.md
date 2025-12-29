@@ -61,7 +61,7 @@ Take your AI deployment to the next level with vLLM - a production-grade inferen
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────┐
 │       vLLM Server                │
 │                                  │
@@ -81,7 +81,7 @@ Take your AI deployment to the next level with vLLM - a production-grade inferen
    OpenAI Python SDK
    curl / HTTP clients
    Your applications
-```
+```python
 
 ## Prerequisites
 
@@ -107,7 +107,7 @@ ls ~/models/Llama-3.1-8B-Instruct/config.json
 
 # Python version?
 python3 --version  # Need 3.10+
-```
+```python
 
 **If any checks fail:**
 - **No hardware?** → See [Lesson 1: Hardware Detection](#)
@@ -116,7 +116,7 @@ python3 --version  # Need 3.10+
   ```bash
   huggingface-cli download meta-llama/Llama-3.1-8B-Instruct \
     --local-dir ~/models/Llama-3.1-8B-Instruct
-  ```
+```text
 
 ---
 
@@ -140,7 +140,7 @@ You don't need 8B parameters for production AI. Qwen3-0.6B is a **game-changer**
 
 ```bash
 huggingface-cli download Qwen/Qwen3-0.6B --local-dir ~/models/Qwen3-0.6B
-```
+```text
 
 
 **No HuggingFace token needed!** Downloads in ~2-3 minutes.
@@ -153,7 +153,7 @@ huggingface-cli download Qwen/Qwen3-0.6B --local-dir ~/models/Qwen3-0.6B
 
 ```bash
 huggingface-cli download google/gemma-3-1b-it --local-dir ~/models/gemma-3-1b-it
-```
+```text
 
 - **1B params** (8x smaller than 8B)
 - **140+ languages** supported
@@ -166,7 +166,7 @@ huggingface-cli download google/gemma-3-1b-it --local-dir ~/models/gemma-3-1b-it
 
 ```bash
 huggingface-cli download meta-llama/Llama-3.1-8B-Instruct --local-dir ~/models/Llama-3.1-8B-Instruct
-```
+```bash
 
 **Requirements:**
 - HuggingFace token (gated model)
@@ -186,7 +186,7 @@ cd ~/tt-metal && \
   git submodule update --init --recursive && \
   sudo ./install_dependencies.sh && \
   ./build_metal.sh
-```
+```bash
 
 [🔧 Update and Build TT-Metal](command:tenstorrent.updateTTMetal)
 
@@ -223,7 +223,7 @@ Before proceeding, let's check what you already have installed:
 
 # Check if server script exists
 [ -f ~/tt-scratchpad/start-vllm-server.py ] && echo "✓ Server script found" || echo "✗ Server script missing"
-```
+```bash
 
 **All checks passed?** You can skip to [Step 4: Start the Server](#step-4-start-the-openai-compatible-server).
 
@@ -239,7 +239,7 @@ First, get Tenstorrent's vLLM fork:
 cd ~ && \
   git clone --branch dev https://github.com/tenstorrent/vllm.git tt-vllm && \
   cd tt-vllm
-```
+```bash
 
 [📦 Clone TT vLLM Repository](command:tenstorrent.cloneVllm)
 
@@ -267,7 +267,7 @@ cd ~/tt-vllm && \
   pip install --upgrade ttnn pytest && \
   pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48 && \
   pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
-```
+```text
 
 [⚙️ Install vLLM](command:tenstorrent.installVllm)
 
@@ -311,7 +311,7 @@ python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
 #   → --max-model-len 2048
 #   → --max-num-seqs 16
 #   → --block-size 64
-```
+```bash
 
 **Override any setting as needed:**
 
@@ -324,7 +324,7 @@ python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
 python ~/tt-scratchpad/start-vllm-server.py \
   --model ~/models/Qwen3-0.6B \
   --max-model-len 8192
-```
+```bash
 
 **What the script does automatically:**
 
@@ -375,7 +375,7 @@ Before starting the server, create the script that registers TT models with vLLM
 cd ~/tt-vllm && \
   source ~/tt-vllm-venv/bin/activate && \
   python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B
-```
+```bash
 
 **That's literally it!** The script now auto-detects and configures:
 - ✅ **Hardware type** (N150/N300/T3K/P100/P150) via tt-smi
@@ -422,7 +422,7 @@ cd ~/tt-vllm && \
     --max-model-len 2048 \
     --max-num-seqs 16 \
     --block-size 64
-```
+```bash
 
 **💡 What you get:**
 - **~16 concurrent users** with 2K context each
@@ -452,7 +452,7 @@ cd ~/tt-vllm && \
     --max-model-len 2048 \
     --max-num-seqs 12 \
     --block-size 64
-```
+```bash
 
 ---
 
@@ -477,7 +477,7 @@ cd ~/tt-vllm && \
     --max-model-len 2048 \
     --max-num-seqs 2 \
     --block-size 64
-```
+```bash
 
 [🚀 Start vLLM with Llama (N150 - Not Recommended)](command:tenstorrent.startVllmServerN150)
 
@@ -503,7 +503,7 @@ cd ~/tt-vllm && \
     --max-num-seqs 32 \
     --block-size 64 \
     --tensor-parallel-size 2
-```
+```bash
 
 [🚀 Start vLLM Server (N300)](command:tenstorrent.startVllmServerN300)
 
@@ -527,7 +527,7 @@ cd ~/tt-vllm && \
     --max-num-seqs 64 \
     --block-size 64 \
     --tensor-parallel-size 8
-```
+```bash
 
 [🚀 Start vLLM Server (T3K)](command:tenstorrent.startVllmServerT3K)
 
@@ -553,7 +553,7 @@ cd ~/tt-vllm && \
     --max-model-len 8192 \
     --max-num-seqs 4 \
     --block-size 64
-```
+```text
 
 [🚀 Start vLLM Server (P100)](command:tenstorrent.startVllmServerP100)
 
@@ -576,9 +576,9 @@ This creates `~/tt-scratchpad/start-vllm-server.py` which registers TT models wi
 ### Why a Custom Starter Script?
 
 **The Problem:** vLLM doesn't automatically know about Tenstorrent's custom model implementations (like `TTLlamaForCausalLM`). Without registration, vLLM will fail with:
-```
+```yaml
 ValidationError: Cannot find model module 'TTLlamaForCausalLM'
-```
+```python
 
 **The Solution:** A production-ready starter script that:
 1. **Registers TT models** with vLLM's `ModelRegistry` API before the server starts
@@ -596,7 +596,7 @@ ModelRegistry.register_model(
 )
 
 # Then start vLLM server with all your flags
-```
+```python
 
 **Why not use `python -m vllm.entrypoints.openai.api_server` directly?**
 - ❌ TT models not registered → ValidationError
@@ -631,7 +631,7 @@ ModelRegistry.register_model(
 
 **What you'll see:**
 
-```
+```yaml
 INFO: Loading model meta-llama/Llama-3.1-8B-Instruct
 INFO: Initializing TT-Metal backend...
 INFO: Model loaded successfully
@@ -639,7 +639,7 @@ INFO: Started server process
 INFO: Waiting for application startup.
 INFO: Application startup complete.
 INFO: Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-```
+```bash
 
 **Server is ready!** Leave this terminal open.
 
@@ -668,7 +668,7 @@ cd ~/tt-vllm && \
     --max-model-len 8192 \
     --max-num-seqs 4 \
     --block-size 64
-```
+```bash
 
 **That's it!** The same script automatically detects Qwen is Llama-compatible and uses the TT-optimized implementation. Same performance, different model.
 
@@ -709,15 +709,15 @@ response = client.chat.completions.create(
 )
 
 print(response.choices[0].message.content)
-```
+```text
 
 [💬 Test with OpenAI SDK](command:tenstorrent.testVllmOpenai)
 
 **Response:**
-```
+```bash
 Machine learning is a subset of artificial intelligence that involves
 training algorithms to learn from data and make predictions or decisions...
-```
+```text
 
 **Why this is powerful:** Your code is **identical** to code that calls OpenAI's API. Just change the `base_url`!
 
@@ -735,7 +735,7 @@ curl http://localhost:8000/v1/chat/completions \
     ],
     "max_tokens": 128
   }'
-```
+```text
 
 [🔧 Test with curl](command:tenstorrent.testVllmCurl)
 
@@ -762,7 +762,7 @@ curl http://localhost:8000/v1/chat/completions \
     "total_tokens": 50
   }
 }
-```
+```text
 
 ## OpenAI-Compatible Endpoints
 
@@ -784,7 +784,7 @@ curl http://localhost:8000/v1/chat/completions \
     "temperature": 0.7,
     "max_tokens": 256
   }'
-```
+```text
 
 ### POST /v1/completions
 
@@ -798,7 +798,7 @@ curl http://localhost:8000/v1/completions \
     "prompt": "Once upon a time",
     "max_tokens": 100
   }'
-```
+```text
 
 ### GET /v1/models
 
@@ -806,7 +806,7 @@ List available models:
 
 ```bash
 curl http://localhost:8000/v1/models
-```
+```text
 
 Response:
 ```json
@@ -820,7 +820,7 @@ Response:
     }
   ]
 }
-```
+```python
 
 ## Streaming Responses
 
@@ -841,7 +841,7 @@ stream = client.chat.completions.create(
 for chunk in stream:
     if chunk.choices[0].delta.content is not None:
         print(chunk.choices[0].delta.content, end='', flush=True)
-```
+```python
 
 Output appears word-by-word as it's generated!
 
@@ -877,7 +877,7 @@ async def main():
     await asyncio.gather(*tasks)
 
 asyncio.run(main())
-```
+```python
 
 **vLLM handles all 5 requests efficiently** using continuous batching - much better than sequential processing!
 
@@ -905,11 +905,11 @@ response = client.chat.completions.create(
 )
 
 print(response.choices[0].message.content)
-```
+```text
 
 
 **Expected output:**
-```
+```text
 Let me think through this carefully:
 
 1. The farmer starts with 17 sheep
@@ -918,7 +918,7 @@ Let me think through this carefully:
 4. Therefore, 9 sheep remain alive
 
 Answer: 9 sheep are left.
-```
+```text
 
 **Why this works:** Qwen3-0.6B recognizes this requires reasoning and automatically engages its "thinking mode" - even though it's only 0.6B parameters!
 
@@ -934,7 +934,7 @@ response = client.chat.completions.create(
     }],
     max_tokens=128
 )
-```
+```text
 
 ```python
 # Pattern recognition
@@ -946,7 +946,7 @@ response = client.chat.completions.create(
     }],
     max_tokens=64
 )
-```
+```text
 
 
 **What makes Qwen3-0.6B special:**
@@ -972,7 +972,7 @@ python -m vllm.entrypoints.openai.api_server \
   --max-num-seqs 16 \              # Max concurrent sequences
   --disable-log-requests \          # Reduce logging
   --trust-remote-code              # Allow custom models
-```
+```bash
 
 ### Environment Variables
 
@@ -985,7 +985,7 @@ export HF_HOME=~/hf_cache
 
 # Enable debug logging
 export VLLM_LOGGING_LEVEL=DEBUG
-```
+```bash
 
 ## Deployment Patterns
 
@@ -998,7 +998,7 @@ python -m vllm.entrypoints.openai.api_server \
   --model $HF_MODEL \
   --host 0.0.0.0 \
   --port 8000
-```
+```bash
 
 **Good for:** Dev/test, small teams, moderate QPS
 
@@ -1015,7 +1015,7 @@ CMD python -m vllm.entrypoints.openai.api_server \
     --model meta-llama/Llama-3.1-8B-Instruct \
     --host 0.0.0.0 \
     --port 8000
-```
+```text
 
 **Good for:** Consistent environments, easier scaling
 
@@ -1023,12 +1023,12 @@ CMD python -m vllm.entrypoints.openai.api_server \
 
 Multiple vLLM servers behind nginx:
 
-```
+```text
 nginx (load balancer)
   ├── vLLM server 1 (port 8001)
   ├── vLLM server 2 (port 8002)
   └── vLLM server 3 (port 8003)
-```
+```text
 
 **Good for:** High availability, horizontal scaling
 
@@ -1039,17 +1039,17 @@ nginx (load balancer)
 1. **Set appropriate batch size:**
 ```bash
 --max-num-seqs 32  # Higher = more throughput, more memory
-```
+```text
 
 2. **Optimize sequence length:**
 ```bash
 --max-model-len 2048  # Match your use case
-```
+```text
 
 3. **Enable GPU memory optimization:**
 ```bash
 --gpu-memory-utilization 0.9  # Use 90% of GPU memory
-```
+```text
 
 4. **Monitor metrics:**
 - Watch request latency
@@ -1069,7 +1069,7 @@ curl http://localhost:8000/health
 
 # Server stats
 curl http://localhost:8000/v1/models
-```
+```bash
 
 **Integration with monitoring tools:**
 - Prometheus for metrics collection
@@ -1108,7 +1108,7 @@ source ~/tt-vllm/tt_metal/setup-metal.sh
 
 # Verify model path
 ls ~/models/Llama-3.1-8B-Instruct/config.json
-```
+```bash
 
 **Import errors (e.g., "No module named 'llama_models'", "No module named 'fairscale'", "No module named 'pytz'", etc.):**
 ```bash
@@ -1116,7 +1116,7 @@ ls ~/models/Llama-3.1-8B-Instruct/config.json
 source ~/tt-vllm-venv/bin/activate
 pip install --upgrade ttnn pytest
 pip install fairscale termcolor loguru blobfile fire pytz llama-models==0.0.48
-```
+```text
 
 **Out of Memory / DRAM Exhausted (N150 Users):**
 If larger models (8B params) exhaust your DRAM on N150, use smaller models:
@@ -1129,7 +1129,7 @@ If larger models (8B params) exhaust your DRAM on N150, use smaller models:
 
   # Start server (use N150 command from Step 4 above)
   python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Qwen3-0.6B ...
-  ```
+```bash
 
 - **Gemma 3-1B-IT** - 1B params (8x smaller than 8B)
   ```bash
@@ -1138,7 +1138,7 @@ If larger models (8B params) exhaust your DRAM on N150, use smaller models:
 
   # Start server (use N150 command from Step 4 above)
   python ~/tt-scratchpad/start-vllm-server.py --model ~/models/gemma-3-1b-it ...
-  ```
+```bash
 
 **Why small models work better on N150:**
 - **Minimal DRAM usage** - Fits comfortably in N150's memory
@@ -1162,7 +1162,7 @@ sudo ./install_dependencies.sh      # Install/update system dependencies
 # Then upgrade ttnn in vLLM venv
 source ~/tt-vllm-venv/bin/activate
 pip install --upgrade ttnn
-```
+```bash
 
 **Why `--clean`?** Removes all cached build artifacts to prevent conflicts between old and new versions. This forces a complete rebuild from scratch.
 
@@ -1175,7 +1175,7 @@ If you see `RuntimeError: Failed to infer device type`, you need to explicitly s
 ```bash
 export TT_METAL_ARCH_NAME=blackhole
 export MESH_DEVICE=P100
-```
+```bash
 
 **Why this happens:** Blackhole hardware (P100) requires explicit architecture specification. Wormhole chips (N150/N300/T3K) auto-detect, but Blackhole needs `TT_METAL_ARCH_NAME=blackhole`.
 
@@ -1195,14 +1195,14 @@ cd ~/tt-vllm && \
     --max-model-len 8192 \
     --max-num-seqs 4 \
     --block-size 64
-```
+```text
 
 **ValidationError: Cannot find model module 'TTLlamaForCausalLM':**
 This error means vLLM cannot find the TT model implementation. Solution:
 ```bash
 # Use the starter script (Step 4) which registers TT models
 python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instruct
-```
+```python
 
 **Why this happens:** vLLM needs to explicitly register TT models using `ModelRegistry.register_model()` before starting. The starter script does this automatically. Do NOT call `python -m vllm.entrypoints.openai.api_server` directly - it will fail because TT models aren't registered.
 
@@ -1210,14 +1210,14 @@ python ~/tt-scratchpad/start-vllm-server.py --model ~/models/Llama-3.1-8B-Instru
 ```bash
 ls -la ~/tt-scratchpad/start-vllm-server.py
 # If missing, use the extension button "Create vLLM Server Starter Script" in Lesson 6
-```
+```bash
 
 **If you encounter other import errors (e.g., "No module named 'xyz'"):**
 ```bash
 # Install the missing package
 source ~/tt-vllm-venv/bin/activate
 pip install <missing-package-name>
-```
+```bash
 
 **Other import errors:**
 ```bash
@@ -1225,7 +1225,7 @@ pip install <missing-package-name>
 source ~/tt-vllm-venv/bin/activate
 cd ~/tt-vllm
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
-```
+```bash
 
 **Virtual environment issues:**
 ```bash
@@ -1239,7 +1239,7 @@ export vllm_dir=$(pwd)
 source $vllm_dir/tt_metal/setup-metal.sh
 pip install fairscale termcolor loguru blobfile fire llama-models==0.0.48
 pip install -e . --extra-index-url https://download.pytorch.org/whl/cpu
-```
+```text
 
 **Slow inference:**
 - Check `--max-num-seqs` setting

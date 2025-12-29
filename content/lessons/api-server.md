@@ -39,7 +39,7 @@ The key advantage: **model stays loaded in memory between HTTP requests** for fa
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐
 │   Flask Server  │  ← Loads model once on startup
 │                 │
@@ -53,7 +53,7 @@ The key advantage: **model stays loaded in memory between HTTP requests** for fa
 └─────────────────┘
         ↕
     curl / HTTP clients
-```
+```python
 
 **Performance:**
 - Load time (startup): 2-5 minutes
@@ -81,7 +81,7 @@ ls ~/models/Llama-3.1-8B-Instruct/original/consolidated.00.pth
 # Dependencies installed?
 python3 -c "import pi; print('✓ pi installed')"
 python3 -c "import flask; print('✓ flask installed')"
-```
+```python
 
 **All checks passed?** Continue to Step 1 below.
 
@@ -97,14 +97,14 @@ python3 -c "import flask; print('✓ flask installed')"
   huggingface-cli login
   hf download meta-llama/Llama-3.1-8B-Instruct \
     --local-dir ~/models/Llama-3.1-8B-Instruct
-  ```
+```bash
 
 **No dependencies?**
 - Install Direct API dependencies:
   ```bash
   pip install pi flask
   pip install git+https://github.com/tenstorrent/llama-models.git@tt_metal_tag
-  ```
+```bash
 
 ---
 
@@ -123,7 +123,7 @@ Flask is a lightweight Python web framework:
 
 ```bash
 pip install flask
-```
+```bash
 
 [📦 Install Flask](command:tenstorrent.installFlask)
 
@@ -139,7 +139,7 @@ This command creates `~/tt-scratchpad/tt-api-server-direct.py`:
 ```bash
 # Creates the API server with direct Generator API
 mkdir -p ~/tt-scratchpad && cp template ~/tt-scratchpad/tt-api-server-direct.py && chmod +x ~/tt-scratchpad/tt-api-server-direct.py
-```
+```bash
 
 [🌐 Create API Server Script](command:tenstorrent.createApiServerDirect)
 
@@ -163,13 +163,13 @@ cd ~/tt-metal && \
   export HF_MODEL=~/models/Llama-3.1-8B-Instruct && \
   export PYTHONPATH=$(pwd) && \
   python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8080
-```
+```python
 
 [🚀 Start API Server (Direct API)](command:tenstorrent.startApiServerDirect)
 
 **What you'll see:**
 
-```
+```text
 🔄 Importing tt-metal libraries and loading model...
    This will take 2-5 minutes on first run...
 
@@ -193,7 +193,7 @@ Note: Model is loaded in memory - inference is fast!
 Press CTRL+C to stop the server
 
  * Running on http://127.0.0.1:8080
-```
+```bash
 
 **The model is now loaded and ready!** Leave this terminal open.
 
@@ -207,7 +207,7 @@ Verify the server is running and the model is loaded:
 
 ```bash
 curl http://localhost:8080/health
-```
+```text
 
 Response:
 ```json
@@ -217,7 +217,7 @@ Response:
   "model_loaded": true,
   "note": "Model is loaded in memory for fast inference"
 }
-```
+```text
 
 ### Basic Inference Query
 
@@ -227,7 +227,7 @@ Send your first prompt (**notice how fast it is!**):
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
   -d '{"prompt": "What is machine learning?"}'
-```
+```json
 
 [💬 Test: Basic Inference](command:tenstorrent.testApiBasicDirect)
 
@@ -240,7 +240,7 @@ curl -X POST http://localhost:8080/chat \
   "time_seconds": 1.23,
   "tokens_per_second": 36.6
 }
-```
+```text
 
 **Notice:** Only 1-3 seconds! The model was already loaded.
 
@@ -263,7 +263,7 @@ curl -X POST http://localhost:8080/chat \
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
   -d '{"prompt": "What are transformers in AI?"}'
-```
+```json
 
 [🔄 Test: Multiple Queries](command:tenstorrent.testApiMultipleDirect)
 
@@ -290,7 +290,7 @@ curl -X POST http://localhost:8080/chat \
     "max_tokens": 200,
     "temperature": 0.7
   }'
-```
+```text
 
 ## API Reference
 
@@ -305,7 +305,7 @@ Generates text using the loaded model.
   "max_tokens": 128,        // Optional, default: 128
   "temperature": 0.0        // Optional, default: 0.0 (greedy)
 }
-```
+```text
 
 **Response (JSON):**
 ```json
@@ -316,7 +316,7 @@ Generates text using the loaded model.
   "time_seconds": 1.23,
   "tokens_per_second": 36.6
 }
-```
+```text
 
 **Parameters:**
 - `prompt` (required): Your input text
@@ -331,7 +331,7 @@ Generates text using the loaded model.
 {
   "error": "Error message here"
 }
-```
+```text
 
 ### GET /health
 
@@ -345,7 +345,7 @@ Health check endpoint.
   "model_loaded": true,
   "note": "Model is loaded in memory for fast inference"
 }
-```
+```python
 
 ## Using from Python
 
@@ -366,7 +366,7 @@ response = requests.post(
 data = response.json()
 print(f"Response: {data['response']}")
 print(f"Speed: {data['tokens_per_second']:.1f} tokens/sec")
-```
+```json
 
 ## Using from JavaScript
 
@@ -386,7 +386,7 @@ fetch('http://localhost:8080/chat', {
   console.log('Response:', data.response);
   console.log('Speed:', data.tokens_per_second, 'tok/s');
 });
-```
+```python
 
 ## Understanding the Code
 
@@ -412,7 +412,7 @@ def initialize_model():
 
     # Create generator
     GENERATOR = Generator([MODEL], [MODEL_ARGS], MESH_DEVICE, ...)
-```
+```python
 
 **This runs once when the server starts!**
 
@@ -430,7 +430,7 @@ def generate_response(prompt, max_tokens=128, temperature=0.0):
         logits = GENERATOR.decode_forward_text(...)
 
     return response, tokens_generated
-```
+```python
 
 **This runs for each HTTP request - fast!**
 
@@ -452,19 +452,19 @@ def chat():
         "tokens_generated": tokens,
         ...
     })
-```
+```text
 
 ## Performance Metrics
 
 Watch the server logs to see real-time performance:
 
-```
+```text
 📝 Request: What is machine learning?...
 ✓ Generated 45 tokens in 1.23s (36.6 tok/s)
 
 📝 Request: Explain neural networks...
 ✓ Generated 52 tokens in 1.41s (36.9 tok/s)
-```
+```python
 
 **Typical performance:**
 - Latency: 1-3 seconds per request
@@ -481,7 +481,7 @@ def chat():
     if auth_token != 'Bearer your-secret-token':
         return jsonify({"error": "Unauthorized"}), 401
     ...
-```
+```python
 
 **2. Rate limiting**
 ```python
@@ -493,7 +493,7 @@ limiter = Limiter(app, default_limits=["10 per minute"])
 @limiter.limit("5 per minute")
 def chat():
     ...
-```
+```python
 
 **3. Streaming responses**
 ```python
@@ -507,7 +507,7 @@ def chat_stream():
 
     return Response(stream_with_context(generate()),
                    mimetype='text/event-stream')
-```
+```python
 
 **4. Request logging**
 ```python
@@ -519,7 +519,7 @@ logging.basicConfig(filename='api.log', level=logging.INFO)
 def chat():
     logging.info(f"Request from {request.remote_addr}: {prompt[:50]}")
     ...
-```
+```bash
 
 ## Deployment Considerations
 
@@ -529,12 +529,12 @@ def chat():
 ```bash
 pip install gunicorn
 gunicorn -w 1 -b 0.0.0.0:8080 tt-api-server-direct:app
-```
+```text
 
 2. **Add HTTPS:**
 ```bash
 # Use nginx or Apache as reverse proxy with SSL
-```
+```text
 
 3. **Monitor and scale:**
 - Track latency and throughput
@@ -559,7 +559,7 @@ The model will unload and cleanup happens automatically.
 **Port already in use:**
 ```bash
 python3 ~/tt-scratchpad/tt-api-server-direct.py --port 8081
-```
+```python
 
 **Connection refused:**
 - Check server is running (look for "Server ready" message)

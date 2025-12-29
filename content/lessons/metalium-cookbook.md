@@ -54,7 +54,7 @@ This creates all 4 projects in `~/tt-scratchpad/cookbook/` with one command. You
 
 All projects are deployed to `~/tt-scratchpad/cookbook/`:
 
-```
+```text
 ~/tt-scratchpad/cookbook/
 ├── game_of_life/
 │   ├── game_of_life.py       # Core TTNN implementation
@@ -74,7 +74,7 @@ All projects are deployed to `~/tt-scratchpad/cookbook/`:
     ├── filters.py             # Image processing kernels (starter template)
     ├── requirements.txt
     └── README.md
-```
+```python
 
 ---
 
@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
     # Cleanup
     ttnn.close_device(device)
-```
+```python
 
 ---
 
@@ -361,7 +361,7 @@ def get_pattern(name):
 def list_patterns():
     """List all available patterns."""
     return list(PATTERNS.keys())
-```
+```python
 
 ---
 
@@ -455,7 +455,7 @@ def compare_patterns(patterns_dict):
 
     plt.tight_layout()
     plt.show()
-```
+```bash
 
 ---
 
@@ -488,7 +488,7 @@ animate_game_of_life(history, interval=50)
 
 ttnn.close_device(device)
 "
-```
+```python
 
 ---
 
@@ -511,7 +511,7 @@ for size in sizes:
 
     generations_per_sec = 100 / elapsed
     print(f"{size}×{size}: {generations_per_sec:.2f} gen/sec")
-```
+```python
 
 ### 2. Custom Rule Sets
 Implement variants like **HighLife** (birth on 3,6) or **Day & Night**:
@@ -532,7 +532,7 @@ def highlife_step(self, grid):
     )
 
     return ttnn.to_float(ttnn.logical_or(birth, survival))
-```
+```python
 
 ### 3. Multi-Color Variants
 Track cell "age" or "species":
@@ -547,7 +547,7 @@ def step_with_age(self, grid):
     aged = ttnn.where(ttnn.eq(next_grid, 1.0), aged, 0.0)
 
     return aged
-```
+```text
 
 ### 4. 3D Game of Life
 Extend to 3D volumes (more complex rules):
@@ -559,7 +559,7 @@ kernel_3d[0, 0, 1, 1, 1] = 0  # Center cell
 
 # Use 3D convolution
 neighbors = ttnn.conv3d(grid_3d, kernel_3d, padding=(1,1,1))
-```
+```python
 
 ---
 
@@ -889,7 +889,7 @@ if __name__ == "__main__":
 
     # Cleanup
     ttnn.close_device(device)
-```
+```python
 
 ---
 
@@ -1054,7 +1054,7 @@ class AudioEffects:
             output[i] += 0.5 * audio[delay_idx]
 
         return output
-```
+```python
 
 ---
 
@@ -1267,7 +1267,7 @@ class SpectrogramVisualizer:
         anim = FuncAnimation(fig, update, frames=num_frames, interval=1000/30, blit=True)
 
         plt.show()
-```
+```bash
 
 ---
 
@@ -1325,7 +1325,7 @@ viz.real_time_spectrogram(duration=10)
 
 ttnn.close_device(device)
 "
-```
+```python
 
 ---
 
@@ -1353,7 +1353,7 @@ def voice_activity_detection(self, audio, threshold_db=-40):
     # Convert to time segments
     times = np.arange(len(energy)) * hop_length / self.sample_rate
     return times, is_speech
-```
+```python
 
 ### 2. Automatic Gain Control (AGC)
 Normalize volume dynamically:
@@ -1380,7 +1380,7 @@ def auto_gain_control(self, audio, target_db=-20, attack_ms=50, release_ms=200):
     gain_linear = 10 ** (gain_db / 20)
 
     return audio * gain_linear
-```
+```python
 
 ### 3. Noise Gate
 Remove background noise:
@@ -1397,7 +1397,7 @@ def noise_gate(self, audio, threshold_db=-50, attack_ms=10, release_ms=100):
     gate_smooth = self._smooth_gate(gate_open, attack_ms, release_ms)
 
     return audio * gate_smooth
-```
+```python
 
 ### 4. Parametric EQ
 Frequency-specific gain:
@@ -1418,7 +1418,7 @@ def parametric_eq(self, audio, center_freq, gain_db, q_factor=1.0):
     # Filter audio
     filtered = signal.lfilter(b, a, audio.numpy())
     return torch.from_numpy(filtered).float()
-```
+```python
 
 ### 5. VST Plugin Interface
 Integrate with DAWs:
@@ -1435,7 +1435,7 @@ def process_block(self, audio_block):
 
     # Convert back
     return ttnn.to_torch(processed).cpu().numpy()
-```
+```python
 
 ---
 
@@ -1662,7 +1662,7 @@ if __name__ == "__main__":
     viz.show(mandelbrot)
 
     ttnn.close_device(device)
-```
+```python
 
 ---
 
@@ -1898,7 +1898,7 @@ class MandelbrotVisualizer:
 
         plt.tight_layout()
         plt.show()
-```
+```bash
 
 ---
 
@@ -1950,7 +1950,7 @@ viz.compare_julia_sets(c_values)
 
 ttnn.close_device(device)
 "
-```
+```text
 
 ---
 
@@ -1964,7 +1964,7 @@ z_real_new = ttnn.subtract(
     ttnn.square(ttnn.abs(z_imag))
 )
 z_real_new = ttnn.add(z_real_new, c_real)
-```
+```python
 
 ### 2. 3D Mandelbulb
 Extend to 3D using spherical coordinates.
@@ -1980,14 +1980,14 @@ def render_zoom_sequence(self, target_x, target_y, num_frames=100):
         zoom_factor = 0.95 ** i  # Exponential zoom
         # ... render and save frame
     return frames
-```
+```text
 
 ### 4. Performance Profiling
 ```python
 # Compare different resolutions
 for size in [512, 1024, 2048, 4096]:
     fractal = renderer.render(size, size, -2.5, 1.0, -1.25, 1.25, 256)
-```
+```python
 
 ---
 
@@ -2267,7 +2267,7 @@ if __name__ == "__main__":
     plt.show()
 
     ttnn.close_device(device)
-```
+```python
 
 ---
 
@@ -2289,7 +2289,7 @@ while True:
     cv2.imshow('Filtered', filtered.permute(1, 2, 0).numpy())
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-```
+```text
 
 ### 2. Neural Style Transfer
 Use pre-trained VGG features + TTNN for fast style transfer.
